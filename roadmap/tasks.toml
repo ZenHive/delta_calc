@@ -1,0 +1,195 @@
+schema_version = 2
+project = "delta_calc"
+default_branch = "main"
+vision = "A standalone, headless Decimal calculation engine for leveraged crypto trading — salvaged from the retired TradingDashboard app so the rebuild depends on it instead of reimplementing leverage, DCA, and hedging math."
+
+[phases.1]
+name = "Extraction"
+order = 1
+status = "in_progress"
+
+[bundles.calculators]
+description = "Port the pure risk/hedging calculators out of the retired TradingDashboard app into DeltaCalc.*"
+order = 1
+phase = 1
+
+[milestones.v0_1]
+name = "Standalone calc engine"
+order = 1
+status = "active"
+target_version = "0.1.0"
+description = "Proves the salvaged calculators run standalone (no Phoenix/Ecto/I-O) with their original test suites green, so the TradingDashboard rebuild can depend on DeltaCalc instead of reimplementing the math."
+
+# ---------------------------------------------------------------------------
+# Source of truth for ports: the retired app at ~/_DATA/code/TradingDashboard
+#   lib/trading_dashboard/risk/{calc,presets,dca_planner,position_calculator}.ex
+#   lib/trading_dashboard/portfolio.ex + portfolio/snapshot.ex (hedging formulas)
+#   test/trading_dashboard/risk/*.exs (5 test files)
+# ---------------------------------------------------------------------------
+
+[[task]]
+id = 1
+phase = 1
+bundle = "calculators"
+milestone = "v0_1"
+status = "done"
+title = "Scaffold delta_calc library"
+assignee = "claude"
+model = "claude-sonnet-4-6"
+scores = { d = 1, b = 5, u = 5 }
+markers = ["docs"]
+files_to_modify = ["mix.exs", "lib/delta_calc.ex", "README.md", ".tool-versions", ".doctor.exs", ".gitignore"]
+body = "Create a standalone Elixir library (no --sup, no Phoenix) for the salvaged calculators: mix.exs with {:decimal, \"~> 2.0\"} + dev/test tooling mirroring the source project (stream_data, credo, dialyxir, doctor, styler, sobelow, ex_unit_json, dialyzer_json, ex_doc); precommit aliases; .tool-versions; README + moduledoc describing the planned API surface; git init for a clean break from the dead project."
+implemented = "Scaffolded ~/_DATA/code/delta_calc via `mix new --module DeltaCalc`; customised mix.exs (deps + precommit/precommit.full aliases + dialyzer/coverage config), lib/delta_calc.ex moduledoc (API surface), README, .tool-versions (1.19.1-otp-28 / erlang 28.4), .doctor.exs (hand-written for doctor 0.22 whose gen.config is broken under Elixir 1.20), .gitignore (+priv/plts). `mix compile --warnings-as-errors` clean; `mix test` green; git initialised."
+acceptance_criteria = [
+  "mix deps.get && mix compile --warnings-as-errors succeeds",
+  "mix test passes",
+  "git repo initialised at ~/_DATA/code/delta_calc",
+]
+
+[[task]]
+id = 2
+phase = 1
+bundle = "calculators"
+milestone = "v0_1"
+status = "pending"
+title = "Port DeltaCalc.Calc (core engine) + its tests"
+assignee = "claude"
+model = "claude-sonnet-4-6"
+module = "DeltaCalc.Calc"
+scores = { d = 3, b = 5, u = 5 }
+depends_on = [1]
+files_to_modify = ["lib/delta_calc/calc.ex", "test/delta_calc/calc_test.exs", "test/delta_calc/golden_calc_test.exs", "test/delta_calc/dca_test.exs", "test/delta_calc/dca_property_test.exs"]
+touches = ["lib/delta_calc/calc.ex"]
+body = "Lift TradingDashboard.Risk.Calc (~/_DATA/code/TradingDashboard/lib/trading_dashboard/risk/calc.ex, 973 lines) into DeltaCalc.Calc. Pure Decimal, ZERO dependencies — namespace rename only, no logic changes. Port all 11 public fns: effective_leverage/2, leverage_to_aum/2, liquidation/4, allocate/5, position/5, multi_leg_position/3, safety/5, compare_dca_safety/8, convert_ladder_for_short/1, dca_ladder/8, quantize/1. Port the 4 source test files verbatim (rename module refs): test/trading_dashboard/risk/{calc_test,golden_calc_test,dca_test,dca_property_test}.exs."
+acceptance_criteria = [
+  "All ~90 ported tests pass (incl. StreamData property tests)",
+  "No reference to TradingDashboard.* remains",
+  "mix credo --strict and mix dialyzer clean",
+  "Coverage of DeltaCalc.Calc >= 95% (critical money math)",
+]
+
+[[task]]
+id = 3
+phase = 1
+bundle = "calculators"
+milestone = "v0_1"
+status = "pending"
+title = "Port DeltaCalc.Presets + tests"
+assignee = "claude"
+model = "claude-sonnet-4-6"
+module = "DeltaCalc.Presets"
+scores = { d = 1, b = 4, u = 5 }
+depends_on = [1]
+files_to_modify = ["lib/delta_calc/presets.ex", "test/delta_calc/presets_test.exs"]
+touches = ["lib/delta_calc/presets.ex"]
+body = "Lift TradingDashboard.Risk.Presets (lib/trading_dashboard/risk/presets.ex) into DeltaCalc.Presets — leaf module, no deps, namespace rename only. Public fns: load_modes/0, load_thresholds/0, load_dca_preset/0. Port test/trading_dashboard/risk/presets_test.exs (23 tests) verbatim."
+acceptance_criteria = [
+  "All 23 ported preset tests pass",
+  "mix credo --strict and mix dialyzer clean",
+]
+
+[[task]]
+id = 4
+phase = 1
+bundle = "calculators"
+milestone = "v0_1"
+status = "pending"
+title = "Port DeltaCalc.DCAPlanner"
+assignee = "claude"
+model = "claude-sonnet-4-6"
+module = "DeltaCalc.DCAPlanner"
+scores = { d = 2, b = 4, u = 4 }
+depends_on = [2, 3]
+files_to_modify = ["lib/delta_calc/dca_planner.ex"]
+touches = ["lib/delta_calc/dca_planner.ex"]
+body = "Lift TradingDashboard.Risk.DCAPlanner (lib/trading_dashboard/risk/dca_planner.ex) into DeltaCalc.DCAPlanner. Update the two aliases to DeltaCalc.Calc and DeltaCalc.Presets. Public surface: calculate_dca_ladder/1 (map) + /10 (backward-compat positional), build_defensive_preset/3, build_aggressive_preset/3, enhance_dca_steps/5. Logic unchanged — only the namespace of the aliased peers changes."
+acceptance_criteria = [
+  "Compiles clean against the ported Calc/Presets",
+  "mix credo --strict and mix dialyzer clean",
+  "Tests added under task 7 cover calculate_dca_ladder/1",
+]
+
+[[task]]
+id = 5
+phase = 1
+bundle = "calculators"
+milestone = "v0_1"
+status = "pending"
+title = "Port DeltaCalc.PositionCalculator (decouple from LiveView assigns)"
+assignee = "claude"
+model = "claude-sonnet-4-6"
+module = "DeltaCalc.PositionCalculator"
+scores = { d = 2, b = 4, u = 4 }
+depends_on = [2]
+files_to_modify = ["lib/delta_calc/position_calculator.ex"]
+touches = ["lib/delta_calc/position_calculator.ex"]
+body = "Lift TradingDashboard.Risk.PositionCalculator (lib/trading_dashboard/risk/position_calculator.ex) into DeltaCalc.PositionCalculator. The ONE decoupling: calculate_position/2's 2nd arg is named `assigns` and reads `assigns.risk_modes[mode]` (line ~119). It is a plain map at runtime — rename the param to `config`, update @doc to describe `%{risk_modes: %{...}}`, no struct/behaviour involved. Alias updates to DeltaCalc.Calc."
+acceptance_criteria = [
+  "2nd param renamed assigns -> config, documented as a plain map",
+  "Compiles clean against ported Calc",
+  "mix credo --strict and mix dialyzer clean",
+  "Tests added under task 7 cover calculate_position/2",
+]
+
+[[task]]
+id = 6
+phase = 1
+bundle = "calculators"
+milestone = "v0_1"
+status = "pending"
+title = "Extract DeltaCalc.Hedging (pure spot-hedging formulas)"
+assignee = "claude"
+model = "claude-sonnet-4-6"
+module = "DeltaCalc.Hedging"
+scores = { d = 3, b = 4, u = 4 }
+depends_on = [1]
+files_to_modify = ["lib/delta_calc/hedging.ex"]
+touches = ["lib/delta_calc/hedging.ex"]
+body = "NEW module — extract the pure hedging/portfolio FORMULAS (not the DB queries) from the retired app into DeltaCalc.Hedging as value-in/value-out fns. Sources: portfolio.ex:368 calculate_required_cex_balance(total_spot, hedge_percent) [already pure]; portfolio.ex:380 check_hedge_coverage/2 [extract the coverage-ratio formula, drop the Scope/Repo fetch]; portfolio.ex:486 + snapshot.ex:110 needs_rebalancing? [extract the threshold comparison, take values not structs]; snapshot.ex:124 calculate_change/2 + :142 calculate_percentage_change/2 [pure delta math, take prior/current values]. Read those line ranges in ~/_DATA/code/TradingDashboard before porting. Caller keeps its DB fetch and passes values in."
+acceptance_criteria = [
+  "Pure functions only — no Ecto/Repo/Scope/Snapshot-struct coupling",
+  "Each formula matches the source's numeric behaviour",
+  "Fresh tests added under task 7",
+  "mix credo --strict and mix dialyzer clean",
+]
+
+[[task]]
+id = 7
+phase = 1
+bundle = "calculators"
+milestone = "v0_1"
+status = "pending"
+title = "Backfill tests for PositionCalculator, DCAPlanner, Hedging"
+assignee = "claude"
+model = "claude-sonnet-4-6"
+scores = { d = 3, b = 5, u = 4 }
+depends_on = [4, 5, 6]
+files_to_modify = ["test/delta_calc/position_calculator_test.exs", "test/delta_calc/dca_planner_test.exs", "test/delta_calc/hedging_test.exs"]
+body = "PositionCalculator and DCAPlanner shipped UNTESTED in the source app (only exercised transitively through the LiveView); Hedging is brand new. Write dedicated tests: calculate_position/2 full pipeline (allocation -> notional -> leverage -> safety -> mmr_info) incl. long/short and each risk mode; calculate_dca_ladder/1 defensive + aggressive incl. short conversion; all DeltaCalc.Hedging formulas incl. edge cases (zero spot, 0%/100%/120%+ hedge, nil-safe boundaries). Use golden numbers cross-checked against the source behaviour."
+acceptance_criteria = [
+  "calculate_position/2 and calculate_dca_ladder/1 each have dedicated passing tests",
+  "DeltaCalc.Hedging fully covered incl. boundary cases",
+  "Overall coverage >= 80% (>= 95% on Calc/Hedging money math)",
+  "No test hides errors (explicit flunk on unexpected branches)",
+]
+
+[[task]]
+id = 8
+phase = 1
+bundle = "calculators"
+milestone = "v0_1"
+status = "pending"
+title = "README + API docs + tighten doctor thresholds"
+assignee = "claude"
+model = "claude-sonnet-4-6"
+scores = { d = 1, b = 3, u = 3 }
+markers = ["docs"]
+depends_on = [2, 3, 4, 5, 6]
+files_to_modify = ["README.md", "lib/delta_calc.ex", ".doctor.exs"]
+body = "Once the modules are ported, flesh out README with real usage examples per module (input shapes + sample Decimal outputs), confirm every public fn has @doc + @spec, and raise the .doctor.exs thresholds from the scaffold's 0 to the project standard (min_overall_doc_coverage to 100, spec coverage to a real floor) now that there is public API to hold to it."
+acceptance_criteria = [
+  "README documents each module with a runnable example",
+  "mix doctor passes at tightened thresholds (100% doc on public API)",
+  "ex_doc builds clean (mix docs)",
+]

@@ -92,6 +92,7 @@
       "acceptance_criteria": [
         "All ~90 ported tests pass (incl. StreamData property tests)",
         "No reference to TradingDashboard.* remains",
+        "Every public fn carries a Descripex api() declaration before its @doc (annotate at port time)",
         "mix credo --strict and mix dialyzer clean",
         "Coverage of DeltaCalc.Calc >= 95% (critical money math)"
       ],
@@ -132,6 +133,7 @@
       "model": "claude-sonnet-4-6",
       "acceptance_criteria": [
         "All 23 ported preset tests pass",
+        "Every public fn carries a Descripex api() declaration before its @doc (annotate at port time)",
         "mix credo --strict and mix dialyzer clean"
       ],
       "files_to_modify": [
@@ -169,6 +171,7 @@
       "model": "claude-sonnet-4-6",
       "acceptance_criteria": [
         "Compiles clean against the ported Calc/Presets",
+        "Every public fn carries a Descripex api() declaration before its @doc (annotate at port time)",
         "mix credo --strict and mix dialyzer clean",
         "Tests added under task 7 cover calculate_dca_ladder/1"
       ],
@@ -206,6 +209,7 @@
       "acceptance_criteria": [
         "2nd param renamed assigns -> config, documented as a plain map",
         "Compiles clean against ported Calc",
+        "calculate_position/2 carries a Descripex api() declaration before its @doc (annotate at port time)",
         "mix credo --strict and mix dialyzer clean",
         "Tests added under task 7 cover calculate_position/2"
       ],
@@ -243,6 +247,7 @@
       "acceptance_criteria": [
         "Pure functions only — no Ecto/Repo/Scope/Snapshot-struct coupling",
         "Each formula matches the source's numeric behaviour",
+        "Every public fn carries a Descripex api() declaration before its @doc (annotate at port time)",
         "Fresh tests added under task 7",
         "mix credo --strict and mix dialyzer clean"
       ],
@@ -298,13 +303,13 @@
       "bundle": "calculators",
       "milestone": "v0_1",
       "status": "pending",
-      "title": "README + API docs + tighten doctor thresholds",
+      "title": "README + API docs + agent manifest + tighten doctor thresholds",
       "scores": {
         "d": 1,
         "b": 3,
-        "u": 3
+        "u": 4
       },
-      "eff": 3.0,
+      "eff": 3.5,
       "dep_layer": 3,
       "unlocks": 0,
       "markers": [
@@ -321,15 +326,18 @@
       "model": "claude-sonnet-4-6",
       "acceptance_criteria": [
         "README documents each module with a runnable example",
+        "DeltaCalc.Manifest.build/0 returns the aggregated api surface; Descripex.MCP.tools/1 lists every public fn",
+        "mix descripex.manifest emits a valid api_manifest.json",
         "mix doctor passes at tightened thresholds (100% doc on public API)",
         "ex_doc builds clean (mix docs)"
       ],
       "files_to_modify": [
         "README.md",
         "lib/delta_calc.ex",
+        "lib/delta_calc/manifest.ex",
         ".doctor.exs"
       ],
-      "body": "Once the modules are ported, flesh out README with real usage examples per module (input shapes + sample Decimal outputs), confirm every public fn has @doc + @spec, and raise the .doctor.exs thresholds from the scaffold's 0 to the project standard (min_overall_doc_coverage to 100, spec coverage to a real floor) now that there is public API to hold to it.",
+      "body": "Capstone after the modules are ported (each already carries its api() declarations). 1) README: real usage examples per module (input shapes + sample Decimal outputs). 2) Confirm every public fn has @doc + @spec. 3) Aggregate the per-module Descripex api() surface: add DeltaCalc.Manifest with `build/0` -> Descripex.Manifest.build([DeltaCalc.Calc, .Presets, .DCAPlanner, .PositionCalculator, .Hedging]); expose Descripex.MCP.tools/1 over the same module list so a trading agent can call DeltaCalc as MCP tools; verify `mix descripex.manifest --pretty` emits a clean api_manifest.json. 4) Raise .doctor.exs thresholds from the scaffold's 0 to the project standard (min_overall_doc_coverage 100, real spec floor) now that there is public API to hold to it.",
       "cross_repo": []
     }
   ]

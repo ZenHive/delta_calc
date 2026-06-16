@@ -13,7 +13,7 @@ defmodule DeltaCalc.MixProject do
       aliases: aliases(),
       test_coverage: [summary: [threshold: 80]],
       dialyzer: [
-        plt_add_apps: [:mix],
+        plt_add_apps: [:mix, :ex_unit],
         list_unused_filters: true,
         plt_local_path: "priv/plts/project.plt",
         plt_core_path: "priv/plts/core.plt"
@@ -27,7 +27,7 @@ defmodule DeltaCalc.MixProject do
   end
 
   def cli do
-    [preferred_envs: ["test.json": :test, "dialyzer.json": :dev]]
+    [preferred_envs: ["test.json": :test, "dialyzer.json": :dev, ci: :test]]
   end
 
   def application do
@@ -36,10 +36,21 @@ defmodule DeltaCalc.MixProject do
 
   defp deps do
     [
+      {:ex_slop, "~> 0.4", only: [:dev, :test], runtime: false},
+      {:reach, "~> 2.0", only: [:dev, :test], runtime: false},
+      {:ex_dna, "~> 1.0", only: [:dev, :test], runtime: false},
       {:decimal, "~> 2.0"},
+
+      # Agent-economy surface — api() macro for AI-agent discovery/calling.
+      # Annotate every public fn with api() AT PORT TIME (cheaper than backfitting).
+      {:descripex, "~> 0.11"},
 
       # Test / property-based testing (ported risk tests rely on StreamData)
       {:stream_data, "~> 1.0", only: [:test, :dev]},
+
+      # Quality stack installer (elixir-vibe) — brings ex_dna / ex_slop / reach + `mix ci`
+      {:igniter, "~> 0.7", only: [:dev], runtime: false},
+      {:vibe_kit, "~> 0.1", only: [:dev, :test], runtime: false},
 
       # Dev / quality tooling — mirrors the source project's stack
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
@@ -63,7 +74,17 @@ defmodule DeltaCalc.MixProject do
         "doctor",
         "test.json --quiet --cover"
       ],
-      "precommit.full": ["precommit", "cmd env MIX_ENV=dev mix dialyzer"]
+      "precommit.full": ["precommit", "cmd env MIX_ENV=dev mix dialyzer"],
+      ci: [
+        "format",
+        "compile --warnings-as-errors",
+        "format --check-formatted",
+        "test",
+        "credo --strict",
+        "dialyzer",
+        "ex_dna --max-clones 0",
+        "reach.check --arch --smells"
+      ]
     ]
   end
 

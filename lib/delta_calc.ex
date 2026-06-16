@@ -19,6 +19,13 @@ defmodule DeltaCalc do
     * `DeltaCalc.Hedging` — pure spot-hedging formulas: required CEX balance,
       hedge coverage ratio, rebalance threshold, snapshot deltas.
 
+  ## Agent surface
+
+  Every public function is annotated with a `Descripex.api/3` declaration, so the
+  engine is discoverable and callable by AI agents (`__api__/0`, JSON Schema, MCP
+  tools via `Descripex.MCP.tools/1`, aggregated by `DeltaCalc.Manifest`). A trading
+  agent can plan a position or size a hedge by calling DeltaCalc as a tool.
+
   > #### Scaffold {: .info}
   > This is the library skeleton. The calculators are ported incrementally
   > against the extraction roadmap in `roadmap/tasks.toml` (`rmap list`).

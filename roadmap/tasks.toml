@@ -34,18 +34,20 @@ bundle = "calculators"
 milestone = "v0_1"
 status = "done"
 title = "Scaffold delta_calc library"
-assignee = "claude"
-model = "claude-sonnet-4-6"
 scores = { d = 1, b = 5, u = 5 }
 markers = ["docs"]
-files_to_modify = ["mix.exs", "lib/delta_calc.ex", "README.md", ".tool-versions", ".doctor.exs", ".gitignore"]
-body = "Create a standalone Elixir library (no --sup, no Phoenix) for the salvaged calculators: mix.exs with {:decimal, \"~> 2.0\"} + dev/test tooling mirroring the source project (stream_data, credo, dialyxir, doctor, styler, sobelow, ex_unit_json, dialyzer_json, ex_doc); precommit aliases; .tool-versions; README + moduledoc describing the planned API surface; git init for a clean break from the dead project."
-implemented = "Scaffolded ~/_DATA/code/delta_calc via `mix new --module DeltaCalc`; customised mix.exs (deps + precommit/precommit.full aliases + dialyzer/coverage config), lib/delta_calc.ex moduledoc (API surface), README, .tool-versions (1.19.1-otp-28 / erlang 28.4), .doctor.exs (hand-written for doctor 0.22 whose gen.config is broken under Elixir 1.20), .gitignore (+priv/plts). `mix compile --warnings-as-errors` clean; `mix test` green; git initialised."
 acceptance_criteria = [
   "mix deps.get && mix compile --warnings-as-errors succeeds",
   "mix test passes",
   "git repo initialised at ~/_DATA/code/delta_calc",
 ]
+files_to_modify = ["mix.exs", "lib/delta_calc.ex", "README.md", ".tool-versions", ".doctor.exs", ".gitignore"]
+assignee = "claude"
+model = "claude-sonnet-4-6"
+body = "Create a standalone Elixir library (no --sup, no Phoenix) for the salvaged calculators: mix.exs with {:decimal, \"~> 2.0\"} + dev/test tooling mirroring the source project (stream_data, credo, dialyxir, doctor, styler, sobelow, ex_unit_json, dialyzer_json, ex_doc); precommit aliases; .tool-versions; README + moduledoc describing the planned API surface; git init for a clean break from the dead project."
+implemented = "Scaffolded ~/_DATA/code/delta_calc via `mix new --module DeltaCalc`; customised mix.exs (deps + precommit/precommit.full aliases + dialyzer/coverage config), lib/delta_calc.ex moduledoc (API surface), README, .tool-versions (1.19.1-otp-28 / erlang 28.4), .doctor.exs (hand-written for doctor 0.22 whose gen.config is broken under Elixir 1.20), .gitignore (+priv/plts). `mix compile --warnings-as-errors` clean; `mix test` green; git initialised."
+done_at = "2026-06-16"
+shipped_in = "fb44929a931a54ba4c461a459717bfff40be4edf"
 
 [[task]]
 id = 2

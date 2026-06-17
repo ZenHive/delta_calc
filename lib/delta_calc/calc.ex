@@ -394,12 +394,17 @@ defmodule DeltaCalc.Calc do
   """
   @spec multi_leg_position(list(map()), Decimal.t(), Decimal.t()) :: map()
   def multi_leg_position(legs, current_price, initial_equity) do
+    multi_leg_position(legs, current_price, initial_equity, :long)
+  end
+
+  @spec multi_leg_position(list(map()), Decimal.t(), Decimal.t(), :long | :short) :: map()
+  defp multi_leg_position(legs, current_price, initial_equity, side) do
     current_price = to_decimal(current_price)
     initial_equity = to_decimal(initial_equity)
 
     # Calculate position aggregates
     {total_notional, total_pnl, total_tokens} =
-      calculate_leg_totals(legs, current_price)
+      calculate_leg_totals(legs, current_price, side)
 
     # Calculate average entry price
     avg_entry = calculate_average_entry(total_notional, total_tokens)
@@ -420,16 +425,19 @@ defmodule DeltaCalc.Calc do
   end
 
   # Calculate totals across all position legs
-  @spec calculate_leg_totals(list(map()), Decimal.t()) ::
+  @spec calculate_leg_totals(list(map()), Decimal.t(), :long | :short) ::
           {Decimal.t(), Decimal.t(), Decimal.t()}
-  defp calculate_leg_totals(legs, current_price) do
+  defp calculate_leg_totals(legs, current_price, side) do
     Enum.reduce(legs, {@zero, @zero, @zero}, fn leg, {notional_acc, pnl_acc, tokens_acc} ->
       entry = to_decimal(leg.entry)
       notional = to_decimal(leg.notional)
       tokens = Decimal.div(notional, entry)
 
-      # PnL = tokens * (current_price - entry)
-      pnl = Decimal.mult(tokens, Decimal.sub(current_price, entry))
+      pnl =
+        case side do
+          :long -> Decimal.mult(tokens, Decimal.sub(current_price, entry))
+          :short -> Decimal.mult(tokens, Decimal.sub(entry, current_price))
+        end
 
       {
         Decimal.add(notional_acc, notional),
@@ -747,7 +755,7 @@ defmodule DeltaCalc.Calc do
 
     # Calculate multi-leg position after DCA
     legs = [single_leg, dca_leg]
-    multi_pos = multi_leg_position(legs, current_price, initial_equity)
+    multi_pos = multi_leg_position(legs, current_price, initial_equity, side)
     multi_liq = liquidation(multi_pos.avg_entry, multi_pos.effective_leverage, mmr, side)
 
     # Calculate safety metrics

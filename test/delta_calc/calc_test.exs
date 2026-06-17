@@ -699,6 +699,55 @@ defmodule DeltaCalc.CalcTest do
       # Post-DCA distance should be less than pre-DCA
       assert Decimal.compare(post_distance, pre_distance) == :lt
     end
+
+    test "short DCA uses entry-current PnL so underwater shorts show higher leverage" do
+      single_leg = %{entry: Decimal.new(3000), notional: Decimal.new(125)}
+      dca_leg = %{entry: Decimal.new(3200), notional: Decimal.new(125)}
+      current_price = Decimal.new(3200)
+      initial_equity = Decimal.new(50)
+
+      result =
+        Calc.compare_dca_safety(
+          single_leg,
+          dca_leg,
+          current_price,
+          initial_equity,
+          Decimal.new("0.005"),
+          :short,
+          Decimal.new(25)
+        )
+
+      # Leg 1: (3000-3200) * (125/3000) = -8.33; leg 2 at market = 0
+      expected_pnl =
+        Decimal.sub(Decimal.new(3000), current_price)
+        |> Decimal.mult(Decimal.div(Decimal.new(125), Decimal.new(3000)))
+
+      assert_in_delta(Decimal.to_float(expected_pnl), -8.33, 0.1)
+      assert Decimal.compare(expected_pnl, Decimal.new(0)) == :lt
+
+      # Pre-fix long-only formula would flip sign to +8.33
+      long_only_pnl = Decimal.negate(expected_pnl)
+      assert_in_delta(Decimal.to_float(long_only_pnl), 8.33, 0.1)
+      refute Decimal.equal?(expected_pnl, long_only_pnl)
+
+      # Post-DCA equity: 50 - 8.33 = 41.67 → ~6x leverage, not 4.29x
+      expected_equity = Decimal.add(initial_equity, expected_pnl)
+      expected_leverage = Calc.effective_leverage(Decimal.new(250), expected_equity)
+      assert_in_delta(Decimal.to_float(expected_equity), 41.67, 0.1)
+      assert_in_delta(Decimal.to_float(expected_leverage), 6.0, 0.1)
+
+      long_only_equity = Decimal.add(initial_equity, long_only_pnl)
+      long_only_leverage = Calc.effective_leverage(Decimal.new(250), long_only_equity)
+      assert_in_delta(Decimal.to_float(long_only_leverage), 4.29, 0.1)
+
+      pre_leverage = Calc.effective_leverage(Decimal.new(125), initial_equity)
+      post_leverage = Decimal.add(pre_leverage, result.leverage_change)
+      assert_in_delta(Decimal.to_float(post_leverage), 6.0, 0.1)
+      refute Decimal.equal?(post_leverage, long_only_leverage)
+
+      # Leverage should increase (2.5x → 6.0x), not the understated 4.29x
+      assert_in_delta(Decimal.to_float(result.leverage_change), 3.5, 0.1)
+    end
   end
 
   describe "dca_ladder/8" do

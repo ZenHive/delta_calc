@@ -163,7 +163,8 @@ defmodule DeltaCalc.StressScenario do
         {position, index} = highest_margin_position(account, shock)
         id = position_id(position, index)
 
-        remaining = %{account | positions: List.delete_at(account.positions, index)}
+        {prefix, [_position | suffix]} = Enum.split(account.positions, index)
+        remaining = %{account | positions: prefix ++ suffix}
         cascade_positions(remaining, shock, [id | liquidated])
     end
   end
@@ -195,7 +196,13 @@ defmodule DeltaCalc.StressScenario do
         quantity = to_decimal(position.quantity)
         mark = to_decimal(position.mark_price)
         shocked_mark = shocked_mark_price(mark, shock)
-        signed = signed_quantity(position.side, quantity)
+
+        signed =
+          case position.side do
+            :long -> quantity
+            :short -> Decimal.negate(quantity)
+          end
+
         delta = Decimal.sub(shocked_mark, mark)
 
         acc |> Decimal.add(Decimal.mult(signed, delta))
@@ -257,13 +264,10 @@ defmodule DeltaCalc.StressScenario do
     end
   end
 
-  defp signed_quantity(:long, quantity), do: quantity
-  defp signed_quantity(:short, quantity), do: Decimal.negate(quantity)
-
   @spec to_decimal(Decimal.t() | number() | String.t()) :: Decimal.t()
   defp to_decimal(%Decimal{} = value), do: value
 
-  defp to_decimal(value) do
+  defp to_decimal(value) when is_number(value) or is_binary(value) do
     {:ok, decimal} = Decimal.cast(value)
     decimal
   end

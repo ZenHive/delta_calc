@@ -288,6 +288,15 @@ MarginBridge.margin_runway_days(Decimal.new("2025"), Decimal.new("45"))
 MarginBridge.project_payback_timeline(Decimal.new("2430"), Decimal.new("90"))
 #=> %{remaining_debt: #Decimal<2430>, daily_funding: #Decimal<90>, days_to_payoff: 27, ...}
 
+# stress_test_prolonged_negative(rate, position_size, days, opts) -> stress map
+MarginBridge.stress_test_prolonged_negative(
+  Decimal.new("-0.025"),
+  Decimal.new("60000"),
+  90,
+  periods_per_day: 24
+)
+#=> %{daily_cost: #Decimal<360.00000>, total_cost: #Decimal<32400.00000>, kill_switch_day: nil, ...}
+
 # check_kill_switch(avg_funding_24h, margin_ratio, opts) -> kill-switch map
 MarginBridge.check_kill_switch(Decimal.new("0.015"), Decimal.new("0.145"))
 #=> %{kill_switch_triggered: false, avg_funding_24h: #Decimal<0.015>, ...}

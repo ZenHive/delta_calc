@@ -25,3 +25,6 @@ delta_calc-*.tar
 # Dialyzer PLT files.
 /priv/plts/
 
+# Local hex docs cache.
+/.hex-docs/
+

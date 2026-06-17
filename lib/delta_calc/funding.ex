@@ -193,8 +193,8 @@ defmodule DeltaCalc.Funding do
     count = Decimal.new(data_points)
     avg_rate = Decimal.div(sum, count)
 
-    max_rate = Enum.max_by(rates, &Decimal.to_float/1)
-    min_rate = Enum.min_by(rates, &Decimal.to_float/1)
+    max_rate = Enum.max_by(rates, & &1, Decimal)
+    min_rate = Enum.min_by(rates, & &1, Decimal)
     {trend, slope} = trend_and_slope(rates)
 
     {:ok,
@@ -224,8 +224,8 @@ defmodule DeltaCalc.Funding do
     decimal_rates = Map.new(rates, fn {venue, rate} -> {venue, ensure_decimal(rate)} end)
     rate_values = Map.values(decimal_rates)
 
-    max_rate = Enum.max_by(rate_values, &Decimal.to_float/1)
-    min_rate = Enum.min_by(rate_values, &Decimal.to_float/1)
+    max_rate = Enum.max_by(rate_values, & &1, Decimal)
+    min_rate = Enum.min_by(rate_values, & &1, Decimal)
     delta = Decimal.sub(max_rate, min_rate)
 
     {max_exchange, _} = Enum.find(decimal_rates, fn {_, r} -> Decimal.equal?(r, max_rate) end)
@@ -261,7 +261,7 @@ defmodule DeltaCalc.Funding do
   defp rank_venues(rates) do
     rates
     |> Enum.map(fn {venue, rate} -> {venue, ensure_decimal(rate)} end)
-    |> Enum.sort_by(fn {_venue, rate} -> Decimal.to_float(rate) end, :desc)
+    |> Enum.sort_by(fn {_venue, rate} -> rate end, {:desc, Decimal})
   end
 
   @spec build_opportunity(String.t() | atom(), map()) :: map()

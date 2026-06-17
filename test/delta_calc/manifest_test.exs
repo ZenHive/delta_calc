@@ -15,7 +15,13 @@ defmodule DeltaCalc.ManifestTest do
     "DeltaCalc.MarginBridge",
     "DeltaCalc.FundingProjection",
     "DeltaCalc.OptionLadder",
-    "DeltaCalc.OptionsRisk"
+    "DeltaCalc.OptionsRisk",
+    "DeltaCalc.PnL",
+    "DeltaCalc.DeltaNeutral",
+    "DeltaCalc.PortfolioMargin",
+    "DeltaCalc.StressScenario",
+    "DeltaCalc.Fees",
+    "DeltaCalc.Carry"
   ]
 
   describe "build/0" do
@@ -91,6 +97,12 @@ defmodule DeltaCalc.ManifestTest do
       assert "funding_projection__project_payback_timeline" in tool_names
       assert "option_ladder__optimal_expiries" in tool_names
       assert "options_risk__max_loss" in tool_names
+      assert "pn_l__unrealized_pnl" in tool_names
+      assert "delta_neutral__net_delta" in tool_names
+      assert "portfolio_margin__combined_maintenance_margin" in tool_names
+      assert "stress_scenario__apply_shock" in tool_names
+      assert "fees__effective_entry" in tool_names
+      assert "carry__annualized_basis" in tool_names
     end
   end
 
@@ -108,7 +120,13 @@ defmodule DeltaCalc.ManifestTest do
                DeltaCalc.MarginBridge,
                DeltaCalc.FundingProjection,
                DeltaCalc.OptionLadder,
-               DeltaCalc.OptionsRisk
+               DeltaCalc.OptionsRisk,
+               DeltaCalc.PnL,
+               DeltaCalc.DeltaNeutral,
+               DeltaCalc.PortfolioMargin,
+               DeltaCalc.StressScenario,
+               DeltaCalc.Fees,
+               DeltaCalc.Carry
              ]
     end
   end

@@ -18,7 +18,13 @@ defmodule DeltaCalc.Manifest do
     DeltaCalc.MarginBridge,
     DeltaCalc.FundingProjection,
     DeltaCalc.OptionLadder,
-    DeltaCalc.OptionsRisk
+    DeltaCalc.OptionsRisk,
+    DeltaCalc.PnL,
+    DeltaCalc.DeltaNeutral,
+    DeltaCalc.PortfolioMargin,
+    DeltaCalc.StressScenario,
+    DeltaCalc.Fees,
+    DeltaCalc.Carry
   ]
 
   @doc "Build a JSON-serializable manifest of all public DeltaCalc APIs."

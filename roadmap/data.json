@@ -1247,7 +1247,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Manifest-consistency test: unique public names + full module registration across DeltaCalc.Manifest",
       "scores": {
         "d": 2,
@@ -1278,6 +1278,7 @@
       ],
       "body": "Retrospective fix for the class of bug that escaped per-task review (tasks 24/25): the reviewer gates one diff against one task and never sees the whole surface, so a public-name collision across two write-set-disjoint modules (project_payback_timeline in FundingProjection vs MarginBridge, task 25) landed clean. Turn that global invariant into a CI failure. Walk DeltaCalc.Manifest.build/0 (or Code.fetch_docs over the registered modules) and assert: (1) public function name+arity is unique across all registered modules; (2) every lib/delta_calc module exposing api() functions is in Manifest @modules; (3) existing :hints-present invariant retained. Pure introspection test — no new public lib functions, so no api() annotation needed on test code. Note in the test moduledoc that 'advertised option actually changes output' is a review-criteria convention, not mechanically checked here (would need mutation testing).",
       "created_at": "2026-06-17",
+      "started_at": "2026-06-17",
       "scored_at": "2026-06-17",
       "cross_repo": []
     },

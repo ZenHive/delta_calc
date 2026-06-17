@@ -944,7 +944,7 @@ shipped_in = "74420d18f77c06bd49a0004b76c94a35a227b9d3"
 id = 35
 phase = 3
 bundle = "consumer_math"
-status = "pending"
+status = "in_progress"
 title = "Fix Funding.compare_funding_rates cross-cadence ranking: max/min and arbitrage from raw rates, annualized at per-venue cadence"
 scores = { d = 4, b = 6, u = 6 }
 acceptance_criteria = ["Mixed-cadence compare_funding_rates never returns a negative annual_apr_delta", "max_exchange/min_exchange reflect the highest/lowest ANNUALIZED rate when cadences differ", "Same-cadence (scalar periods_per_day) output is byte-identical to current behavior", "Arbitrage threshold semantics under mixed cadence are documented in the @doc", "Regression test covers the hourly-vs-8h ranking-inversion trigger"]
@@ -966,4 +966,5 @@ The deeper question is a domain decision: `@arbitrage_threshold 0.0005` is a raw
 Add a property/unit test for the mixed-cadence ranking inversion so coverage no longer ratifies the bug.
 """
 created_at = "2026-06-17"
+started_at = "2026-06-17"
 scored_at = "2026-06-17"

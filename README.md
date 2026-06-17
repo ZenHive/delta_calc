@@ -2,7 +2,9 @@
 
 Pure-`Decimal` calculation engine for leveraged crypto trading — **position sizing,
 effective leverage, liquidation price, DCA ladders, safety scoring, spot hedging,
-funding-rate math, account metrics, margin-bridge financing, and option-ladder strategies**.
+funding-rate math, account metrics, margin-bridge financing, option-ladder strategies,
+position PnL, delta-neutral rebalancing, portfolio-margin netting, stress scenarios,
+fee math, and spot/perp carry analysis**.
 
 Salvaged from the retired `TradingDashboard` app so a rebuild does not reinvent the math.
 Every function is a pure value-in / value-out `Decimal` computation: no Ecto, no Phoenix,
@@ -32,7 +34,13 @@ alias DeltaCalc.{
   MarginBridge,
   FundingProjection,
   OptionLadder,
-  OptionsRisk
+  OptionsRisk,
+  PnL,
+  DeltaNeutral,
+  PortfolioMargin,
+  StressScenario,
+  Fees,
+  Carry
 }
 ```
 
@@ -350,6 +358,201 @@ OptionsRisk.monitor_margin_bridge_health(%{
   daily_burn: Decimal.new("45")
 })
 #=> %{margin_ratio: #Decimal<0.145>, runway_days: #Decimal<45>, health_status: :healthy}
+```
+
+## `DeltaCalc.PnL`
+
+Position PnL, return-on-equity, and fee/funding-adjusted breakeven math.
+
+```elixir
+# unrealized_pnl(params) -> Decimal
+PnL.unrealized_pnl(%{
+  entry_price: Decimal.new("50000"),
+  mark_price: Decimal.new("51000"),
+  size: Decimal.new("2"),
+  side: :long
+})
+#=> #Decimal<2000.00000000>
+
+# realized_pnl(params) -> Decimal (fees + accrued funding netted)
+PnL.realized_pnl(%{
+  entry_price: Decimal.new("50000"),
+  exit_price: Decimal.new("52000"),
+  size: Decimal.new("2"),
+  side: :long,
+  open_fee_rate: Decimal.new("0.0004"),
+  close_fee_rate: Decimal.new("0.0002"),
+  accrued_funding: Decimal.new("15")
+})
+#=> #Decimal<...>
+
+# roe(params) -> Decimal
+PnL.roe(%{pnl: Decimal.new("400"), margin: Decimal.new("1000")})
+#=> #Decimal<40.00000000>
+
+# breakeven(params) -> Decimal
+PnL.breakeven(%{
+  entry_price: Decimal.new("50000"),
+  size: Decimal.new("2"),
+  open_fee_rate: Decimal.new("0.0004"),
+  close_fee_rate: Decimal.new("0.0002"),
+  side: :long
+})
+#=> #Decimal<...>
+```
+
+## `DeltaCalc.DeltaNeutral`
+
+Net delta aggregation and rebalance sizing from exchange-supplied position deltas.
+
+```elixir
+positions = [
+  %{kind: :spot, size: Decimal.new("1.5"), side: :long},
+  %{kind: :perp, size: Decimal.new("1.0"), side: :short},
+  %{kind: :option, delta: Decimal.new("0.35")}
+]
+
+# net_delta(positions) -> Decimal
+DeltaNeutral.net_delta(positions)
+#=> #Decimal<0.85000000>
+
+# rebalance_to_neutral(positions | params) -> rebalance map
+DeltaNeutral.rebalance_to_neutral(positions)
+#=> %{
+#     net_delta: #Decimal<0.85000000>,
+#     within_tolerance: false,
+#     side: :short,
+#     size: #Decimal<0.85000000>,
+#     instrument: :perp,
+#     signed_hedge: #Decimal<-0.85000000>
+#   }
+```
+
+## `DeltaCalc.PortfolioMargin`
+
+Combined maintenance margin, netted liquidation price, and margin usage for a position book.
+
+```elixir
+account = %{
+  equity: Decimal.new("1000"),
+  positions: [
+    %{side: :long, quantity: Decimal.new("3"), mark_price: Decimal.new("3000"), mmr: Decimal.new("0.005")},
+    %{side: :short, quantity: Decimal.new("1"), mark_price: Decimal.new("3000"), mmr: Decimal.new("0.005")}
+  ]
+}
+
+# combined_maintenance_margin(account) -> Decimal
+PortfolioMargin.combined_maintenance_margin(account)
+#=> #Decimal<30.00000000>
+
+# portfolio_liquidation_price(account) -> Decimal | nil
+PortfolioMargin.portfolio_liquidation_price(account)
+#=> #Decimal<2512.56281407>
+
+# margin_usage(account) -> %{used, available, usage_pct}
+PortfolioMargin.margin_usage(account)
+#=> %{used: #Decimal<30.00000000>, available: #Decimal<970.00000000>, usage_pct: #Decimal<3.00000000>}
+```
+
+## `DeltaCalc.StressScenario`
+
+Price-shock scenarios and cascade liquidation simulation across a portfolio-margin book.
+
+```elixir
+account = %{
+  equity: Decimal.new("1000"),
+  positions: [
+    %{id: :btc_long, side: :long, quantity: Decimal.new("3"), mark_price: Decimal.new("3000"), mmr: Decimal.new("0.005")},
+    %{id: :btc_short, side: :short, quantity: Decimal.new("1"), mark_price: Decimal.new("3000"), mmr: Decimal.new("0.005")}
+  ]
+}
+
+# apply_shock(account, shock_pct) -> shock result map
+StressScenario.apply_shock(account, Decimal.new("-10"))
+#=> %{
+#     shock_pct: #Decimal<-10>,
+#     equity: #Decimal<400.00000000>,
+#     positions: [...],
+#     portfolio_margin: #Decimal<27.00000000>,
+#     liquidation_price: #Decimal<...>
+#   }
+
+# cascade(account, shock_pct) -> cascade result map
+StressScenario.cascade(account, Decimal.new("-20"))
+#=> %{
+#     shock_pct: #Decimal<-20>,
+#     liquidated_positions: [:btc_long],
+#     margin_call: #Decimal<224.00000000>,
+#     survives?: true
+#   }
+```
+
+## `DeltaCalc.Fees`
+
+Effective entry/exit prices, roundtrip cost, and funding-adjusted breakeven.
+
+```elixir
+# effective_entry(fill_price, params) -> Decimal
+Fees.effective_entry(Decimal.new("50000"), %{
+  fee_rate: Decimal.new("0.0004"),
+  slippage_bps: Decimal.new("10"),
+  side: :long
+})
+#=> #Decimal<50070.00000000>
+
+# effective_exit(fill_price, params) -> Decimal
+Fees.effective_exit(Decimal.new("50000"), %{fee_rate: Decimal.new("0.0004"), side: :long})
+#=> #Decimal<49980.00000000>
+
+# roundtrip_cost(params) -> Decimal
+Fees.roundtrip_cost(%{
+  notional: Decimal.new("10000"),
+  open_fee_rate: Decimal.new("0.0004"),
+  close_fee_rate: Decimal.new("0.0002")
+})
+#=> #Decimal<6.00000000>
+
+# funding_adjusted_breakeven(entry_price, params, accrued_funding) -> Decimal
+Fees.funding_adjusted_breakeven(
+  Decimal.new("50000"),
+  %{size: Decimal.new("2"), open_fee_rate: Decimal.new("0.0004"), close_fee_rate: Decimal.new("0.0002"), side: :long},
+  Decimal.new("0")
+)
+#=> #Decimal<...>
+```
+
+## `DeltaCalc.Carry`
+
+Basis yield, break-even funding, and net carry for spot/perp hedge profitability.
+
+```elixir
+# annualized_basis(spot_price, perp_price) -> Decimal
+Carry.annualized_basis(Decimal.new("60000"), Decimal.new("60600"))
+#=> #Decimal<1.00000000>
+
+# breakeven_funding(params) -> Decimal (per-period rate)
+Carry.breakeven_funding(%{
+  spot_price: Decimal.new("60000"),
+  perp_price: Decimal.new("60600"),
+  holding_days: 30
+})
+#=> #Decimal<-0.00000913>
+
+# net_carry(params) -> carry decision map
+Carry.net_carry(%{
+  spot_price: Decimal.new("60000"),
+  perp_price: Decimal.new("60600"),
+  funding_rate: Decimal.new("0.0001"),
+  holding_days: 30
+})
+#=> %{
+#     annualized_basis: #Decimal<1.00000000>,
+#     basis_yield: #Decimal<0.08219178>,
+#     funding_yield: #Decimal<0.90000000>,
+#     net_yield: #Decimal<0.98219178>,
+#     breakeven_funding: #Decimal<-0.00000913>,
+#     profitable?: true
+#   }
 ```
 
 ## Agent surface

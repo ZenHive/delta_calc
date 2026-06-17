@@ -116,7 +116,7 @@ id = 4
 phase = 1
 bundle = "calculators"
 milestone = "v0_1"
-status = "in_progress"
+status = "done"
 title = "Port DeltaCalc.DCAPlanner"
 scores = { d = 2, b = 4, u = 4 }
 depends_on = [2, 3]
@@ -132,7 +132,12 @@ assignee = "claude"
 module = "DeltaCalc.DCAPlanner"
 model = "claude-sonnet-4-6"
 body = "Lift TradingDashboard.Risk.DCAPlanner (lib/trading_dashboard/risk/dca_planner.ex) into DeltaCalc.DCAPlanner. Update the two aliases to DeltaCalc.Calc and DeltaCalc.Presets. Public surface: calculate_dca_ladder/1 (map) + /10 (backward-compat positional), build_defensive_preset/3, build_aggressive_preset/3, enhance_dca_steps/5. Logic unchanged — only the namespace of the aliased peers changes."
+implemented = "Landed by cursor via merge-train; reviewer-approved (run run-1781658155324-84de0922, 6840a1d2283b5c1686d613e9e715abb7085c775e)."
+delivered_by = "cursor"
+verified = true
 started_at = "2026-06-17"
+done_at = "2026-06-17"
+shipped_in = "6840a1d2283b5c1686d613e9e715abb7085c775e"
 
 [[task]]
 id = 5

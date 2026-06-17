@@ -558,7 +558,7 @@ id = 20
 phase = 3
 bundle = "consumer_math"
 milestone = "v0_3"
-status = "in_progress"
+status = "done"
 title = "Build DeltaCalc.StressScenario (price-shock cascade across the book)"
 scores = { d = 3, b = 4, u = 4 }
 depends_on = [19]
@@ -569,9 +569,14 @@ assignee = "grok"
 module = "DeltaCalc.StressScenario"
 model = "grok-composer-2.5-fast"
 body = "Drives the consumer's risk alerts. Pure Decimal scenario engine over the position book: apply_shock/2 (signed price-move %) -> post-shock per-position state; cascade/2 -> which positions liquidate, aggregate margin call, does the portfolio survive. Built on DeltaCalc.PortfolioMargin's netted margin/liq math rather than re-deriving it. Inputs supplied by the consumer; no I/O. Manifest/README registration is task 23."
+implemented = "Landed by grok via merge-train; reviewer-approved (run run-1781668327960-2afca928, 5472ca3100471dd647b4e59a0187926bba99520e)."
+delivered_by = "grok"
+verified = true
 created_at = "2026-06-17"
 started_at = "2026-06-17"
 scored_at = "2026-06-17"
+done_at = "2026-06-17"
+shipped_in = "5472ca3100471dd647b4e59a0187926bba99520e"
 
 [[task]]
 id = 21

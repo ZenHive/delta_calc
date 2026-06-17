@@ -6,7 +6,7 @@
     },
     "tidewave": {
       "type": "http",
-      "url": "http://localhost:4025/tidewave/mcp"
+      "url": "http://localhost:4024/tidewave/mcp"
     },
     "dashboard_tidewave": {
       "type": "http",

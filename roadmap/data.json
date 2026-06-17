@@ -1058,7 +1058,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "in_progress",
+      "status": "done",
       "title": "Register v0_3 modules in DeltaCalc.Manifest + README",
       "scores": {
         "d": 1,
@@ -1093,10 +1093,15 @@
         "lib/delta_calc/manifest.ex",
         "README.md"
       ],
+      "shipped_in": "f534c9fea9f43739a5fb8b4f040d528266098d61",
       "body": "Consolidation task (kept separate so the six module-build tasks stay write-set-disjoint and dispatch in parallel). Add the new v0_3 modules to DeltaCalc.Manifest @modules: PnL, DeltaNeutral, PortfolioMargin, StressScenario, Fees, Carry. Add a README API-surface entry for each. Verify Manifest.build/0 / modules/0 / tools/1 surface them and the api()-hints validation test passes.",
       "created_at": "2026-06-17",
       "started_at": "2026-06-17",
+      "done_at": "2026-06-17",
       "scored_at": "2026-06-17",
+      "implemented": "Landed by grok via merge-train; reviewer-approved (run run-1781694577739-770ea694, f534c9fea9f43739a5fb8b4f040d528266098d61).",
+      "delivered_by": "grok",
+      "verified": true,
       "cross_repo": []
     },
     {

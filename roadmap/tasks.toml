@@ -748,7 +748,7 @@ id = 28
 phase = 3
 bundle = "consumer_math"
 milestone = "v0_3"
-status = "pending"
+status = "in_progress"
 title = "Fix Funding.compare_single_symbol hardcoded x3 cadence (same Deribit bug as task 26)"
 scores = { d = 2, b = 4, u = 4 }
 acceptance_criteria = ["lib/delta_calc/funding.ex:249 bare Decimal.new(3) removed; annual_apr_delta derives funding-periods-per-day from a caller-supplied cadence (periods_per_day or per-venue interval hours), not a baked constant", "Consistent with Funding.annualize/2 (which already parameterizes cadence via 24/period) and with the MarginBridge/Carry :periods_per_day convention", "Descripex api() for compare_funding_rates updated to advertise the cadence param (:value kind, documents 8h=3/day default vs 24/day Deribit)", "Tests cover 3/day and 24/day (Deribit); the existing 219.00 golden is re-derived under the explicit default, not left asserting the old hardcode", "mix credo --strict and mix dialyzer.json clean; coverage >= 95% (money math)"]
@@ -759,6 +759,7 @@ module = "DeltaCalc.Funding"
 model = "gpt-5.5"
 body = "Second instance of the Deribit funding-cadence bug (task 26 fixed only MarginBridge). funding.ex:249 in compare_single_symbol annualizes a cross-venue funding-rate delta with a hardcoded Decimal.new(3) periods/day — wrong for Deribit hourly funding (~8x understated) and doubly wrong because compare_funding_rates spans venues that may each have different funding intervals. The same module's annualize/2 already does cadence right (24/period from a caller-supplied period). The test (funding_test.exs:64) asserts annual_apr_delta == 219.00 computed WITH the hardcode, so coverage currently ratifies the bug — re-derive the golden under an explicit documented default. Fix: thread funding cadence as a caller-supplied :value param into the annual_apr_delta computation; keep pure Decimal, no I/O. See CLAUDE.md 'Review Blind Spots'."
 created_at = "2026-06-17"
+started_at = "2026-06-17"
 scored_at = "2026-06-17"
 
 [[task]]

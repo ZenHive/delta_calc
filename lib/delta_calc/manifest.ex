@@ -4,6 +4,12 @@ defmodule DeltaCalc.Manifest do
 
   Use `build/0` for a JSON-serializable manifest, or `tools/0` for MCP tool definitions
   that a trading agent can call directly.
+
+  CI enforces three global invariants in `DeltaCalc.ManifestConsistencyTest`:
+
+    1. Public function name+arity is unique across all `@modules` entries.
+    2. Every `lib/delta_calc/` module exposing `api()` functions is listed in `@modules`.
+    3. Every advertised public function carries Descripex `:hints` metadata.
   """
 
   @modules [

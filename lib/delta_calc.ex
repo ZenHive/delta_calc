@@ -7,14 +7,14 @@ defmodule DeltaCalc do
   library so the rebuild does not reinvent the math. Every function is a pure
   value-in / value-out `Decimal` computation — no Ecto, no Phoenix, no I/O.
 
-  ## Modules (target API surface — ported task-by-task, see `roadmap/`)
+  ## Modules
 
     * `DeltaCalc.Calc` — core engine: effective leverage, leverage-to-AUM,
       liquidation price, allocation envelope, position sizing, multi-leg
       cross-margin aggregation, safety scoring, DCA ladders.
     * `DeltaCalc.Presets` — default risk modes, black-swan thresholds, DCA preset.
-    * `DeltaCalc.DCAPlanner` — defensive/aggressive DCA ladder orchestration.
-    * `DeltaCalc.PositionCalculator` — full position-sizing pipeline
+    * `DeltaCalc.DCAPlanner` — planned defensive/aggressive DCA ladder orchestration.
+    * `DeltaCalc.PositionCalculator` — planned full position-sizing pipeline
       (takes a plain `config` map; decoupled from LiveView assigns).
     * `DeltaCalc.Hedging` — pure spot-hedging formulas: required CEX balance,
       hedge coverage ratio, rebalance threshold, snapshot deltas.
@@ -26,8 +26,8 @@ defmodule DeltaCalc do
   tools via `Descripex.MCP.tools/1`, aggregated by `DeltaCalc.Manifest`). A trading
   agent can plan a position or size a hedge by calling DeltaCalc as a tool.
 
-  > #### Scaffold {: .info}
-  > This is the library skeleton. The calculators are ported incrementally
-  > against the extraction roadmap in `roadmap/tasks.toml` (`rmap list`).
+  > #### Extraction status {: .info}
+  > `Calc`, `Presets`, and `Hedging` are ported. Remaining calculators are
+  > tracked in the extraction roadmap in `roadmap/tasks.toml` (`rmap list`).
   """
 end

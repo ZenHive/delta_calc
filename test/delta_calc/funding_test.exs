@@ -49,13 +49,16 @@ defmodule DeltaCalc.FundingTest do
     end
   end
 
-  describe "compare_funding_rates/1" do
-    test "ranks venues and flags arbitrage for a single symbol" do
+  describe "compare_funding_rates/2" do
+    test "ranks venues and flags arbitrage for a single symbol using explicit 8h cadence" do
       result =
-        Funding.compare_funding_rates(%{
-          binance: Decimal.new("0.003"),
-          bybit: Decimal.new("0.001")
-        })
+        Funding.compare_funding_rates(
+          %{
+            binance: Decimal.new("0.003"),
+            bybit: Decimal.new("0.001")
+          },
+          3
+        )
 
       assert result.arbitrage_opportunity == true
       assert result.max_exchange == :binance
@@ -67,6 +70,34 @@ defmodule DeltaCalc.FundingTest do
                {:binance, Decimal.new("0.003")},
                {:bybit, Decimal.new("0.001")}
              ]
+    end
+
+    test "annualizes arbitrage delta with Deribit hourly cadence" do
+      result =
+        Funding.compare_funding_rates(
+          %{
+            deribit: Decimal.new("0.003"),
+            bybit: Decimal.new("0.001")
+          },
+          24
+        )
+
+      assert result.arbitrage_opportunity == true
+      assert Decimal.equal?(result.annual_apr_delta, Decimal.new("1752.00"))
+    end
+
+    test "annualizes arbitrage delta with venue-specific cadences" do
+      result =
+        Funding.compare_funding_rates(
+          %{
+            deribit: Decimal.new("0.003"),
+            bybit: Decimal.new("0.001")
+          },
+          %{deribit: 24, bybit: 3}
+        )
+
+      assert result.arbitrage_opportunity == true
+      assert Decimal.equal?(result.annual_apr_delta, Decimal.new("2518.50"))
     end
 
     test "returns insufficient_data for a single venue" do

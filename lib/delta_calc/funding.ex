@@ -11,8 +11,13 @@ defmodule DeltaCalc.Funding do
   @arbitrage_threshold Decimal.new("0.0005")
   @trend_threshold Decimal.new("0.00001")
   @default_period_hours 8
+  @default_periods_per_day 3
+  @hours_per_day 24
   @days_per_year 365
   @hundred Decimal.new(100)
+
+  @type decimal_input :: Decimal.t() | number() | String.t()
+  @type periods_per_day_input :: decimal_input() | %{atom() => decimal_input()}
 
   @typedoc "Annualised funding-rate breakdown as percentage Decimals."
   @type apr_result :: %{
@@ -73,7 +78,7 @@ defmodule DeltaCalc.Funding do
     with {:ok, rate_dec} <- cast_rate(rate),
          true <- period_hours > 0 do
       period = Decimal.new(period_hours)
-      funding_per_day = Decimal.div(Decimal.new(24), period)
+      funding_per_day = Decimal.div(Decimal.new(@hours_per_day), period)
 
       hourly_rate = Decimal.div(rate_dec, period)
       daily_rate = Decimal.mult(rate_dec, funding_per_day)
@@ -99,6 +104,13 @@ defmodule DeltaCalc.Funding do
         description:
           "Single symbol: %{venue => rate}. Multiple symbols: %{\"SYMBOL\" => %{venue => rate}}.",
         schema: map()
+      ],
+      periods_per_day: [
+        kind: :value,
+        default: 3,
+        description:
+          "Funding periods per calendar day as a scalar or %{venue => periods}. " <>
+            "Default 3 for 8h venues; use 24 for Deribit hourly funding."
       ]
     ],
     returns: %{
@@ -113,15 +125,18 @@ defmodule DeltaCalc.Funding do
 
   Pass `%{binance: rate, bybit: rate}` for one symbol, or
   `%{"BTCUSDT" => %{binance: rate, bybit: rate}}` for many.
+  `periods_per_day` defaults to 3 for 8-hour funding; pass 24 for Deribit
+  hourly funding or `%{venue => periods}` when venues use different cadences.
   """
-  @spec compare_funding_rates(map()) :: map() | comparison_result()
-  def compare_funding_rates(rates) when is_map(rates) do
+  @spec compare_funding_rates(map(), periods_per_day_input()) :: map() | comparison_result()
+  def compare_funding_rates(rates, periods_per_day \\ @default_periods_per_day)
+      when is_map(rates) do
     if multi_symbol?(rates) do
       Map.new(rates, fn {symbol, venue_rates} ->
-        {symbol, compare_single_symbol(venue_rates)}
+        {symbol, compare_single_symbol(venue_rates, periods_per_day)}
       end)
     else
-      compare_single_symbol(rates)
+      compare_single_symbol(rates, periods_per_day)
     end
   end
 
@@ -211,8 +226,8 @@ defmodule DeltaCalc.Funding do
 
   def funding_trend(_), do: {:error, :insufficient_data}
 
-  @spec compare_single_symbol(map()) :: comparison_result()
-  defp compare_single_symbol(rates) when map_size(rates) < 2 do
+  @spec compare_single_symbol(map(), periods_per_day_input()) :: comparison_result()
+  defp compare_single_symbol(rates, _periods_per_day) when map_size(rates) < 2 do
     %{
       insufficient_data: true,
       arbitrage_opportunity: false,
@@ -220,7 +235,7 @@ defmodule DeltaCalc.Funding do
     }
   end
 
-  defp compare_single_symbol(rates) do
+  defp compare_single_symbol(rates, periods_per_day) do
     decimal_rates = Map.new(rates, fn {venue, rate} -> {venue, ensure_decimal(rate)} end)
     rate_values = Map.values(decimal_rates)
 
@@ -245,17 +260,47 @@ defmodule DeltaCalc.Funding do
 
     if arbitrage? do
       annual_apr_delta =
-        delta
-        |> Decimal.mult(Decimal.new(3))
-        |> Decimal.mult(Decimal.new(@days_per_year))
-        |> Decimal.mult(@hundred)
-        |> Decimal.round(2)
+        annual_apr_delta(max_rate, max_exchange, min_rate, min_exchange, periods_per_day)
 
       Map.put(base, :annual_apr_delta, annual_apr_delta)
     else
       base
     end
   end
+
+  @spec annual_apr_delta(
+          Decimal.t(),
+          atom(),
+          Decimal.t(),
+          atom(),
+          periods_per_day_input()
+        ) :: Decimal.t()
+  defp annual_apr_delta(max_rate, max_exchange, min_rate, min_exchange, periods_per_day) do
+    max_annual_apr = annual_apr(max_rate, periods_per_day_for(periods_per_day, max_exchange))
+    min_annual_apr = annual_apr(min_rate, periods_per_day_for(periods_per_day, min_exchange))
+
+    max_annual_apr
+    |> Decimal.sub(min_annual_apr)
+    |> Decimal.round(2)
+  end
+
+  @spec annual_apr(Decimal.t(), Decimal.t()) :: Decimal.t()
+  defp annual_apr(rate, periods_per_day) do
+    rate
+    |> Decimal.mult(periods_per_day)
+    |> Decimal.mult(Decimal.new(@days_per_year))
+    |> Decimal.mult(@hundred)
+  end
+
+  @spec periods_per_day_for(periods_per_day_input(), atom()) :: Decimal.t()
+  defp periods_per_day_for(periods_per_day_by_venue, venue)
+       when is_map(periods_per_day_by_venue) do
+    periods_per_day_by_venue
+    |> Map.get(venue, @default_periods_per_day)
+    |> ensure_decimal()
+  end
+
+  defp periods_per_day_for(periods_per_day, _venue), do: ensure_decimal(periods_per_day)
 
   @spec rank_venues(map()) :: [{atom(), Decimal.t()}]
   defp rank_venues(rates) do

@@ -579,7 +579,7 @@ id = 22
 phase = 3
 bundle = "consumer_math"
 milestone = "v0_3"
-status = "pending"
+status = "in_progress"
 title = "Build DeltaCalc.Carry (basis yield + break-even funding for hedge profitability)"
 scores = { d = 2, b = 3, u = 3 }
 acceptance_criteria = ["annualized_basis/2 from spot vs perp (or futures) price", "breakeven_funding/1 — the funding rate at which a hedge's carry turns net-negative", "net_carry/1 combines funding income/cost with basis over a holding period", "Every public fn carries a Descripex api() declaration; mix credo --strict and mix dialyzer.json clean; coverage >= 95%"]
@@ -590,6 +590,7 @@ module = "DeltaCalc.Carry"
 model = "gpt-5.5"
 body = "Answers 'is this hedge still paying me' — extends DeltaCalc.Funding from a rate toward a decision. Pure Decimal: annualized_basis (spot vs perp/futures spread, annualized), breakeven_funding (rate where the hedge's carry flips net-negative), net_carry (funding +/- basis over a holding period). Caller supplies spot/perp prices and funding rate. No I/O. Manifest/README registration is task 23."
 created_at = "2026-06-17"
+started_at = "2026-06-17"
 scored_at = "2026-06-17"
 
 [[task]]

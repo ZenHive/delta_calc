@@ -566,7 +566,7 @@ id = 21
 phase = 3
 bundle = "consumer_math"
 milestone = "v0_3"
-status = "in_progress"
+status = "done"
 title = "Build DeltaCalc.Fees (effective entry/exit, roundtrip cost, funding-adjusted breakeven)"
 scores = { d = 2, b = 3, u = 4 }
 acceptance_criteria = ["effective_entry/2 and effective_exit/2 fold taker/maker fee + optional slippage into the fill price", "roundtrip_cost/1 returns total fee cost for a position open+close", "funding_adjusted_breakeven/3 combines roundtrip fees with accrued funding", "Every public fn carries a Descripex api() declaration; mix credo --strict and mix dialyzer.json clean; coverage >= 95%"]
@@ -576,9 +576,14 @@ assignee = "cursor"
 module = "DeltaCalc.Fees"
 model = "composer-2.5-fast"
 body = "Small but it is the input-correctness layer for PnL (task 17) and every 'is this trade worth it' check. Pure Decimal: effective_entry/effective_exit (fill price adjusted for taker/maker fee + optional slippage bps), roundtrip_cost (open+close fee total), funding_adjusted_breakeven (roundtrip fees + accrued funding). Fee/slippage rates are caller inputs. No I/O. Manifest/README registration is task 23."
+implemented = "Landed by cursor via merge-train; reviewer-approved (run run-1781667617515-df4b228a, 092a5bce51692c497aad16463d19d48f558eeb9e)."
+delivered_by = "cursor"
+verified = true
 created_at = "2026-06-17"
 started_at = "2026-06-17"
 scored_at = "2026-06-17"
+done_at = "2026-06-17"
+shipped_in = "092a5bce51692c497aad16463d19d48f558eeb9e"
 
 [[task]]
 id = 22

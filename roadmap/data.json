@@ -632,7 +632,7 @@
       "phase": 2,
       "bundle": "calc_primitives",
       "milestone": "v0_2",
-      "status": "in_progress",
+      "status": "done",
       "title": "Build DeltaCalc.OptionLadder (rolling option strategy math)",
       "scores": {
         "d": 4,
@@ -659,10 +659,15 @@
       "touches": [
         "lib/delta_calc/option_ladder.ex"
       ],
+      "shipped_in": "47417f304bdeb48399b564f50bfa6ea560919b0e",
       "body": "New module for the dashboard's task 7.4 (Rolling Option Strategy Builder). Pure decision/calc functions: optimal_expiries/2 (allocation % across expiry buckets), check_roll_conditions/2 (decision tree on days_to_expiry/pnl%/spread), select_strikes/2 (strike ladder from IV percentile + risk profile), sync_with_funding/2 (roll cost vs funding income), IV-adjusted position sizing. Source of truth: TradingDashboard phase7.md RollingStrategy specs. Execution/scheduling stays in the dashboard. Manifest/README registration is task 16.",
       "created_at": "2026-06-17",
       "started_at": "2026-06-17",
+      "done_at": "2026-06-17",
       "scored_at": "2026-06-17",
+      "implemented": "Landed by codex via merge-train; reviewer-approved (run run-1781661580278-1b7ddfa9, 47417f304bdeb48399b564f50bfa6ea560919b0e).",
+      "delivered_by": "codex",
+      "verified": true,
       "cross_repo": []
     },
     {

@@ -759,3 +759,39 @@ model = "gpt-5.5"
 body = "Second instance of the Deribit funding-cadence bug (task 26 fixed only MarginBridge). funding.ex:249 in compare_single_symbol annualizes a cross-venue funding-rate delta with a hardcoded Decimal.new(3) periods/day — wrong for Deribit hourly funding (~8x understated) and doubly wrong because compare_funding_rates spans venues that may each have different funding intervals. The same module's annualize/2 already does cadence right (24/period from a caller-supplied period). The test (funding_test.exs:64) asserts annual_apr_delta == 219.00 computed WITH the hardcode, so coverage currently ratifies the bug — re-derive the golden under an explicit documented default. Fix: thread funding cadence as a caller-supplied :value param into the annual_apr_delta computation; keep pure Decimal, no I/O. See CLAUDE.md 'Review Blind Spots'."
 created_at = "2026-06-17"
 scored_at = "2026-06-17"
+
+[[task]]
+id = 29
+phase = 3
+bundle = "consumer_math"
+milestone = "v0_3"
+status = "pending"
+title = "Fix Carry.annualized_basis misnomer: returns raw basis, not annualized (+ basis_yield stock/flow mismatch)"
+scores = { d = 3, b = 4, u = 4 }
+acceptance_criteria = ["annualized_basis/2 is renamed or corrected so its name + api() hint match its math: it currently computes raw instantaneous basis (perp-spot)/spot*100 with NO time term and no expiry/days input, yet name and hint claim 'annualized percentage' (proven on live BTC: returns 0.33651323 == raw basis exactly)", "Decide and document the basis-yield semantics: net_carry adds funding_yield (a per-period FLOW summed over holding_days) to basis_yield (a one-time price-gap STOCK time-prorated by holding_days/365) — a stock/flow unit mismatch. Either treat captured basis as a one-time term (no /365 proration) or justify the proration explicitly in the doc with the convergence-horizon assumption it encodes", "carry_test.exs is corrected: tests at lines 6-24 assert raw basis (1.0) as 'a positive annual percentage' — the golden was computed BY the mislabeled code, ratifying the misnomer. New assertions must verify against first principles (a 1% premium is a 1% premium, not a 1% annual rate), not re-assert code output", "net_carry result key renamed if annualized_basis is renamed; downstream consumers (none in-repo yet) and Manifest stay consistent", "Descripex api() updated; mix credo --strict and mix dialyzer.json clean; coverage >= 95% (money math)"]
+files_to_modify = ["lib/delta_calc/carry.ex", "test/delta_calc/carry_test.exs"]
+touches = ["lib/delta_calc/carry.ex"]
+assignee = "cursor"
+module = "DeltaCalc.Carry"
+model = "composer-2.5"
+body = "Quant audit finding (live-data grounded). Carry.annualized_basis/2 is misnamed: the body is raw (perp-spot)/spot*100 with no time component and no way to annualize (no expiry/days arg) — confirmed on live Deribit/BTC where it returns 0.33651323, exactly the raw instantaneous basis. The name and the api() hint both say 'annualized percentage', and net_carry exposes the value under an :annualized_basis key, so a consumer trusting the manifest gets a wrong-by-definition number. Compounding it, basis_yield time-prorates this one-time basis (a stock) by holding_days/365 and adds it to funding_yield (a per-period flow summed over the holding period) — different time bases summed into net_yield/profitable?. carry_test.exs ratifies the misnomer (asserts the raw value as an 'annual percentage'). This is exactly the domain-ground-truth blind spot from CLAUDE.md 'Review Blind Spots': internally consistent, fully tested, passes every mechanical gate, still wrong. Fix the naming/units and re-derive the goldens from first principles. Pure Decimal, no I/O."
+created_at = "2026-06-17"
+scored_at = "2026-06-17"
+
+[[task]]
+id = 30
+phase = 3
+bundle = "consumer_math"
+milestone = "v0_3"
+status = "pending"
+title = "OptionsRisk: thread periods_per_day to MarginBridge (cadence locked to 3/day) + rename hardcoded total_90d field"
+scores = { d = 2, b = 3, u = 4 }
+acceptance_criteria = ["calculate_negative_funding_impact/1 and stress_test_extended_negative/2 expose funding cadence (periods_per_day, :value kind) and pass it through to MarginBridge.stress_test_prolonged_negative — currently they call it WITHOUT the param, silently locking every Deribit stress path to the 3/day default that task 26 made overridable; the venue assumption is reintroduced by omission at the consumer", "stress_test_extended_negative result key total_90d is renamed to reflect the configurable duration_days (default 90) — a caller passing duration_days: 30 currently gets a field literally named total_90d holding the 30-day total", "Tests cover a non-default cadence (24/day Deribit) flowing end-to-end through OptionsRisk into the per-row daily/total figures, proving the param is actually honored (not just accepted)", "Descripex api() updated for both functions; mix credo --strict and mix dialyzer.json clean; coverage >= 95% (money math)"]
+files_to_modify = ["lib/delta_calc/options_risk.ex", "test/delta_calc/options_risk_test.exs"]
+touches = ["lib/delta_calc/options_risk.ex"]
+assignee = "grok"
+module = "DeltaCalc.OptionsRisk"
+model = "grok-composer-2.5-fast"
+body = "Quant audit finding. OptionsRisk is the Deribit-options/margin-bridge consumer of MarginBridge, but it calls MarginBridge.stress_test_prolonged_negative without supplying periods_per_day, so every stress scenario uses the 3/day (8h) default with no caller override path. Task 26 parameterized cadence in MarginBridge precisely so venue funding frequency stops being baked in; OptionsRisk undoes that by omission — a Deribit consumer cannot correct the cadence through OptionsRisk's public API. Separately, the total_90d result key is a hardcoded name while duration_days is configurable (default 90), so the field label lies when duration_days != 90. Fix: expose periods_per_day on the two public stress functions and thread it down; rename the field to the configurable duration. Pure Decimal, no I/O. Same cadence class as tasks 26/28; this is the third (consumer-layer) instance. See CLAUDE.md 'Review Blind Spots'."
+created_at = "2026-06-17"
+scored_at = "2026-06-17"

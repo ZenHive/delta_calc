@@ -849,7 +849,7 @@ id = 33
 phase = 3
 bundle = "consumer_math"
 milestone = "v0_3"
-status = "pending"
+status = "in_progress"
 title = "Add stream_data property-test layer encoding quant-audit invariants (anti-ratification guard)"
 scores = { d = 4, b = 4, u = 4 }
 depends_on = [28, 29, 30, 31, 32]
@@ -870,6 +870,7 @@ Add a property-based test layer (add {:stream_data, "~> 1.0", only: [:dev, :test
 Where a formula is a documented approximation (Calc.liquidation), assert the looser monotonic bound and reference the moduledoc note rather than an exact equality.
 """
 created_at = "2026-06-17"
+started_at = "2026-06-17"
 scored_at = "2026-06-17"
 
 [[task]]

@@ -1327,7 +1327,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "in_progress",
+      "status": "pending",
       "title": "Fix Carry.annualized_basis misnomer: returns raw basis, not annualized (+ basis_yield stock/flow mismatch)",
       "scores": {
         "d": 3,

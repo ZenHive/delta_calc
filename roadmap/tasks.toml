@@ -767,7 +767,7 @@ id = 29
 phase = 3
 bundle = "consumer_math"
 milestone = "v0_3"
-status = "in_progress"
+status = "pending"
 title = "Fix Carry.annualized_basis misnomer: returns raw basis, not annualized (+ basis_yield stock/flow mismatch)"
 scores = { d = 3, b = 4, u = 4 }
 acceptance_criteria = ["annualized_basis/2 is renamed or corrected so its name + api() hint match its math: it currently computes raw instantaneous basis (perp-spot)/spot*100 with NO time term and no expiry/days input, yet name and hint claim 'annualized percentage' (proven on live BTC: returns 0.33651323 == raw basis exactly)", "Decide and document the basis-yield semantics: net_carry adds funding_yield (a per-period FLOW summed over holding_days) to basis_yield (a one-time price-gap STOCK time-prorated by holding_days/365) — a stock/flow unit mismatch. Either treat captured basis as a one-time term (no /365 proration) or justify the proration explicitly in the doc with the convergence-horizon assumption it encodes", "carry_test.exs is corrected: tests at lines 6-24 assert raw basis (1.0) as 'a positive annual percentage' — the golden was computed BY the mislabeled code, ratifying the misnomer. New assertions must verify against first principles (a 1% premium is a 1% premium, not a 1% annual rate), not re-assert code output", "net_carry result key renamed if annualized_basis is renamed; downstream consumers (none in-repo yet) and Manifest stay consistent", "Descripex api() updated; mix credo --strict and mix dialyzer.json clean; coverage >= 95% (money math)"]

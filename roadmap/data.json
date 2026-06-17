@@ -403,7 +403,7 @@
       "phase": 2,
       "bundle": "calc_primitives",
       "milestone": "v0_2",
-      "status": "in_progress",
+      "status": "done",
       "title": "Build DeltaCalc.Funding (funding-rate math)",
       "scores": {
         "d": 3,
@@ -432,10 +432,15 @@
       "touches": [
         "lib/delta_calc/funding.ex"
       ],
+      "shipped_in": "83cf9d4d59b2e70d75724d0a540f5a19db4ba83a",
       "body": "New module DeltaCalc.Funding for the funding-rate Decimal math the dashboard's tasks 1.6.5 (re-home market-analysis math) and 1.5.4 (funding-rate comparison) need. Implement: funding_apr (per-period rate -> annualised %), compare_funding_rates (rank venues by funding), find_arbitrage_opportunities (cross-venue funding spread -> opportunity list), funding_trend (series -> direction/slope). Source of truth: TradingDashboard market_analysis.ex (calculate_funding_apr/compare_funding_rates/find_arbitrage_opportunities/get_funding_trend) + phase1 ccxt-migration notes. Pure Decimal, rates passed in as :value. Manifest/README registration is handled by task 16 — do NOT edit manifest.ex or README here.",
       "created_at": "2026-06-17",
       "started_at": "2026-06-17",
+      "done_at": "2026-06-17",
       "scored_at": "2026-06-17",
+      "implemented": "Landed by cursor via merge-train; reviewer-approved (run run-1781661567975-d5b07ba6, 83cf9d4d59b2e70d75724d0a540f5a19db4ba83a).",
+      "delivered_by": "cursor",
+      "verified": true,
       "cross_repo": []
     },
     {

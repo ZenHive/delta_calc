@@ -202,7 +202,7 @@ id = 7
 phase = 1
 bundle = "calculators"
 milestone = "v0_1"
-status = "in_progress"
+status = "done"
 title = "Backfill tests for PositionCalculator, DCAPlanner, Hedging"
 scores = { d = 3, b = 5, u = 4 }
 depends_on = [4, 5, 6]
@@ -216,7 +216,12 @@ files_to_modify = ["test/delta_calc/position_calculator_test.exs", "test/delta_c
 assignee = "cursor"
 model = "composer-2.5-fast"
 body = "PositionCalculator and DCAPlanner shipped UNTESTED in the source app (only exercised transitively through the LiveView); Hedging is brand new. Write dedicated tests: calculate_position/2 full pipeline (allocation -> notional -> leverage -> safety -> mmr_info) incl. long/short and each risk mode; calculate_dca_ladder/1 defensive + aggressive incl. short conversion; all DeltaCalc.Hedging formulas incl. edge cases (zero spot, 0%/100%/120%+ hedge, nil-safe boundaries). Use golden numbers cross-checked against the source behaviour."
+implemented = "Landed by cursor via merge-train; reviewer-approved (run run-1781658992052-eb532c98, 8c997df82ae776462c6c40ad7655f8e144cac178)."
+delivered_by = "cursor"
+verified = true
 started_at = "2026-06-17"
+done_at = "2026-06-17"
+shipped_in = "8c997df82ae776462c6c40ad7655f8e144cac178"
 
 [[task]]
 id = 8

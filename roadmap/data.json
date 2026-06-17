@@ -1287,7 +1287,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Fix Funding.compare_single_symbol hardcoded x3 cadence (same Deribit bug as task 26)",
       "scores": {
         "d": 2,

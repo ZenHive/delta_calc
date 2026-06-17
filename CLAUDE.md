@@ -44,6 +44,20 @@ value-out functions.
 `ex_dna --max-clones 0`, `reach.check --arch --smells`). Coverage tiers: ≥80% standard,
 ≥95% on `Calc`/`Hedging` money math.
 
+## AGENTS.md is generated — regenerate after editing CLAUDE.md
+
+`AGENTS.md` is **not** hand-authored: it's the Codex-facing view of this file, produced by
+inlining every `@`-import from `CLAUDE.md` (Codex doesn't inherit our Claude Code hooks, so
+AGENTS.md carries the rules they'd enforce). After any `CLAUDE.md` edit, regenerate:
+
+```sh
+~/.claude/plugins/marketplaces/zenhive/scripts/sync-agents-md.sh          # write
+~/.claude/plugins/marketplaces/zenhive/scripts/sync-agents-md.sh --check  # freshness gate (CI)
+```
+
+Never edit `AGENTS.md` directly — it's overwritten. Both files are committed; `--check` exits
+non-zero when AGENTS.md has drifted (including drift in transitive `@`-imports).
+
 ## Tidewave
 
 This library runs Tidewave via a **standalone Bandit** endpoint (no Phoenix). Start it with

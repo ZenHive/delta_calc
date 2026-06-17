@@ -28,3 +28,11 @@ delta_calc-*.tar
 # Local hex docs cache.
 /.hex-docs/
 
+# Claude Code local overrides (shared settings.json IS committed).
+/.claude/settings.local.json
+
+# Editor / language-server caches.
+/.elixir_ls/
+/.elixir-tools/
+/.lexical/
+

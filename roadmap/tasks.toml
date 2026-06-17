@@ -139,7 +139,7 @@ id = 5
 phase = 1
 bundle = "calculators"
 milestone = "v0_1"
-status = "in_progress"
+status = "done"
 title = "Port DeltaCalc.PositionCalculator (decouple from LiveView assigns)"
 scores = { d = 2, b = 4, u = 4 }
 depends_on = [2]
@@ -156,7 +156,12 @@ assignee = "claude"
 module = "DeltaCalc.PositionCalculator"
 model = "claude-sonnet-4-6"
 body = "Lift TradingDashboard.Risk.PositionCalculator (lib/trading_dashboard/risk/position_calculator.ex) into DeltaCalc.PositionCalculator. The ONE decoupling: calculate_position/2's 2nd arg is named `assigns` and reads `assigns.risk_modes[mode]` (line ~119). It is a plain map at runtime — rename the param to `config`, update @doc to describe `%{risk_modes: %{...}}`, no struct/behaviour involved. Alias updates to DeltaCalc.Calc."
+implemented = "Landed by claude via merge-train; reviewer-approved (run run-1781657324261-bffd6abb, 85b70b5b193f0bc8271ff73beda26c94963e60af)."
+delivered_by = "claude"
+verified = true
 started_at = "2026-06-17"
+done_at = "2026-06-17"
+shipped_in = "85b70b5b193f0bc8271ff73beda26c94963e60af"
 
 [[task]]
 id = 6

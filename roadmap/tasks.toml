@@ -37,6 +37,23 @@ status = "pending"
 target_version = "0.2.0"
 description = "Build the pure-Decimal calc primitives that TradingDashboard's future roadmap (hedging engine, risk monitoring, options strategy) specifies, so the dashboard consumes DeltaCalc.* rather than reimplementing the math. Source of truth: ~/_DATA/code/TradingDashboard/roadmap/phaseN.md specs."
 
+[phases.3]
+name = "Consumer decision math"
+order = 3
+status = "pending"
+
+[bundles.consumer_math]
+description = "Pure-Decimal decision/aggregation primitives the dashboard touches on every screen — PnL/breakeven, net-delta hedging, portfolio-margin liquidation, stress scenarios, fees, funding carry. Value-in/value-out over inputs the consumer already holds (own state + exchange-supplied mark price, funding rate, option deltas). No option pricing — Greeks/IV come from the exchange (Deribit); a Black-Scholes lib is a separate later concern, explicitly out of scope here."
+order = 3
+phase = 3
+
+[milestones.v0_3]
+name = "Consumer decision primitives"
+order = 3
+status = "pending"
+target_version = "0.3.0"
+description = "The math the dashboard reaches for at the call-site: position PnL/ROE/breakeven net of fees+funding, net-delta rebalancing from exchange-supplied option deltas, portfolio-margin liquidation across netted positions, price-shock stress scenarios, fee modeling, and funding carry/break-even. Consumer-driven (delta_calc IS the consumer's math layer). Option pricing stays out — exchange supplies Greeks/IV; BS is a future separate lib."
+
 # ---------------------------------------------------------------------------
 # Source of truth for ports: the retired app at ~/_DATA/code/TradingDashboard
 #   lib/trading_dashboard/risk/{calc,presets,dca_planner,position_calculator}.ex
@@ -462,3 +479,169 @@ started_at = "2026-06-17"
 scored_at = "2026-06-17"
 done_at = "2026-06-17"
 shipped_in = "73d23e7b29084ff48bc1d8df545f5f626b3e509b"
+
+[[task]]
+id = 17
+phase = 3
+bundle = "consumer_math"
+milestone = "v0_3"
+status = "pending"
+title = "Build DeltaCalc.PnL (position PnL, ROE, breakeven net of fees + funding)"
+scores = { d = 2, b = 4, u = 5 }
+depends_on = [21]
+acceptance_criteria = ["unrealized_pnl/1, realized_pnl/1, roe/1, breakeven/1 implemented; breakeven folds in fees (DeltaCalc.Fees) and accrued funding", "long/short symmetry covered; zero-size and zero-entry guarded", "Every public fn carries a Descripex api() declaration before its @doc (:value kind for money/price inputs)", "mix credo --strict and mix dialyzer.json clean; coverage >= 95% (money math)"]
+files_to_modify = ["lib/delta_calc/pnl.ex", "test/delta_calc/pnl_test.exs"]
+touches = ["lib/delta_calc/pnl.ex"]
+assignee = "cursor"
+module = "DeltaCalc.PnL"
+model = "composer-2.5-fast"
+body = "Consumer reaches for this on every position row. Pure Decimal value-in/value-out over the caller's own state: entry_price, mark_price, size, side, fees, accrued_funding. unrealized_pnl (mark vs entry x size, side-aware), realized_pnl (exit-based), roe (pnl / margin), breakeven (entry adjusted for roundtrip fees + accrued funding so 'where do I turn green' is honest). Reuse DeltaCalc.Fees for the fee component. No I/O, no exchange fetch — the consumer supplies mark/funding from its state. Manifest/README registration is task 23."
+created_at = "2026-06-17"
+scored_at = "2026-06-17"
+
+[[task]]
+id = 18
+phase = 3
+bundle = "consumer_math"
+milestone = "v0_3"
+status = "pending"
+title = "Build DeltaCalc.DeltaNeutral (net delta + rebalance from exchange-supplied deltas)"
+scores = { d = 3, b = 5, u = 5 }
+acceptance_criteria = ["net_delta/1 aggregates spot + perp + option deltas (option deltas supplied by caller, NOT priced here) into one signed Decimal exposure", "rebalance_to_neutral/1 returns the hedge adjustment (side + size) to bring net delta to ~0 within a tolerance", "no Black-Scholes / IV repricing — option delta is an input", "Every public fn carries a Descripex api() declaration before its @doc; mix credo --strict and mix dialyzer.json clean; coverage >= 95%"]
+files_to_modify = ["lib/delta_calc/delta_neutral.ex", "test/delta_calc/delta_neutral_test.exs"]
+touches = ["lib/delta_calc/delta_neutral.ex"]
+assignee = "grok"
+module = "DeltaCalc.DeltaNeutral"
+model = "grok-composer-2.5-fast"
+body = "The number the whole strategy targets. Pure aggregation: caller passes positions [%{kind: :spot|:perp|:option, notional/size, delta}] where option delta comes from the exchange (Deribit returns it) — delta_calc does NOT price options. net_delta/1 sums signed exposures; rebalance_to_neutral/1 emits the hedge leg (instrument side + size) to flatten net delta within a tolerance. Compose with DeltaCalc.Hedging for distribution. No I/O. Manifest/README registration is task 23."
+created_at = "2026-06-17"
+scored_at = "2026-06-17"
+
+[[task]]
+id = 19
+phase = 3
+bundle = "consumer_math"
+milestone = "v0_3"
+status = "pending"
+title = "Build DeltaCalc.PortfolioMargin (combined maintenance margin + netted liquidation)"
+scores = { d = 4, b = 4, u = 4 }
+acceptance_criteria = ["combined_maintenance_margin/1 across multiple positions under portfolio-margin netting (offsetting longs/shorts reduce requirement)", "portfolio_liquidation_price/1 (or equity-floor distance) for the netted book, distinct from AccountMetrics per-isolated-position liq", "margin_usage/1 returns used vs available under the portfolio model", "Every public fn carries a Descripex api() declaration; mix credo --strict and mix dialyzer.json clean; coverage >= 95%"]
+files_to_modify = ["lib/delta_calc/portfolio_margin.ex", "test/delta_calc/portfolio_margin_test.exs"]
+touches = ["lib/delta_calc/portfolio_margin.ex"]
+assignee = "codex"
+module = "DeltaCalc.PortfolioMargin"
+model = "gpt-5.5"
+body = "The capital-efficiency thesis: portfolio margin nets offsetting positions, which AccountMetrics (per-account/isolated) cannot express. Pure Decimal over the caller's position list + margin params (mmr rates, equity): combined_maintenance_margin/1 with netting, portfolio_liquidation_price/1 for the netted book, margin_usage/1. Inputs are exchange/account values the consumer already holds. No I/O. Feeds DeltaCalc.StressScenario (task 20). Manifest/README registration is task 23."
+created_at = "2026-06-17"
+scored_at = "2026-06-17"
+
+[[task]]
+id = 20
+phase = 3
+bundle = "consumer_math"
+milestone = "v0_3"
+status = "pending"
+title = "Build DeltaCalc.StressScenario (price-shock cascade across the book)"
+scores = { d = 3, b = 4, u = 4 }
+depends_on = [19]
+acceptance_criteria = ["apply_shock/2 applies a signed price-move % and returns per-position post-shock state (margin, liquidated?)", "cascade/2 reports which positions liquidate, total margin call, and portfolio survival under the shock", "uses DeltaCalc.PortfolioMargin for the netted margin/liq math", "Every public fn carries a Descripex api() declaration; mix credo --strict and mix dialyzer.json clean; coverage >= 95%"]
+files_to_modify = ["lib/delta_calc/stress_scenario.ex", "test/delta_calc/stress_scenario_test.exs"]
+touches = ["lib/delta_calc/stress_scenario.ex"]
+assignee = "grok"
+module = "DeltaCalc.StressScenario"
+model = "grok-composer-2.5-fast"
+body = "Drives the consumer's risk alerts. Pure Decimal scenario engine over the position book: apply_shock/2 (signed price-move %) -> post-shock per-position state; cascade/2 -> which positions liquidate, aggregate margin call, does the portfolio survive. Built on DeltaCalc.PortfolioMargin's netted margin/liq math rather than re-deriving it. Inputs supplied by the consumer; no I/O. Manifest/README registration is task 23."
+created_at = "2026-06-17"
+scored_at = "2026-06-17"
+
+[[task]]
+id = 21
+phase = 3
+bundle = "consumer_math"
+milestone = "v0_3"
+status = "pending"
+title = "Build DeltaCalc.Fees (effective entry/exit, roundtrip cost, funding-adjusted breakeven)"
+scores = { d = 2, b = 3, u = 4 }
+acceptance_criteria = ["effective_entry/2 and effective_exit/2 fold taker/maker fee + optional slippage into the fill price", "roundtrip_cost/1 returns total fee cost for a position open+close", "funding_adjusted_breakeven/3 combines roundtrip fees with accrued funding", "Every public fn carries a Descripex api() declaration; mix credo --strict and mix dialyzer.json clean; coverage >= 95%"]
+files_to_modify = ["lib/delta_calc/fees.ex", "test/delta_calc/fees_test.exs"]
+touches = ["lib/delta_calc/fees.ex"]
+assignee = "cursor"
+module = "DeltaCalc.Fees"
+model = "composer-2.5-fast"
+body = "Small but it is the input-correctness layer for PnL (task 17) and every 'is this trade worth it' check. Pure Decimal: effective_entry/effective_exit (fill price adjusted for taker/maker fee + optional slippage bps), roundtrip_cost (open+close fee total), funding_adjusted_breakeven (roundtrip fees + accrued funding). Fee/slippage rates are caller inputs. No I/O. Manifest/README registration is task 23."
+created_at = "2026-06-17"
+scored_at = "2026-06-17"
+
+[[task]]
+id = 22
+phase = 3
+bundle = "consumer_math"
+milestone = "v0_3"
+status = "pending"
+title = "Build DeltaCalc.Carry (basis yield + break-even funding for hedge profitability)"
+scores = { d = 2, b = 3, u = 3 }
+acceptance_criteria = ["annualized_basis/2 from spot vs perp (or futures) price", "breakeven_funding/1 — the funding rate at which a hedge's carry turns net-negative", "net_carry/1 combines funding income/cost with basis over a holding period", "Every public fn carries a Descripex api() declaration; mix credo --strict and mix dialyzer.json clean; coverage >= 95%"]
+files_to_modify = ["lib/delta_calc/carry.ex", "test/delta_calc/carry_test.exs"]
+touches = ["lib/delta_calc/carry.ex"]
+assignee = "codex"
+module = "DeltaCalc.Carry"
+model = "gpt-5.5"
+body = "Answers 'is this hedge still paying me' — extends DeltaCalc.Funding from a rate toward a decision. Pure Decimal: annualized_basis (spot vs perp/futures spread, annualized), breakeven_funding (rate where the hedge's carry flips net-negative), net_carry (funding +/- basis over a holding period). Caller supplies spot/perp prices and funding rate. No I/O. Manifest/README registration is task 23."
+created_at = "2026-06-17"
+scored_at = "2026-06-17"
+
+[[task]]
+id = 23
+phase = 3
+bundle = "consumer_math"
+milestone = "v0_3"
+status = "pending"
+title = "Register v0_3 modules in DeltaCalc.Manifest + README"
+scores = { d = 1, b = 3, u = 4 }
+depends_on = [17, 18, 19, 20, 21, 22]
+acceptance_criteria = ["DeltaCalc.Manifest @modules includes PnL, DeltaNeutral, PortfolioMargin, StressScenario, Fees, Carry", "Manifest.build/0 and Manifest.modules/0 return the new surface; MCP tools/1 enumerates it", "README API-surface section lists the new modules", "mix ci green (incl. api()-hints validation test over all public modules)"]
+files_to_modify = ["lib/delta_calc/manifest.ex", "README.md"]
+touches = ["lib/delta_calc/manifest.ex", "README.md"]
+assignee = "grok"
+model = "grok-composer-2.5-fast"
+body = "Consolidation task (kept separate so the six module-build tasks stay write-set-disjoint and dispatch in parallel). Add the new v0_3 modules to DeltaCalc.Manifest @modules: PnL, DeltaNeutral, PortfolioMargin, StressScenario, Fees, Carry. Add a README API-surface entry for each. Verify Manifest.build/0 / modules/0 / tools/1 surface them and the api()-hints validation test passes."
+created_at = "2026-06-17"
+scored_at = "2026-06-17"
+
+[[task]]
+id = 24
+phase = 2
+bundle = "calc_primitives"
+milestone = "v0_2"
+status = "pending"
+title = "Fix OptionsRisk :critical threshold — advertised opt has no effect"
+scores = { d = 2, b = 2, u = 2 }
+depends_on = [15]
+acceptance_criteria = ["health_status either consumes the :critical threshold (4th band) or the :critical opt + @default_critical_threshold are removed and the api()/doc updated", "Decide intended band model: 3-band (healthy/warning/critical) vs 4-band; align type, thresholds, doc, and api() opts", "mix credo --strict and mix dialyzer.json clean; coverage >= 95%"]
+files_to_modify = ["lib/delta_calc/options_risk.ex", "test/delta_calc/options_risk_test.exs"]
+touches = ["lib/delta_calc/options_risk.ex"]
+assignee = "cursor"
+module = "DeltaCalc.OptionsRisk"
+model = "composer-2.5-fast"
+body = "Audit discovery (audit c695d69). monitor_margin_bridge_health/2 advertises an optional :critical margin threshold via its api() declaration and collects it (@default_critical_threshold 0.45, opts :critical at options_risk.ex:310), but health_status/4 never reads the 4th param (_critical at :375) — the cond only branches on reduce (=> :critical) and warning. health_status type is 3-band and the @doc says 'critical above 35%' (the reduce threshold, 0.35). Net: the :critical option is dead/misleading to agent (Descripex/MCP) consumers — it appears configurable but changes nothing. Resolve the design ambiguity: either add a genuine 4th band that uses the 0.45 critical threshold, or drop the :critical opt + constant and fix the api()/doc to match the real 3-band behavior. Behavior/surface change, so deferred from the hygiene audit rather than guessed."
+created_at = "2026-06-17"
+scored_at = "2026-06-17"
+
+[[task]]
+id = 25
+phase = 2
+bundle = "calc_primitives"
+milestone = "v0_2"
+status = "pending"
+title = "Disambiguate project_payback_timeline name collision (FundingProjection vs MarginBridge)"
+scores = { d = 2, b = 2, u = 2 }
+depends_on = [12, 13]
+acceptance_criteria = ["The two project_payback_timeline functions no longer share a name OR the shared name is justified as one coherent concept", "Manifest/MCP tool list shows no two distinct-shape functions under the same bare name across namespaces", "README + Descripex api() descriptions updated to match; mix credo --strict and mix dialyzer.json clean; coverage maintained"]
+files_to_modify = ["lib/delta_calc/funding_projection.ex", "lib/delta_calc/margin_bridge.ex", "README.md"]
+touches = ["lib/delta_calc/funding_projection.ex", "lib/delta_calc/margin_bridge.ex"]
+assignee = "cursor"
+module = "DeltaCalc.MarginBridge"
+model = "composer-2.5-fast"
+body = "Audit discovery (audit c695d69). Two public functions share the name project_payback_timeline but model different things with incompatible shapes: FundingProjection.project_payback_timeline/1 takes a params map and returns %{best_case, expected, worst_case} (volatility scenarios); MarginBridge.project_payback_timeline/3 takes (debt, daily_funding, opts) positionally and returns %{remaining_debt, daily_funding, days_to_payoff, projected_payoff_date} (single-scenario + date). For an agent discovering the surface via Descripex Manifest/MCP tools, two identically-named tools with different params/returns across namespaces is a real discoverability hazard. Rename one (e.g. MarginBridge -> payback_timeline or project_payoff_date) and update its api() declaration + README. Public-surface rename, so deferred from the hygiene audit rather than applied unilaterally."
+created_at = "2026-06-17"
+scored_at = "2026-06-17"

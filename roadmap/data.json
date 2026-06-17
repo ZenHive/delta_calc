@@ -1532,7 +1532,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "in_progress",
+      "status": "pending",
       "title": "Differential test: delta_calc liquidation + funding-cost vs recorded ccxt venue spec (offline fixtures)",
       "scores": {
         "d": 4,

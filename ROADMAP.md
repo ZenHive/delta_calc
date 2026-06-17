@@ -11,7 +11,7 @@ Source of truth: `roadmap/tasks.toml` (managed by [`rmap`](https://hex.pm/)). Th
 - **target_version:** 0.1.0
 - **status:** 🔄 active
 - **hypothesis:** Proves the salvaged calculators run standalone (no Phoenix/Ecto/I-O) with their original test suites green, so the TradingDashboard rebuild can depend on DeltaCalc instead of reimplementing the math.
-- **pinned tasks:** 6/8 done
+- **pinned tasks:** 7/8 done
 <!-- MILESTONES:END -->
 
 ## Phase 1 — Extraction
@@ -29,5 +29,5 @@ their original test suites green.
 | Task 5 | ✅ | 🎁 **calculators** · 🚀 **v0_1** · *DeltaCalc.PositionCalculator* · Port DeltaCalc.PositionCalculator (decouple from LiveView assigns) [D:2/B:4/U:4 → Eff:2.0?] 🎯 |
 | Task 6 | ✅ | 🎁 **calculators** · 🚀 **v0_1** · *DeltaCalc.Hedging* · Extract DeltaCalc.Hedging (pure spot-hedging formulas) [D:3/B:4/U:4 → Eff:1.33?] 📋 |
 | Task 7 | 🔄 | 🎁 **calculators** · 🚀 **v0_1** · Backfill tests for PositionCalculator, DCAPlanner, Hedging [D:3/B:5/U:4 → Eff:1.5?] 🚀 |
-| Task 8 | 🔄 | 🎁 **calculators** · 🚀 **v0_1** · 📝 README + API docs + agent manifest + tighten doctor thresholds [D:1/B:3/U:4 → Eff:3.5?] 🎯 |
+| Task 8 | ✅ | 🎁 **calculators** · 🚀 **v0_1** · 📝 README + API docs + agent manifest + tighten doctor thresholds [D:1/B:3/U:4 → Eff:3.5?] 🎯 |
 <!-- TASKS:END -->

@@ -38,6 +38,11 @@ defmodule DeltaCalc.HedgingTest do
       result = Hedging.calculate_required_cex_balance(Decimal.new("1000"), Decimal.new("33.5"))
       assert Decimal.equal?(result, Decimal.new("335"))
     end
+
+    test "120% hedge exceeds total spot (portfolio margin ceiling)" do
+      result = Hedging.calculate_required_cex_balance(Decimal.new("100000"), Decimal.new("120"))
+      assert Decimal.equal?(result, Decimal.new("120000"))
+    end
   end
 
   describe "check_hedge_coverage/3" do
@@ -98,6 +103,29 @@ defmodule DeltaCalc.HedgingTest do
 
       assert Decimal.equal?(cov, Decimal.new("33.33"))
     end
+
+    test "120% target passes when CEX covers full spot and more" do
+      assert {:ok, cov} =
+               Hedging.check_hedge_coverage(
+                 Decimal.new("120000"),
+                 Decimal.new("100000"),
+                 Decimal.new("120")
+               )
+
+      assert Decimal.equal?(cov, Decimal.new("120.00"))
+    end
+
+    test "120% target triggers rebalancing when under-hedged" do
+      assert {:needs_rebalancing, current, target} =
+               Hedging.check_hedge_coverage(
+                 Decimal.new("100000"),
+                 Decimal.new("100000"),
+                 Decimal.new("120")
+               )
+
+      assert Decimal.equal?(current, Decimal.new("100.00"))
+      assert Decimal.equal?(target, Decimal.new("120"))
+    end
   end
 
   describe "needs_rebalancing?/2" do
@@ -120,6 +148,12 @@ defmodule DeltaCalc.HedgingTest do
 
     test "zero coverage always needs rebalancing" do
       assert Hedging.needs_rebalancing?(Decimal.new("0"))
+    end
+
+    test "120% custom target respected" do
+      assert Hedging.needs_rebalancing?(Decimal.new("110"), Decimal.new("120"))
+      refute Hedging.needs_rebalancing?(Decimal.new("120"), Decimal.new("120"))
+      refute Hedging.needs_rebalancing?(Decimal.new("150"), Decimal.new("120"))
     end
   end
 

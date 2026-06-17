@@ -121,8 +121,11 @@ defmodule DeltaCalc.FundingProjection do
     |> Decimal.to_integer()
   end
 
-  defp to_decimal(value) when is_binary(value), do: Decimal.new(value)
-  defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
-  defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)
+  @spec to_decimal(Decimal.t() | number() | String.t()) :: Decimal.t()
   defp to_decimal(%Decimal{} = value), do: value
+
+  defp to_decimal(value) do
+    {:ok, decimal} = Decimal.cast(value)
+    decimal
+  end
 end

@@ -444,7 +444,7 @@ id = 16
 phase = 2
 bundle = "calc_primitives"
 milestone = "v0_2"
-status = "pending"
+status = "in_progress"
 title = "Register v0_2 modules in DeltaCalc.Manifest + README"
 scores = { d = 1, b = 3, u = 4 }
 depends_on = [9, 10, 11, 12, 13, 14, 15]
@@ -455,4 +455,5 @@ assignee = "grok"
 model = "grok-composer-2.5-fast"
 body = "Consolidation task (kept separate so the seven module-build tasks stay write-set-disjoint and dispatch in parallel). Add the new v0_2 modules to DeltaCalc.Manifest @modules: Funding, AccountMetrics, Concentration, MarginBridge, FundingProjection, OptionLadder, OptionsRisk (Hedging already listed). Add a README API-surface entry for each. Verify Manifest.build/0 / modules/0 / tools/1 surface them and the api()-hints validation test passes."
 created_at = "2026-06-17"
+started_at = "2026-06-17"
 scored_at = "2026-06-17"

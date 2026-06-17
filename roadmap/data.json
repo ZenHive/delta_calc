@@ -1406,7 +1406,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Fix Calc.compare_dca_safety side-blind PnL (multi_leg_position computes short as long)",
       "scores": {
         "d": 3,
@@ -1436,6 +1436,7 @@
       ],
       "body": "compare_dca_safety/8 accepts a :side and uses it correctly for liquidation/4 and safety/5, but it derives the post-DCA aggregate via multi_leg_position/3 — which has NO side param and computes unrealized PnL as tokens*(current-entry) in calculate_leg_totals/2, i.e. long-only. For a short position this flips the PnL sign, so current_equity, effective_leverage, and the resulting liquidation/safety verdicts are wrong and OVERSTATE short safety.\n\nFix: thread side through the aggregate so a short uses tokens*(entry-current). Either add a :side parameter to multi_leg_position/3 + calculate_leg_totals/2, or compute the signed PnL inside compare_dca_safety before calling. Keep the long path bit-identical to today. Add short-side tests that FAIL under the current long-only math (do not author the golden values by running the buggy code).\n",
       "created_at": "2026-06-17",
+      "started_at": "2026-06-17",
       "scored_at": "2026-06-17",
       "cross_repo": []
     },

@@ -1396,6 +1396,82 @@
       "created_at": "2026-06-17",
       "scored_at": "2026-06-17",
       "cross_repo": []
+    },
+    {
+      "id": 31,
+      "phase": 3,
+      "bundle": "consumer_math",
+      "milestone": "v0_3",
+      "status": "pending",
+      "title": "Fix Calc.compare_dca_safety side-blind PnL (multi_leg_position computes short as long)",
+      "scores": {
+        "d": 3,
+        "b": 4,
+        "u": 4
+      },
+      "eff": 1.33,
+      "dep_layer": 0,
+      "unlocks": 0,
+      "markers": [],
+      "depends_on": [],
+      "assignee": "cursor",
+      "model": "composer-2.5",
+      "acceptance_criteria": [
+        "Short DCA example: legs [125@3000, 125@3200], current_price 3200, equity 50 -> unrealized_pnl is NEGATIVE (about -8.33), not +8.33; effective_leverage about 6x, not 4.29x",
+        "Long path outputs unchanged: existing long tests pass with identical values",
+        "New short-side test would FAIL against the pre-fix long-only formula (verifies, does not ratify)",
+        "Calc money-math coverage >= 95%"
+      ],
+      "out_of_scope": [
+        "multi_leg_position/3 may keep long-only public behavior if side is handled at the compare_dca_safety call-site instead - either approach is fine as long as short DCA is correct",
+        "No change to liquidation/4 or safety/5 (already side-aware)"
+      ],
+      "files_to_modify": [
+        "lib/delta_calc/calc.ex",
+        "test/delta_calc/calc_test.exs"
+      ],
+      "body": "compare_dca_safety/8 accepts a :side and uses it correctly for liquidation/4 and safety/5, but it derives the post-DCA aggregate via multi_leg_position/3 — which has NO side param and computes unrealized PnL as tokens*(current-entry) in calculate_leg_totals/2, i.e. long-only. For a short position this flips the PnL sign, so current_equity, effective_leverage, and the resulting liquidation/safety verdicts are wrong and OVERSTATE short safety.\n\nFix: thread side through the aggregate so a short uses tokens*(entry-current). Either add a :side parameter to multi_leg_position/3 + calculate_leg_totals/2, or compute the signed PnL inside compare_dca_safety before calling. Keep the long path bit-identical to today. Add short-side tests that FAIL under the current long-only math (do not author the golden values by running the buggy code).\n",
+      "created_at": "2026-06-17",
+      "scored_at": "2026-06-17",
+      "cross_repo": []
+    },
+    {
+      "id": 32,
+      "phase": 3,
+      "bundle": "consumer_math",
+      "milestone": "v0_3",
+      "status": "pending",
+      "title": "Fix StressScenario.cascade equity reset: realized losses of liquidated legs are discarded",
+      "scores": {
+        "d": 3,
+        "b": 4,
+        "u": 4
+      },
+      "eff": 1.33,
+      "dep_layer": 0,
+      "unlocks": 0,
+      "markers": [],
+      "depends_on": [],
+      "assignee": "codex",
+      "model": "gpt-5.5",
+      "acceptance_criteria": [
+        "Example: equity 1000; long 3 @ mark 3000; short 1 @ mark 3000; shock -20% (mark -> 2400). Net PnL = 3*(2400-3000) + (-1)*(2400-3000) = -1200, true equity -200. After cascade, survives? is FALSE (insolvent), not true",
+        "Equity after removing a liquidated leg is <= equity before removing it (liquidation never restores equity)",
+        "New insolvent-book test would FAIL against the pre-fix reset-to-original-equity logic (verifies, does not ratify)",
+        "StressScenario / PortfolioMargin money-math coverage >= 95%"
+      ],
+      "out_of_scope": [
+        "No change to PortfolioMargin netting formulas (verified correct)",
+        "apply_shock/2 single-shot output unchanged"
+      ],
+      "files_to_modify": [
+        "lib/delta_calc/stress_scenario.ex",
+        "test/delta_calc/stress_scenario_test.exs"
+      ],
+      "body": "cascade/2 -> cascade_positions/3 recurses on the ORIGINAL account (original equity, original marks) minus the removed leg, recomputing equity each round as shocked_account(remaining) = orig_equity + pnl(surviving legs only). The realized loss of every already-liquidated leg vanishes, so an insolvent book can report survives?: true.\n\nFix: thread the realized-loss-adjusted equity through the cascade. When the highest-margin leg is liquidated at its shocked mark, its loss must remain debited from equity for all subsequent rounds; survives? must reflect cumulative realized PnL of liquidated legs plus remaining-unrealized PnL of survivors. Removing a leg must never increase equity.\n",
+      "created_at": "2026-06-17",
+      "scored_at": "2026-06-17",
+      "cross_repo": []
     }
   ]
 }

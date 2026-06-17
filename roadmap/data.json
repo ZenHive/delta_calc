@@ -1455,7 +1455,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Fix StressScenario.cascade equity reset: realized losses of liquidated legs are discarded",
       "scores": {
         "d": 3,

@@ -161,7 +161,7 @@ id = 6
 phase = 1
 bundle = "calculators"
 milestone = "v0_1"
-status = "in_progress"
+status = "done"
 title = "Extract DeltaCalc.Hedging (pure spot-hedging formulas)"
 scores = { d = 3, b = 4, u = 4 }
 depends_on = [1]
@@ -178,7 +178,12 @@ assignee = "claude"
 module = "DeltaCalc.Hedging"
 model = "claude-sonnet-4-6"
 body = "NEW module — extract the pure hedging/portfolio FORMULAS (not the DB queries) from the retired app into DeltaCalc.Hedging as value-in/value-out fns. Sources: portfolio.ex:368 calculate_required_cex_balance(total_spot, hedge_percent) [already pure]; portfolio.ex:380 check_hedge_coverage/2 [extract the coverage-ratio formula, drop the Scope/Repo fetch]; portfolio.ex:486 + snapshot.ex:110 needs_rebalancing? [extract the threshold comparison, take values not structs]; snapshot.ex:124 calculate_change/2 + :142 calculate_percentage_change/2 [pure delta math, take prior/current values]. Read those line ranges in ~/_DATA/code/TradingDashboard before porting. Caller keeps its DB fetch and passes values in."
+implemented = "Landed by claude via merge-train; reviewer-approved (run run-1781656666791-c3a41f92, e0568260a9daffe43d1d47e92c8fb1b9c9d6d407)."
+delivered_by = "claude"
+verified = true
 started_at = "2026-06-17"
+done_at = "2026-06-17"
+shipped_in = "e0568260a9daffe43d1d47e92c8fb1b9c9d6d407"
 
 [[task]]
 id = 7

@@ -322,7 +322,7 @@ id = 11
 phase = 2
 bundle = "calc_primitives"
 milestone = "v0_2"
-status = "in_progress"
+status = "done"
 title = "Build DeltaCalc.AccountMetrics + DeltaCalc.Concentration"
 scores = { d = 3, b = 4, u = 4 }
 depends_on = [2]
@@ -333,9 +333,14 @@ assignee = "codex"
 module = "DeltaCalc.AccountMetrics"
 model = "gpt-5.5"
 body = "Two new modules for the dashboard's task 3.2 (Risk Monitoring Dashboard) and WS.3 (cascade-risk scoring). DeltaCalc.AccountMetrics: per-account liquidation-distance, leverage, margin-usage % — pure Decimal, reuse DeltaCalc.Calc.liquidation/4 and safety/5. DeltaCalc.Concentration: Herfindahl-Hirschman Index (HHI) over per-asset weights for concentration risk. Source of truth: TradingDashboard phase3.md (account_metrics.ex, concentration.ex specs). Alert thresholds stay in the dashboard — only the math here. Manifest/README registration is task 16."
+implemented = "Landed by codex via merge-train; reviewer-approved (run run-1781661573580-2a47a74a, 7d7f5953d85f8d9992cde5d06c9f85a8f162115f)."
+delivered_by = "codex"
+verified = true
 created_at = "2026-06-17"
 started_at = "2026-06-17"
 scored_at = "2026-06-17"
+done_at = "2026-06-17"
+shipped_in = "7d7f5953d85f8d9992cde5d06c9f85a8f162115f"
 
 [[task]]
 id = 12

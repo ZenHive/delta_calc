@@ -18,7 +18,7 @@ Source of truth: `roadmap/tasks.toml` (managed by [`rmap`](https://hex.pm/)). Th
 - **target_version:** 0.2.0
 - **status:** ⬜ pending
 - **hypothesis:** Build the pure-Decimal calc primitives that TradingDashboard's future roadmap (hedging engine, risk monitoring, options strategy) specifies, so the dashboard consumes DeltaCalc.* rather than reimplementing the math. Source of truth: ~/_DATA/code/TradingDashboard/roadmap/phaseN.md specs.
-- **pinned tasks:** 3/8 done
+- **pinned tasks:** 4/8 done
 <!-- MILESTONES:END -->
 
 ## Phase 1 — Extraction

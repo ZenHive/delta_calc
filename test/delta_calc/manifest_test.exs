@@ -8,7 +8,14 @@ defmodule DeltaCalc.ManifestTest do
     "DeltaCalc.Presets",
     "DeltaCalc.DCAPlanner",
     "DeltaCalc.PositionCalculator",
-    "DeltaCalc.Hedging"
+    "DeltaCalc.Hedging",
+    "DeltaCalc.Funding",
+    "DeltaCalc.AccountMetrics",
+    "DeltaCalc.Concentration",
+    "DeltaCalc.MarginBridge",
+    "DeltaCalc.FundingProjection",
+    "DeltaCalc.OptionLadder",
+    "DeltaCalc.OptionsRisk"
   ]
 
   describe "build/0" do
@@ -77,6 +84,13 @@ defmodule DeltaCalc.ManifestTest do
       assert "calc__effective_leverage" in tool_names
       assert "hedging__calculate_required_cex_balance" in tool_names
       assert "position_calculator__calculate_position" in tool_names
+      assert "funding__funding_apr" in tool_names
+      assert "account_metrics__calculate" in tool_names
+      assert "concentration__hhi" in tool_names
+      assert "margin_bridge__margin_ratio" in tool_names
+      assert "funding_projection__project_payback_timeline" in tool_names
+      assert "option_ladder__optimal_expiries" in tool_names
+      assert "options_risk__max_loss" in tool_names
     end
   end
 
@@ -87,7 +101,14 @@ defmodule DeltaCalc.ManifestTest do
                DeltaCalc.Presets,
                DeltaCalc.DCAPlanner,
                DeltaCalc.PositionCalculator,
-               DeltaCalc.Hedging
+               DeltaCalc.Hedging,
+               DeltaCalc.Funding,
+               DeltaCalc.AccountMetrics,
+               DeltaCalc.Concentration,
+               DeltaCalc.MarginBridge,
+               DeltaCalc.FundingProjection,
+               DeltaCalc.OptionLadder,
+               DeltaCalc.OptionsRisk
              ]
     end
   end

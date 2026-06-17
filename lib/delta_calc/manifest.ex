@@ -11,7 +11,14 @@ defmodule DeltaCalc.Manifest do
     DeltaCalc.Presets,
     DeltaCalc.DCAPlanner,
     DeltaCalc.PositionCalculator,
-    DeltaCalc.Hedging
+    DeltaCalc.Hedging,
+    DeltaCalc.Funding,
+    DeltaCalc.AccountMetrics,
+    DeltaCalc.Concentration,
+    DeltaCalc.MarginBridge,
+    DeltaCalc.FundingProjection,
+    DeltaCalc.OptionLadder,
+    DeltaCalc.OptionsRisk
   ]
 
   @doc "Build a JSON-serializable manifest of all public DeltaCalc APIs."

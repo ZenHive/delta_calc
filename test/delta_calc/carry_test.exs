@@ -3,28 +3,30 @@ defmodule DeltaCalc.CarryTest do
 
   alias DeltaCalc.Carry
 
-  describe "annualized_basis/2" do
-    test "returns contango basis as a positive annual percentage" do
-      basis = Carry.annualized_basis(Decimal.new("60000"), Decimal.new("60600"))
+  describe "basis/2" do
+    test "returns contango as a positive percentage premium over spot" do
+      basis = Carry.basis(Decimal.new("60000"), Decimal.new("60600"))
 
+      # (60600 - 60000) / 60000 * 100 = 1%
       assert Decimal.equal?(basis, Decimal.new("1.00000000"))
     end
 
-    test "returns backwardation basis as a negative annual percentage" do
-      basis = Carry.annualized_basis(Decimal.new("60000"), Decimal.new("59500"))
+    test "returns backwardation as a negative percentage discount to spot" do
+      basis = Carry.basis(Decimal.new("60000"), Decimal.new("59500"))
 
+      # (59500 - 60000) / 60000 * 100 = -500/600 = -0.83333333...%
       assert Decimal.equal?(basis, Decimal.new("-0.83333333"))
     end
 
     test "returns zero when spot price is not positive" do
-      basis = Carry.annualized_basis(Decimal.new("0"), Decimal.new("60600"))
+      basis = Carry.basis(Decimal.new("0"), Decimal.new("60600"))
 
       assert Decimal.equal?(basis, Decimal.new("0"))
     end
   end
 
   describe "breakeven_funding/1" do
-    test "returns the per-period funding rate that offsets positive basis" do
+    test "returns the per-period funding rate that offsets one-time basis capture" do
       rate =
         Carry.breakeven_funding(%{
           spot_price: Decimal.new("60000"),
@@ -32,12 +34,13 @@ defmodule DeltaCalc.CarryTest do
           holding_days: 30
         })
 
-      assert Decimal.equal?(rate, Decimal.new("-0.00000913"))
+      # basis = 1%, periods = 30 * 3 = 90 → -1 / 90 / 100
+      assert Decimal.equal?(rate, Decimal.new("-0.00011111"))
     end
   end
 
   describe "net_carry/1" do
-    test "adds funding income and prorated basis for the holding period" do
+    test "adds one-time basis capture to accumulated funding over the holding period" do
       result =
         Carry.net_carry(%{
           spot_price: Decimal.new("60000"),
@@ -46,11 +49,11 @@ defmodule DeltaCalc.CarryTest do
           holding_days: 30
         })
 
-      assert Decimal.equal?(result.annualized_basis, Decimal.new("1.00000000"))
-      assert Decimal.equal?(result.basis_yield, Decimal.new("0.08219178"))
+      assert Decimal.equal?(result.basis, Decimal.new("1.00000000"))
+      assert Decimal.equal?(result.basis_yield, Decimal.new("1.00000000"))
       assert Decimal.equal?(result.funding_yield, Decimal.new("0.90000000"))
-      assert Decimal.equal?(result.net_yield, Decimal.new("0.98219178"))
-      assert Decimal.equal?(result.breakeven_funding, Decimal.new("-0.00000913"))
+      assert Decimal.equal?(result.net_yield, Decimal.new("1.90000000"))
+      assert Decimal.equal?(result.breakeven_funding, Decimal.new("-0.00011111"))
       assert result.profitable? == true
     end
 
@@ -64,7 +67,7 @@ defmodule DeltaCalc.CarryTest do
         })
 
       assert Decimal.equal?(result.funding_yield, Decimal.new("-1.80000000"))
-      assert Decimal.equal?(result.net_yield, Decimal.new("-1.71780822"))
+      assert Decimal.equal?(result.net_yield, Decimal.new("-0.80000000"))
       assert result.profitable? == false
     end
 
@@ -79,7 +82,7 @@ defmodule DeltaCalc.CarryTest do
         })
 
       assert Decimal.equal?(result.funding_yield, Decimal.new("0.30000000"))
-      assert Decimal.equal?(result.net_yield, Decimal.new("0.38219178"))
+      assert Decimal.equal?(result.net_yield, Decimal.new("1.30000000"))
     end
   end
 

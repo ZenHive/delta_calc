@@ -2,6 +2,15 @@ defmodule DeltaCalc.Carry do
   @moduledoc """
   Basis and funding carry math for spot/perp hedge profitability decisions.
 
+  Yield semantics:
+  - `basis/2` is an instantaneous premium or discount (stock): `(perp - spot) / spot * 100`.
+  - `basis_yield/1` (private) is the one-time basis capture over the hold — equal to `basis/2`
+    at entry, not time-prorated.
+  - `funding_yield/1` sums per-period funding rates over `holding_days` (flow).
+
+  `net_yield` adds the one-time basis stock to accumulated funding flow so both terms are
+  percentages over the same holding window.
+
   All inputs are caller-supplied values. This module performs no exchange access,
   persistence, or portfolio state lookup.
   """
@@ -27,7 +36,7 @@ defmodule DeltaCalc.Carry do
 
   @typedoc "Net carry decision output as percentage yields."
   @type carry_result :: %{
-          annualized_basis: Decimal.t(),
+          basis: Decimal.t(),
           basis_yield: Decimal.t(),
           funding_yield: Decimal.t(),
           net_yield: Decimal.t(),
@@ -36,8 +45,8 @@ defmodule DeltaCalc.Carry do
         }
 
   api(
-    :annualized_basis,
-    "Calculate spot/perp basis as an annualized percentage.",
+    :basis,
+    "Calculate spot/perp basis as an instantaneous percentage premium or discount.",
     params: [
       spot_price: [
         kind: :value,
@@ -50,12 +59,15 @@ defmodule DeltaCalc.Carry do
         schema: float()
       ]
     ],
-    returns: %{type: :decimal, description: "Basis percentage, rounded to 8 places."}
+    returns: %{
+      type: :decimal,
+      description: "(perp - spot) / spot * 100, rounded to 8 places. Not annualized."
+    }
   )
 
   @doc "Return `(perp_price - spot_price) / spot_price * 100`, or zero when spot is not positive."
-  @spec annualized_basis(decimal_input(), decimal_input()) :: Decimal.t()
-  def annualized_basis(spot_price, perp_price) do
+  @spec basis(decimal_input(), decimal_input()) :: Decimal.t()
+  def basis(spot_price, perp_price) do
     spot = to_decimal(spot_price)
 
     if Decimal.compare(spot, @zero) == :gt do
@@ -87,7 +99,7 @@ defmodule DeltaCalc.Carry do
     }
   )
 
-  @doc "Return the per-period funding rate that exactly offsets prorated basis yield."
+  @doc "Return the per-period funding rate that exactly offsets basis yield over the hold."
   @spec breakeven_funding(carry_params()) :: Decimal.t()
   def breakeven_funding(params) do
     periods = funding_periods(params)
@@ -118,7 +130,7 @@ defmodule DeltaCalc.Carry do
     returns: %{
       type: :map,
       description:
-        "Map with annualized_basis, basis_yield, funding_yield, net_yield, breakeven_funding, and profitable?."
+        "Map with basis, basis_yield, funding_yield, net_yield, breakeven_funding, and profitable?."
     }
   )
 
@@ -130,7 +142,7 @@ defmodule DeltaCalc.Carry do
     net_yield = quantize(Decimal.add(basis_yield, funding_yield))
 
     %{
-      annualized_basis: annualized_basis(params.spot_price, params.perp_price),
+      basis: basis(params.spot_price, params.perp_price),
       basis_yield: basis_yield,
       funding_yield: funding_yield,
       net_yield: net_yield,
@@ -141,19 +153,7 @@ defmodule DeltaCalc.Carry do
 
   @spec basis_yield(carry_params()) :: Decimal.t()
   defp basis_yield(params) do
-    params.spot_price
-    |> annualized_basis(params.perp_price)
-    |> period_yield(params)
-  end
-
-  @spec period_yield(Decimal.t(), carry_params()) :: Decimal.t()
-  defp period_yield(annualized_yield, params) do
-    holding_days = Map.get(params, :holding_days, @days_per_year)
-
-    annualized_yield
-    |> Decimal.mult(to_decimal(holding_days))
-    |> Decimal.div(Decimal.new(@days_per_year))
-    |> quantize()
+    basis(params.spot_price, params.perp_price)
   end
 
   @spec funding_yield(carry_params()) :: Decimal.t()

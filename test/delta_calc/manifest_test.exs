@@ -103,7 +103,7 @@ defmodule DeltaCalc.ManifestTest do
       assert "portfolio_margin__combined_maintenance_margin" in tool_names
       assert "stress_scenario__apply_shock" in tool_names
       assert "fees__effective_entry" in tool_names
-      assert "carry__annualized_basis" in tool_names
+      assert "carry__basis" in tool_names
     end
 
     test "bare function names are unique across modules" do

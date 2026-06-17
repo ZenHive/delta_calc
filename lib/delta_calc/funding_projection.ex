@@ -28,7 +28,7 @@ defmodule DeltaCalc.FundingProjection do
 
   api(
     :project_payback_timeline,
-    "Project best-, expected-, and worst-case payback days from funding income uncertainty.",
+    "Project best-, expected-, and worst-case payback days under funding income volatility (not single-scenario payoff dates — see MarginBridge.payback_timeline/3).",
     params: [
       params: [
         kind: :value,

@@ -274,6 +274,7 @@ Concentration.hhi(weights)
 ## `DeltaCalc.MarginBridge`
 
 Perp-funded option financing: margin ratios, runway, payback timelines, and kill-switch checks.
+Single-scenario `payback_timeline/3` differs from `FundingProjection.project_payback_timeline/1` (volatility scenarios).
 
 ```elixir
 # margin_ratio(initial_margin, option_premium, capital) -> Decimal
@@ -284,8 +285,8 @@ MarginBridge.margin_ratio(Decimal.new("6000"), Decimal.new("2700"), Decimal.new(
 MarginBridge.margin_runway_days(Decimal.new("2025"), Decimal.new("45"))
 #=> #Decimal<45>
 
-# project_payback_timeline(remaining_debt, daily_funding, opts) -> payback map
-MarginBridge.project_payback_timeline(Decimal.new("2430"), Decimal.new("90"))
+# payback_timeline(remaining_debt, daily_funding, opts) -> payback map
+MarginBridge.payback_timeline(Decimal.new("2430"), Decimal.new("90"))
 #=> %{remaining_debt: #Decimal<2430>, daily_funding: #Decimal<90>, days_to_payoff: 27, ...}
 
 # stress_test_prolonged_negative(rate, position_size, days, opts) -> stress map
@@ -305,6 +306,7 @@ MarginBridge.check_kill_switch(Decimal.new("0.015"), Decimal.new("0.145"))
 ## `DeltaCalc.FundingProjection`
 
 Best-, expected-, and worst-case payback horizons from funding income and volatility.
+For a single-scenario timeline with optional payoff date, see `DeltaCalc.MarginBridge.payback_timeline/3`.
 
 ```elixir
 # project_payback_timeline(params) -> %{best_case, expected, worst_case}

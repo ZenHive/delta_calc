@@ -94,6 +94,7 @@ defmodule DeltaCalc.ManifestTest do
       assert "account_metrics__calculate" in tool_names
       assert "concentration__hhi" in tool_names
       assert "margin_bridge__margin_ratio" in tool_names
+      assert "margin_bridge__payback_timeline" in tool_names
       assert "funding_projection__project_payback_timeline" in tool_names
       assert "option_ladder__optimal_expiries" in tool_names
       assert "options_risk__max_loss" in tool_names
@@ -103,6 +104,22 @@ defmodule DeltaCalc.ManifestTest do
       assert "stress_scenario__apply_shock" in tool_names
       assert "fees__effective_entry" in tool_names
       assert "carry__annualized_basis" in tool_names
+    end
+
+    test "bare function names are unique across modules" do
+      bare_names =
+        Manifest.modules()
+        |> Enum.flat_map(fn mod ->
+          Enum.map(mod.__api__(), fn entry -> {entry.name, mod} end)
+        end)
+
+      collisions =
+        bare_names
+        |> Enum.group_by(fn {name, _mod} -> name end, fn {_name, mod} -> mod end)
+        |> Enum.reject(fn {_name, [_]} -> true end)
+
+      assert collisions == [],
+             "Duplicate bare api names across modules: #{inspect(collisions)}"
     end
   end
 

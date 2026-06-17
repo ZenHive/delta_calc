@@ -70,10 +70,10 @@ defmodule DeltaCalc.MarginBridgeTest do
     end
   end
 
-  describe "project_payback_timeline/2" do
+  describe "payback_timeline/2" do
     test "projects days from remaining debt and daily funding" do
       timeline =
-        MarginBridge.project_payback_timeline(
+        MarginBridge.payback_timeline(
           Decimal.new("2430"),
           Decimal.new("90")
         )
@@ -88,7 +88,7 @@ defmodule DeltaCalc.MarginBridgeTest do
       from = ~D[2025-01-14]
 
       timeline =
-        MarginBridge.project_payback_timeline(
+        MarginBridge.payback_timeline(
           Decimal.new("2430"),
           Decimal.new("90"),
           from_date: from
@@ -99,7 +99,7 @@ defmodule DeltaCalc.MarginBridgeTest do
 
     test "returns nil days when daily funding is zero" do
       timeline =
-        MarginBridge.project_payback_timeline(
+        MarginBridge.payback_timeline(
           Decimal.new("2700"),
           Decimal.new("0")
         )
@@ -110,7 +110,7 @@ defmodule DeltaCalc.MarginBridgeTest do
 
     test "returns nil projected date when payoff days are nil even with from_date" do
       timeline =
-        MarginBridge.project_payback_timeline(
+        MarginBridge.payback_timeline(
           Decimal.new("2700"),
           Decimal.new("0"),
           from_date: ~D[2025-01-14]
@@ -120,7 +120,7 @@ defmodule DeltaCalc.MarginBridgeTest do
     end
 
     test "accepts numeric inputs via Decimal coercion" do
-      timeline = MarginBridge.project_payback_timeline(2700, 90.0, from_date: ~D[2025-01-01])
+      timeline = MarginBridge.payback_timeline(2700, 90.0, from_date: ~D[2025-01-01])
 
       assert Decimal.equal?(timeline.remaining_debt, Decimal.new("2700"))
       assert Decimal.equal?(timeline.daily_funding, Decimal.new("90.0"))
@@ -129,7 +129,7 @@ defmodule DeltaCalc.MarginBridgeTest do
 
     test "full payback at 90/day matches phase7 high-funding scenario (~30 days)" do
       timeline =
-        MarginBridge.project_payback_timeline(
+        MarginBridge.payback_timeline(
           Decimal.new("2700"),
           Decimal.new("90")
         )

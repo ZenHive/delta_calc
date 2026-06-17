@@ -119,8 +119,8 @@ defmodule DeltaCalc.MarginBridge do
   end
 
   api(
-    :project_payback_timeline,
-    "Project days and optional payoff date from remaining debt and daily funding.",
+    :payback_timeline,
+    "Single-scenario payback: days to payoff and optional projected payoff date from daily funding.",
     params: [
       remaining_debt: [
         kind: :value,
@@ -147,12 +147,14 @@ defmodule DeltaCalc.MarginBridge do
   )
 
   @doc """
-  Project payback timeline from `remaining_debt` and `daily_funding`.
+  Compute single-scenario payback days from `remaining_debt` and `daily_funding`.
 
   Pass `from_date:` in opts to include `projected_payoff_date`.
+  For best/expected/worst cases under funding volatility, use
+  `DeltaCalc.FundingProjection.project_payback_timeline/1`.
   """
-  @spec project_payback_timeline(Decimal.t(), Decimal.t(), keyword()) :: payback_timeline()
-  def project_payback_timeline(remaining_debt, daily_funding, opts \\ []) do
+  @spec payback_timeline(Decimal.t(), Decimal.t(), keyword()) :: payback_timeline()
+  def payback_timeline(remaining_debt, daily_funding, opts \\ []) do
     remaining_debt = to_decimal(remaining_debt)
     daily_funding = to_decimal(daily_funding)
     from_date = Keyword.get(opts, :from_date)

@@ -162,7 +162,7 @@
       "phase": 1,
       "bundle": "calculators",
       "milestone": "v0_1",
-      "status": "in_progress",
+      "status": "pending",
       "title": "Port DeltaCalc.DCAPlanner",
       "scores": {
         "d": 2,

@@ -655,7 +655,7 @@ id = 24
 phase = 2
 bundle = "calc_primitives"
 milestone = "v0_2"
-status = "in_progress"
+status = "done"
 title = "Fix OptionsRisk :critical threshold — advertised opt has no effect"
 scores = { d = 2, b = 2, u = 2 }
 depends_on = [15]
@@ -666,9 +666,14 @@ assignee = "cursor"
 module = "DeltaCalc.OptionsRisk"
 model = "composer-2.5"
 body = "Audit discovery (audit c695d69). monitor_margin_bridge_health/2 advertises an optional :critical margin threshold via its api() declaration and collects it (@default_critical_threshold 0.45, opts :critical at options_risk.ex:310), but health_status/4 never reads the 4th param (_critical at :375) — the cond only branches on reduce (=> :critical) and warning. health_status type is 3-band and the @doc says 'critical above 35%' (the reduce threshold, 0.35). Net: the :critical option is dead/misleading to agent (Descripex/MCP) consumers — it appears configurable but changes nothing. Resolve the design ambiguity: either add a genuine 4th band that uses the 0.45 critical threshold, or drop the :critical opt + constant and fix the api()/doc to match the real 3-band behavior. Behavior/surface change, so deferred from the hygiene audit rather than guessed."
+implemented = "Landed by cursor via merge-train; reviewer-approved (run run-1781695824633-a280c0eb, cb9730970944407d07c173c243ee7d8cd741e1e2)."
+delivered_by = "cursor"
+verified = true
 created_at = "2026-06-17"
 started_at = "2026-06-17"
 scored_at = "2026-06-17"
+done_at = "2026-06-17"
+shipped_in = "cb9730970944407d07c173c243ee7d8cd741e1e2"
 
 [[task]]
 id = 25

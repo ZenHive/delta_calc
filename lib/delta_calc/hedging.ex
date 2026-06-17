@@ -606,7 +606,8 @@ defmodule DeltaCalc.Hedging do
 
       exchanges ->
         count = length(exchanges)
-        per_exchange = Decimal.div(remaining, Decimal.new(count))
+        count_decimal = Decimal.new(count)
+        per_exchange = Decimal.div(remaining, count_decimal)
 
         base_allocations =
           Map.new(exchanges, fn exchange ->
@@ -615,7 +616,7 @@ defmodule DeltaCalc.Hedging do
 
         allocated =
           per_exchange
-          |> Decimal.mult(Decimal.new(count))
+          |> Decimal.mult(count_decimal)
           |> Decimal.sub(remaining)
           |> Decimal.abs()
 

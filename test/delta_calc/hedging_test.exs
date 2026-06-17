@@ -538,6 +538,41 @@ defmodule DeltaCalc.HedgingTest do
 
       assert Decimal.equal?(result.allocations.deribit, Decimal.new("-100000"))
     end
+
+    test "deribit priority with one overflow venue assigns remainder to that venue" do
+      result =
+        Hedging.suggest_hedge_distribution(%{
+          total_hedge_target: Decimal.new("-10000"),
+          available_exchanges: [:deribit, :binance],
+          preferences: %{deribit_priority: true, max_per_exchange: Decimal.new("0.8")}
+        })
+
+      assert Decimal.equal?(result.allocations.deribit, Decimal.new("-8000"))
+      assert Decimal.equal?(result.allocations.binance, Decimal.new("-2000"))
+
+      total =
+        result.allocations
+        |> Map.values()
+        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+      assert Decimal.equal?(total, Decimal.new("-10000"))
+    end
+
+    test "even split absorbs fractional remainder on the first venue" do
+      result =
+        Hedging.suggest_hedge_distribution(%{
+          total_hedge_target: Decimal.new("-100"),
+          available_exchanges: [:binance, :bybit, :okx]
+        })
+
+      total =
+        result.allocations
+        |> Map.values()
+        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+      assert Decimal.equal?(total, Decimal.new("-100"))
+      assert map_size(result.allocations) == 3
+    end
   end
 
   describe "Descripex api() declarations" do

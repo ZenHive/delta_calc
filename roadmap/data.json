@@ -443,7 +443,7 @@
       "phase": 2,
       "bundle": "calc_primitives",
       "milestone": "v0_2",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Extend DeltaCalc.Hedging (engine primitives)",
       "scores": {
         "d": 3,
@@ -477,6 +477,7 @@
       ],
       "body": "Extend the existing DeltaCalc.Hedging with the hedging-engine primitives the dashboard's tasks 2.1 (Hedging Engine), 1.5.4 (multi-exchange distribution), 6.2 (main-account hedging) and 4.1 (per-position hedge calc) need. Add: calculate_hedge_requirements/2 (total_spot, cex_spot, target% -> required hedge), calculate_funding_cost/3 (position_size, funding_rate -> daily cost), needs_cex_transfer?/2, get_basis_spread/2 (spot vs perp), 1:1-max enforcement, suggest_hedge_distribution/1 (split target across venues by capital efficiency), and 110%-coverage + CEX-sufficiency helpers. Source of truth: TradingDashboard phase2.md + phase6.md hedge_calculator specs. Pure Decimal. Keep existing fns intact. B1 (dashboard dep swap) depends on this. Manifest/README registration is task 16 — do NOT edit manifest.ex/README.",
       "created_at": "2026-06-17",
+      "started_at": "2026-06-17",
       "scored_at": "2026-06-17",
       "cross_repo": []
     },

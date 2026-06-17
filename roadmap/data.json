@@ -1532,7 +1532,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Differential test: delta_calc liquidation + funding-cost vs recorded ccxt venue spec (offline fixtures)",
       "scores": {
         "d": 4,
@@ -1568,6 +1568,7 @@
       ],
       "body": "Add an OFFLINE differential-test suite cross-checking delta_calc output against REAL venue specifications recorded from ccxt (the live oracle), WITHOUT adding any runtime dependency on ccxt - fixtures are static recorded responses committed under test/support/ccxt_fixtures/. This catches the bug class the quant audit found that pure invariants cannot: a formula internally consistent but WRONG against a real exchange's published numbers (the cadence bugs, the liquidation-formula note). RustQuant/QuantLib were evaluated and rejected as oracles - they model no perp funding/liquidation/basis; ccxt's per-venue market metadata is the authoritative source.\n\nCover at minimum:\n- Funding cadence: for instruments with DIFFERENT funding intervals (Deribit BTC-PERPETUAL 8h, a Binance 8h pair, Hyperliquid 1h), record ccxt's funding rate + funding interval; assert delta_calc's daily/annual funding cost computed with periods_per_day = 24h / interval_hours matches the venue, and that NO module silently assumes 8h. Validates tasks 26/28/30 against ground truth.\n- Liquidation: record an exchange's maintenance-margin tier + a sample position with the venue's OWN published liquidation price; assert PortfolioMargin.portfolio_liquidation_price reproduces it within tight tolerance. Separately quantify Calc.liquidation's documented-approximation error vs the venue as an INFORMATIONAL assertion (looser bound, references the moduledoc note) - not a hard build failure.\n\nDocument the fixture-refresh procedure in test/support/ccxt_fixtures/README.md: capture via ccxt in a consumer BEAM that has both ccxt_client and delta_calc compiled (e.g. the dashboard node on :4025), then paste recorded JSON into the fixtures dir. The assertion suite itself must run offline and deterministically; any live-refresh helper is :integration-tagged and excluded from mix ci.\n",
       "created_at": "2026-06-17",
+      "started_at": "2026-06-17",
       "scored_at": "2026-06-17",
       "cross_repo": []
     }

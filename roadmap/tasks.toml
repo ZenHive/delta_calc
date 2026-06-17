@@ -84,21 +84,26 @@ id = 3
 phase = 1
 bundle = "calculators"
 milestone = "v0_1"
-status = "pending"
+status = "done"
 title = "Port DeltaCalc.Presets + tests"
-assignee = "claude"
-model = "claude-sonnet-4-6"
-module = "DeltaCalc.Presets"
 scores = { d = 1, b = 4, u = 5 }
 depends_on = [1]
-files_to_modify = ["lib/delta_calc/presets.ex", "test/delta_calc/presets_test.exs"]
-touches = ["lib/delta_calc/presets.ex"]
-body = "Lift TradingDashboard.Risk.Presets (lib/trading_dashboard/risk/presets.ex) into DeltaCalc.Presets — leaf module, no deps, namespace rename only. Public fns: load_modes/0, load_thresholds/0, load_dca_preset/0. Port test/trading_dashboard/risk/presets_test.exs (23 tests) verbatim."
 acceptance_criteria = [
   "All 23 ported preset tests pass",
   "Every public fn carries a Descripex api() declaration before its @doc (annotate at port time)",
   "mix credo --strict and mix dialyzer clean",
 ]
+files_to_modify = ["lib/delta_calc/presets.ex", "test/delta_calc/presets_test.exs"]
+touches = ["lib/delta_calc/presets.ex"]
+assignee = "claude"
+module = "DeltaCalc.Presets"
+model = "claude-sonnet-4-6"
+body = "Lift TradingDashboard.Risk.Presets (lib/trading_dashboard/risk/presets.ex) into DeltaCalc.Presets — leaf module, no deps, namespace rename only. Public fns: load_modes/0, load_thresholds/0, load_dca_preset/0. Port test/trading_dashboard/risk/presets_test.exs (23 tests) verbatim."
+implemented = "Ported TradingDashboard.Risk.Presets to DeltaCalc.Presets (load_modes/0, load_thresholds/0, load_dca_preset/0) + 23 tests; namespace-only port, pure Decimal. Dispatched via harness, reviewer-approved, ff-merged to development."
+delivered_by = "harness:claude/sonnet"
+verified = true
+done_at = "2026-06-17"
+shipped_in = "c6574aa5c93013241a92a93a7f12e496d5f8ed87"
 
 [[task]]
 id = 4

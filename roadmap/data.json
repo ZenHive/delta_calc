@@ -114,7 +114,7 @@
       "phase": 1,
       "bundle": "calculators",
       "milestone": "v0_1",
-      "status": "pending",
+      "status": "done",
       "title": "Port DeltaCalc.Presets + tests",
       "scores": {
         "d": 1,
@@ -143,7 +143,12 @@
       "touches": [
         "lib/delta_calc/presets.ex"
       ],
+      "shipped_in": "c6574aa5c93013241a92a93a7f12e496d5f8ed87",
       "body": "Lift TradingDashboard.Risk.Presets (lib/trading_dashboard/risk/presets.ex) into DeltaCalc.Presets — leaf module, no deps, namespace rename only. Public fns: load_modes/0, load_thresholds/0, load_dca_preset/0. Port test/trading_dashboard/risk/presets_test.exs (23 tests) verbatim.",
+      "done_at": "2026-06-17",
+      "implemented": "Ported TradingDashboard.Risk.Presets to DeltaCalc.Presets (load_modes/0, load_thresholds/0, load_dca_preset/0) + 23 tests; namespace-only port, pure Decimal. Dispatched via harness, reviewer-approved, ff-merged to development.",
+      "delivered_by": "harness:claude/sonnet",
+      "verified": true,
       "cross_repo": []
     },
     {

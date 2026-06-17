@@ -332,7 +332,7 @@
       "phase": 1,
       "bundle": "calculators",
       "milestone": "v0_1",
-      "status": "pending",
+      "status": "in_progress",
       "title": "README + API docs + agent manifest + tighten doctor thresholds",
       "scores": {
         "d": 1,
@@ -368,6 +368,7 @@
         ".doctor.exs"
       ],
       "body": "Capstone after the modules are ported (each already carries its api() declarations). 1) README: real usage examples per module (input shapes + sample Decimal outputs). 2) Confirm every public fn has @doc + @spec. 3) Aggregate the per-module Descripex api() surface: add DeltaCalc.Manifest with `build/0` -> Descripex.Manifest.build([DeltaCalc.Calc, .Presets, .DCAPlanner, .PositionCalculator, .Hedging]); expose Descripex.MCP.tools/1 over the same module list so a trading agent can call DeltaCalc as MCP tools; verify `mix descripex.manifest --pretty` emits a clean api_manifest.json. 4) Raise .doctor.exs thresholds from the scaffold's 0 to the project standard (min_overall_doc_coverage 100, real spec floor) now that there is public API to hold to it.",
+      "started_at": "2026-06-17",
       "cross_repo": []
     }
   ]

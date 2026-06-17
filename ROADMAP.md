@@ -27,7 +27,7 @@ their original test suites green.
 | Task 3 | ✅ | 🎁 **calculators** · 🚀 **v0_1** · *DeltaCalc.Presets* · Port DeltaCalc.Presets + tests [D:1/B:4/U:5 → Eff:4.5?] 🎯 |
 | Task 4 | ⬜ | 🎁 **calculators** · 🚀 **v0_1** · *DeltaCalc.DCAPlanner* · Port DeltaCalc.DCAPlanner [D:2/B:4/U:4 → Eff:2.0?] 🎯 |
 | Task 5 | ⬜ | 🎁 **calculators** · 🚀 **v0_1** · *DeltaCalc.PositionCalculator* · Port DeltaCalc.PositionCalculator (decouple from LiveView assigns) [D:2/B:4/U:4 → Eff:2.0?] 🎯 |
-| Task 6 | ⬜ | 🎁 **calculators** · 🚀 **v0_1** · *DeltaCalc.Hedging* · Extract DeltaCalc.Hedging (pure spot-hedging formulas) [D:3/B:4/U:4 → Eff:1.33?] 📋 |
+| Task 6 | 🔄 | 🎁 **calculators** · 🚀 **v0_1** · *DeltaCalc.Hedging* · Extract DeltaCalc.Hedging (pure spot-hedging formulas) [D:3/B:4/U:4 → Eff:1.33?] 📋 |
 | Task 7 | ⬜ | 🎁 **calculators** · 🚀 **v0_1** · Backfill tests for PositionCalculator, DCAPlanner, Hedging [D:3/B:5/U:4 → Eff:1.5?] 🚀 |
 | Task 8 | ⬜ | 🎁 **calculators** · 🚀 **v0_1** · 📝 README + API docs + agent manifest + tighten doctor thresholds [D:1/B:3/U:4 → Eff:3.5?] 🎯 |
 <!-- TASKS:END -->

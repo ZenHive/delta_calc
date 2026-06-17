@@ -233,7 +233,7 @@
       "phase": 1,
       "bundle": "calculators",
       "milestone": "v0_1",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Extract DeltaCalc.Hedging (pure spot-hedging formulas)",
       "scores": {
         "d": 3,
@@ -264,6 +264,7 @@
         "lib/delta_calc/hedging.ex"
       ],
       "body": "NEW module — extract the pure hedging/portfolio FORMULAS (not the DB queries) from the retired app into DeltaCalc.Hedging as value-in/value-out fns. Sources: portfolio.ex:368 calculate_required_cex_balance(total_spot, hedge_percent) [already pure]; portfolio.ex:380 check_hedge_coverage/2 [extract the coverage-ratio formula, drop the Scope/Repo fetch]; portfolio.ex:486 + snapshot.ex:110 needs_rebalancing? [extract the threshold comparison, take values not structs]; snapshot.ex:124 calculate_change/2 + :142 calculate_percentage_change/2 [pure delta math, take prior/current values]. Read those line ranges in ~/_DATA/code/TradingDashboard before porting. Caller keeps its DB fetch and passes values in.",
+      "started_at": "2026-06-17",
       "cross_repo": []
     },
     {

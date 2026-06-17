@@ -1470,7 +1470,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "in_progress",
+      "status": "done",
       "title": "Fix StressScenario.cascade equity reset: realized losses of liquidated legs are discarded",
       "scores": {
         "d": 3,
@@ -1498,10 +1498,15 @@
         "lib/delta_calc/stress_scenario.ex",
         "test/delta_calc/stress_scenario_test.exs"
       ],
+      "shipped_in": "f1459857b2576a7fa8f45bbfc4e8417392dbc8b7",
       "body": "cascade/2 -> cascade_positions/3 recurses on the ORIGINAL account (original equity, original marks) minus the removed leg, recomputing equity each round as shocked_account(remaining) = orig_equity + pnl(surviving legs only). The realized loss of every already-liquidated leg vanishes, so an insolvent book can report survives?: true.\n\nFix: thread the realized-loss-adjusted equity through the cascade. When the highest-margin leg is liquidated at its shocked mark, its loss must remain debited from equity for all subsequent rounds; survives? must reflect cumulative realized PnL of liquidated legs plus remaining-unrealized PnL of survivors. Removing a leg must never increase equity.\n",
       "created_at": "2026-06-17",
       "started_at": "2026-06-17",
+      "done_at": "2026-06-17",
       "scored_at": "2026-06-17",
+      "implemented": "Landed by codex via merge-train; reviewer-approved (run run-1781705403770-c89a7d07, f1459857b2576a7fa8f45bbfc4e8417392dbc8b7).",
+      "delivered_by": "codex",
+      "verified": true,
       "cross_repo": []
     },
     {

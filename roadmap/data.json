@@ -1211,7 +1211,7 @@
       },
       "eff": 2.0,
       "dep_layer": 0,
-      "unlocks": 0,
+      "unlocks": 1,
       "markers": [],
       "depends_on": [],
       "assignee": "cursor",
@@ -1295,7 +1295,7 @@
       },
       "eff": 2.0,
       "dep_layer": 0,
-      "unlocks": 0,
+      "unlocks": 2,
       "markers": [],
       "depends_on": [],
       "assignee": "codex",
@@ -1334,7 +1334,7 @@
       },
       "eff": 1.33,
       "dep_layer": 0,
-      "unlocks": 0,
+      "unlocks": 1,
       "markers": [],
       "depends_on": [],
       "assignee": "cursor",
@@ -1373,7 +1373,7 @@
       },
       "eff": 1.75,
       "dep_layer": 0,
-      "unlocks": 0,
+      "unlocks": 2,
       "markers": [],
       "depends_on": [],
       "assignee": "grok",
@@ -1411,7 +1411,7 @@
       },
       "eff": 1.33,
       "dep_layer": 0,
-      "unlocks": 0,
+      "unlocks": 1,
       "markers": [],
       "depends_on": [],
       "assignee": "cursor",
@@ -1449,7 +1449,7 @@
       },
       "eff": 1.33,
       "dep_layer": 0,
-      "unlocks": 0,
+      "unlocks": 1,
       "markers": [],
       "depends_on": [],
       "assignee": "codex",
@@ -1469,6 +1469,97 @@
         "test/delta_calc/stress_scenario_test.exs"
       ],
       "body": "cascade/2 -> cascade_positions/3 recurses on the ORIGINAL account (original equity, original marks) minus the removed leg, recomputing equity each round as shocked_account(remaining) = orig_equity + pnl(surviving legs only). The realized loss of every already-liquidated leg vanishes, so an insolvent book can report survives?: true.\n\nFix: thread the realized-loss-adjusted equity through the cascade. When the highest-margin leg is liquidated at its shocked mark, its loss must remain debited from equity for all subsequent rounds; survives? must reflect cumulative realized PnL of liquidated legs plus remaining-unrealized PnL of survivors. Removing a leg must never increase equity.\n",
+      "created_at": "2026-06-17",
+      "scored_at": "2026-06-17",
+      "cross_repo": []
+    },
+    {
+      "id": 33,
+      "phase": 3,
+      "bundle": "consumer_math",
+      "milestone": "v0_3",
+      "status": "pending",
+      "title": "Add stream_data property-test layer encoding quant-audit invariants (anti-ratification guard)",
+      "scores": {
+        "d": 4,
+        "b": 4,
+        "u": 4
+      },
+      "eff": 1.0,
+      "dep_layer": 1,
+      "unlocks": 0,
+      "markers": [],
+      "depends_on": [
+        28,
+        29,
+        30,
+        31,
+        32
+      ],
+      "assignee": "grok",
+      "model": "grok-composer-2.5-fast",
+      "acceptance_criteria": [
+        "stream_data added as a dep; a property-test module with reusable Decimal/side/leverage/periods_per_day generators exists",
+        "PnL long/short antisymmetry property passes",
+        "StressScenario cascade: equity non-increasing across liquidations, and no insolvent book reports survives?: true",
+        "Funding/MarginBridge/OptionsRisk: cost scales linearly with periods_per_day (catches any hardcoded cadence)",
+        "Carry: annualization scaling-law property relating raw basis and annualized over a horizon H",
+        "Properties are derived from math, would have FAILED on pre-fix code, and pass on post-fix code; mix ci green with bounded generation counts"
+      ],
+      "out_of_scope": [
+        "Not replacing existing example tests - this is an additional layer",
+        "No formal-verification / Lean encoding",
+        "Differential testing against external oracles (RustQuant/QuantLib/ccxt) is a separate task"
+      ],
+      "files_to_modify": [
+        "test/delta_calc/property_test.exs",
+        "mix.exs"
+      ],
+      "body": "Add a property-based test layer (add {:stream_data, \"~> 1.0\", only: [:dev, :test]} — it is NOT built into Elixir core; ExUnitProperties ships in that package) asserting the math invariants the per-example golden tests cannot. This directly attacks the failure mode the quant audit found: golden values authored by the buggy code ratify the bug instead of catching it. Build reusable generators (positive Decimal prices, leverage, position sizes, :long/:short, periods_per_day) and assert, at minimum, invariants DERIVED FROM THE MATH (never from running the functions):\n\n- PnL antisymmetry: gross_pnl(entry, price, size, :long) == negate(gross_pnl(entry, price, size, :short)); the DCA-safety aggregate respects side (guards task 31).\n- Cascade equity monotonicity: removing a liquidated leg never increases equity; an insolvent book never reports survives?: true (guards task 32).\n- Funding cadence linearity: daily/annual funding cost scales linearly with periods_per_day; sweeping periods_per_day catches any reintroduced hardcoded cadence (guards tasks 28/30, MarginBridge).\n- Annualization scaling law: annualized_basis over horizon H relates to raw basis by the 365/H factor; basis_yield/period_yield prorates consistently (guards task 29).\n- Liquidation monotonicity: higher leverage moves liq price closer to entry; long liq < entry < short liq.\n\nWhere a formula is a documented approximation (Calc.liquidation), assert the looser monotonic bound and reference the moduledoc note rather than an exact equality.\n",
+      "created_at": "2026-06-17",
+      "scored_at": "2026-06-17",
+      "cross_repo": []
+    },
+    {
+      "id": 34,
+      "phase": 3,
+      "bundle": "consumer_math",
+      "milestone": "v0_3",
+      "status": "pending",
+      "title": "Differential test: delta_calc liquidation + funding-cost vs recorded ccxt venue spec (offline fixtures)",
+      "scores": {
+        "d": 4,
+        "b": 4,
+        "u": 4
+      },
+      "eff": 1.0,
+      "dep_layer": 1,
+      "unlocks": 0,
+      "markers": [],
+      "depends_on": [
+        26,
+        28,
+        30
+      ],
+      "assignee": "codex",
+      "model": "gpt-5.5",
+      "acceptance_criteria": [
+        "test/support/ccxt_fixtures/ holds recorded real ccxt responses (funding rate+interval, maintenance-margin tier, sample position+venue liq price) for >=2 venues with DIFFERENT funding intervals (e.g. 8h and 1h)",
+        "Funding differential: delta_calc daily funding cost with periods_per_day = 24/interval matches the venue figure per fixture; the 1h-interval fixture FAILS if any module assumes 3/day",
+        "Liquidation differential: PortfolioMargin.portfolio_liquidation_price matches the venue's published liq price within tight tolerance for the fixtured position",
+        "Calc.liquidation approximation error vs venue asserted within a documented bound (informational, references moduledoc note), not a hard build failure",
+        "Suite runs offline + deterministic; NO ccxt/HTTP runtime dependency added to delta_calc; live-refresh helper is :integration-tagged and excluded from mix ci"
+      ],
+      "out_of_scope": [
+        "No ccxt/HTTP runtime dependency in delta_calc lib or default test path - fixtures are static recorded data",
+        "Not live-market monitoring - point-in-time recorded spec only",
+        "Math-derived invariants are task 33; this is the venue-ground-truth complement"
+      ],
+      "files_to_modify": [
+        "test/delta_calc/ccxt_differential_test.exs",
+        "test/support/ccxt_fixtures/README.md"
+      ],
+      "body": "Add an OFFLINE differential-test suite cross-checking delta_calc output against REAL venue specifications recorded from ccxt (the live oracle), WITHOUT adding any runtime dependency on ccxt - fixtures are static recorded responses committed under test/support/ccxt_fixtures/. This catches the bug class the quant audit found that pure invariants cannot: a formula internally consistent but WRONG against a real exchange's published numbers (the cadence bugs, the liquidation-formula note). RustQuant/QuantLib were evaluated and rejected as oracles - they model no perp funding/liquidation/basis; ccxt's per-venue market metadata is the authoritative source.\n\nCover at minimum:\n- Funding cadence: for instruments with DIFFERENT funding intervals (Deribit BTC-PERPETUAL 8h, a Binance 8h pair, Hyperliquid 1h), record ccxt's funding rate + funding interval; assert delta_calc's daily/annual funding cost computed with periods_per_day = 24h / interval_hours matches the venue, and that NO module silently assumes 8h. Validates tasks 26/28/30 against ground truth.\n- Liquidation: record an exchange's maintenance-margin tier + a sample position with the venue's OWN published liquidation price; assert PortfolioMargin.portfolio_liquidation_price reproduces it within tight tolerance. Separately quantify Calc.liquidation's documented-approximation error vs the venue as an INFORMATIONAL assertion (looser bound, references the moduledoc note) - not a hard build failure.\n\nDocument the fixture-refresh procedure in test/support/ccxt_fixtures/README.md: capture via ccxt in a consumer BEAM that has both ccxt_client and delta_calc compiled (e.g. the dashboard node on :4025), then paste recorded JSON into the fixtures dir. The assertion suite itself must run offline and deterministically; any live-refresh helper is :integration-tagged and excluded from mix ci.\n",
       "created_at": "2026-06-17",
       "scored_at": "2026-06-17",
       "cross_repo": []

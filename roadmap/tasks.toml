@@ -827,7 +827,7 @@ id = 32
 phase = 3
 bundle = "consumer_math"
 milestone = "v0_3"
-status = "pending"
+status = "in_progress"
 title = "Fix StressScenario.cascade equity reset: realized losses of liquidated legs are discarded"
 scores = { d = 3, b = 4, u = 4 }
 acceptance_criteria = ["Example: equity 1000; long 3 @ mark 3000; short 1 @ mark 3000; shock -20% (mark -> 2400). Net PnL = 3*(2400-3000) + (-1)*(2400-3000) = -1200, true equity -200. After cascade, survives? is FALSE (insolvent), not true", "Equity after removing a liquidated leg is <= equity before removing it (liquidation never restores equity)", "New insolvent-book test would FAIL against the pre-fix reset-to-original-equity logic (verifies, does not ratify)", "StressScenario / PortfolioMargin money-math coverage >= 95%"]
@@ -841,6 +841,7 @@ cascade/2 -> cascade_positions/3 recurses on the ORIGINAL account (original equi
 Fix: thread the realized-loss-adjusted equity through the cascade. When the highest-margin leg is liquidated at its shocked mark, its loss must remain debited from equity for all subsequent rounds; survives? must reflect cumulative realized PnL of liquidated legs plus remaining-unrealized PnL of survivors. Removing a leg must never increase equity.
 """
 created_at = "2026-06-17"
+started_at = "2026-06-17"
 scored_at = "2026-06-17"
 
 [[task]]

@@ -1445,7 +1445,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Fix StressScenario.cascade equity reset: realized losses of liquidated legs are discarded",
       "scores": {
         "d": 3,
@@ -1475,6 +1475,7 @@
       ],
       "body": "cascade/2 -> cascade_positions/3 recurses on the ORIGINAL account (original equity, original marks) minus the removed leg, recomputing equity each round as shocked_account(remaining) = orig_equity + pnl(surviving legs only). The realized loss of every already-liquidated leg vanishes, so an insolvent book can report survives?: true.\n\nFix: thread the realized-loss-adjusted equity through the cascade. When the highest-margin leg is liquidated at its shocked mark, its loss must remain debited from equity for all subsequent rounds; survives? must reflect cumulative realized PnL of liquidated legs plus remaining-unrealized PnL of survivors. Removing a leg must never increase equity.\n",
       "created_at": "2026-06-17",
+      "started_at": "2026-06-17",
       "scored_at": "2026-06-17",
       "cross_repo": []
     },

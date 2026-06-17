@@ -783,7 +783,7 @@ id = 30
 phase = 3
 bundle = "consumer_math"
 milestone = "v0_3"
-status = "pending"
+status = "in_progress"
 title = "OptionsRisk: thread periods_per_day to MarginBridge (cadence locked to 3/day) + rename hardcoded total_90d field"
 scores = { d = 2, b = 3, u = 4 }
 acceptance_criteria = ["calculate_negative_funding_impact/1 and stress_test_extended_negative/2 expose funding cadence (periods_per_day, :value kind) and pass it through to MarginBridge.stress_test_prolonged_negative — currently they call it WITHOUT the param, silently locking every Deribit stress path to the 3/day default that task 26 made overridable; the venue assumption is reintroduced by omission at the consumer", "stress_test_extended_negative result key total_90d is renamed to reflect the configurable duration_days (default 90) — a caller passing duration_days: 30 currently gets a field literally named total_90d holding the 30-day total", "Tests cover a non-default cadence (24/day Deribit) flowing end-to-end through OptionsRisk into the per-row daily/total figures, proving the param is actually honored (not just accepted)", "Descripex api() updated for both functions; mix credo --strict and mix dialyzer.json clean; coverage >= 95% (money math)"]
@@ -794,6 +794,7 @@ module = "DeltaCalc.OptionsRisk"
 model = "grok-composer-2.5-fast"
 body = "Quant audit finding. OptionsRisk is the Deribit-options/margin-bridge consumer of MarginBridge, but it calls MarginBridge.stress_test_prolonged_negative without supplying periods_per_day, so every stress scenario uses the 3/day (8h) default with no caller override path. Task 26 parameterized cadence in MarginBridge precisely so venue funding frequency stops being baked in; OptionsRisk undoes that by omission — a Deribit consumer cannot correct the cadence through OptionsRisk's public API. Separately, the total_90d result key is a hardcoded name while duration_days is configurable (default 90), so the field label lies when duration_days != 90. Fix: expose periods_per_day on the two public stress functions and thread it down; rename the field to the configurable duration. Pure Decimal, no I/O. Same cadence class as tasks 26/28; this is the third (consumer-layer) instance. See CLAUDE.md 'Review Blind Spots'."
 created_at = "2026-06-17"
+started_at = "2026-06-17"
 scored_at = "2026-06-17"
 
 [[task]]

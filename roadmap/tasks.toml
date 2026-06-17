@@ -332,7 +332,7 @@ id = 12
 phase = 2
 bundle = "calc_primitives"
 milestone = "v0_2"
-status = "pending"
+status = "in_progress"
 title = "Build DeltaCalc.MarginBridge (perp-funded option financing math)"
 scores = { d = 4, b = 3, u = 3 }
 acceptance_criteria = ["margin_ratio, margin_runway_days, payback-timeline projection, stress_test_prolonged_negative implemented", "kill-switch condition computed (avg_funding_24h < threshold AND margin_ratio > 0.25)", "Every public fn carries a Descripex api() declaration before its @doc", "mix credo --strict and mix dialyzer.json clean; coverage >= 95%"]
@@ -343,6 +343,7 @@ module = "DeltaCalc.MarginBridge"
 model = "composer-2.5-fast"
 body = "New module for the dashboard's task 7.2 (Portfolio Margin Bridge Financing). Pure Decimal: margin_ratio = (initial_margin + option_premium)/capital; margin_runway_days = available_margin/daily_burn; payback = remaining_debt/daily_funding; stress_test_prolonged_negative (negative_rate x position_size x days -> total cost); kill-switch condition (avg_funding_24h < threshold AND margin_ratio > 0.25). Source of truth: TradingDashboard phase7.md MarginBridge/kill_switch specs. No OTP/persistence — math only. Manifest/README registration is task 16."
 created_at = "2026-06-17"
+started_at = "2026-06-17"
 scored_at = "2026-06-17"
 
 [[task]]

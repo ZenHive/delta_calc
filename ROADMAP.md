@@ -25,7 +25,7 @@ Source of truth: `roadmap/tasks.toml` (managed by [`rmap`](https://hex.pm/)). Th
 - **target_version:** 0.3.0
 - **status:** ⬜ pending
 - **hypothesis:** The math the dashboard reaches for at the call-site: position PnL/ROE/breakeven net of fees+funding, net-delta rebalancing from exchange-supplied option deltas, portfolio-margin liquidation across netted positions, price-shock stress scenarios, fee modeling, and funding carry/break-even. Consumer-driven (delta_calc IS the consumer's math layer). Option pricing stays out — exchange supplies Greeks/IV; BS is a future separate lib.
-- **pinned tasks:** 3/7 done
+- **pinned tasks:** 4/7 done
 <!-- MILESTONES:END -->
 
 ## Phase 1 — Extraction

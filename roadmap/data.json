@@ -1190,7 +1190,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "in_progress",
+      "status": "done",
       "title": "Fix DeltaCalc.MarginBridge hardcoded funding cadence (3/day overstates Deribit ~8x)",
       "scores": {
         "d": 2,
@@ -1219,10 +1219,15 @@
       "touches": [
         "lib/delta_calc/margin_bridge.ex"
       ],
+      "shipped_in": "aff011843816fd5279f2df9ab5ce5802c56cf8a8",
       "body": "Correctness bug found in review: margin_bridge.ex:13 hardcodes @funding_periods_per_day = 3 (8h-interval assumption), applied at line 316 in negative_funding_daily_cost/2 to scale a per-period funding rate into a daily cost. Deribit funds hourly (~24/day), so any Deribit-sourced figure is overstated. The real defect is baking a venue-specific funding cadence into a pure value-in/value-out lib. Fix: drop the module constant; make periods_per_day a caller-supplied :value parameter (sensible documented default for the existing 3/day callers) on the public stress-test function(s) that flow into negative_funding_daily_cost, and thread it through. Pure Decimal, no I/O. Manifest already registers the module; this only changes its public arity/params — keep the api() declaration accurate.",
       "created_at": "2026-06-17",
       "started_at": "2026-06-17",
+      "done_at": "2026-06-17",
       "scored_at": "2026-06-17",
+      "implemented": "Landed by cursor via merge-train; reviewer-approved (run run-1781694579547-6aef8479, aff011843816fd5279f2df9ab5ce5802c56cf8a8).",
+      "delivered_by": "cursor",
+      "verified": true,
       "cross_repo": []
     }
   ]

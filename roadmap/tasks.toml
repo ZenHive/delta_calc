@@ -681,3 +681,21 @@ model = "composer-2.5-fast"
 body = "Audit discovery (audit c695d69). Two public functions share the name project_payback_timeline but model different things with incompatible shapes: FundingProjection.project_payback_timeline/1 takes a params map and returns %{best_case, expected, worst_case} (volatility scenarios); MarginBridge.project_payback_timeline/3 takes (debt, daily_funding, opts) positionally and returns %{remaining_debt, daily_funding, days_to_payoff, projected_payoff_date} (single-scenario + date). For an agent discovering the surface via Descripex Manifest/MCP tools, two identically-named tools with different params/returns across namespaces is a real discoverability hazard. Rename one (e.g. MarginBridge -> payback_timeline or project_payoff_date) and update its api() declaration + README. Public-surface rename, so deferred from the hygiene audit rather than applied unilaterally."
 created_at = "2026-06-17"
 scored_at = "2026-06-17"
+
+[[task]]
+id = 26
+phase = 3
+bundle = "consumer_math"
+milestone = "v0_3"
+status = "pending"
+title = "Fix DeltaCalc.MarginBridge hardcoded funding cadence (3/day overstates Deribit ~8x)"
+scores = { d = 2, b = 4, u = 4 }
+acceptance_criteria = ["@funding_periods_per_day module constant removed; funding cadence becomes a caller-supplied :value param (periods_per_day) with a documented default on every public fn that scales per-period funding to a daily/duration cost", "negative_funding_daily_cost and its public callers (stress_test_*) thread the param; no venue cadence baked into the module", "Descripex api() updated: new periods_per_day param annotated :value with description of the cadence convention (8h=3/day, 1h=24/day Deribit)", "Tests cover 3/day and 24/day (Deribit) cadences; existing golden values preserved for the 3/day default", "mix credo --strict and mix dialyzer.json clean; coverage >= 95% (money math)"]
+files_to_modify = ["lib/delta_calc/margin_bridge.ex", "test/delta_calc/margin_bridge_test.exs"]
+touches = ["lib/delta_calc/margin_bridge.ex"]
+assignee = "cursor"
+module = "DeltaCalc.MarginBridge"
+model = "composer-2.5"
+body = "Correctness bug found in review: margin_bridge.ex:13 hardcodes @funding_periods_per_day = 3 (8h-interval assumption), applied at line 316 in negative_funding_daily_cost/2 to scale a per-period funding rate into a daily cost. Deribit funds hourly (~24/day), so any Deribit-sourced figure is overstated. The real defect is baking a venue-specific funding cadence into a pure value-in/value-out lib. Fix: drop the module constant; make periods_per_day a caller-supplied :value parameter (sensible documented default for the existing 3/day callers) on the public stress-test function(s) that flow into negative_funding_daily_cost, and thread it through. Pure Decimal, no I/O. Manifest already registers the module; this only changes its public arity/params — keep the api() declaration accurate."
+created_at = "2026-06-17"
+scored_at = "2026-06-17"

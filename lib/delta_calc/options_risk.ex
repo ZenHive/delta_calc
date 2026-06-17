@@ -380,6 +380,8 @@ defmodule DeltaCalc.OptionsRisk do
     end
   end
 
+  # Shared coercion shape also lives in MarginBridge; keep module-local for now.
+  # ex_dna:disable-for-lines:4
   defp to_decimal(%Decimal{} = value), do: value
   defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
   defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)

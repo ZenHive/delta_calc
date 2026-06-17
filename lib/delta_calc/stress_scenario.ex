@@ -164,7 +164,13 @@ defmodule DeltaCalc.StressScenario do
         id = position_id(position, index)
 
         {prefix, [_position | suffix]} = Enum.split(account.positions, index)
-        remaining = %{account | positions: prefix ++ suffix}
+
+        remaining = %{
+          account
+          | equity: realized_equity(account, position, shock),
+            positions: prefix ++ suffix
+        }
+
         cascade_positions(remaining, shock, [id | liquidated])
     end
   end
@@ -193,25 +199,36 @@ defmodule DeltaCalc.StressScenario do
   defp shocked_equity(account, shock) do
     pnl =
       Enum.reduce(account.positions, @zero, fn position, acc ->
-        quantity = to_decimal(position.quantity)
-        mark = to_decimal(position.mark_price)
-        shocked_mark = shocked_mark_price(mark, shock)
-
-        signed =
-          case position.side do
-            :long -> quantity
-            :short -> Decimal.negate(quantity)
-          end
-
-        delta = Decimal.sub(shocked_mark, mark)
-
-        acc |> Decimal.add(Decimal.mult(signed, delta))
+        Decimal.add(acc, position_pnl(position, shock))
       end)
 
     account.equity
     |> to_decimal()
     |> Decimal.add(pnl)
     |> Calc.quantize()
+  end
+
+  defp realized_equity(account, position, shock) do
+    account.equity
+    |> to_decimal()
+    |> Decimal.add(position_pnl(position, shock))
+    |> Calc.quantize()
+  end
+
+  defp position_pnl(position, shock) do
+    quantity = to_decimal(position.quantity)
+    mark = to_decimal(position.mark_price)
+    shocked_mark = shocked_mark_price(mark, shock)
+
+    signed =
+      case position.side do
+        :long -> quantity
+        :short -> Decimal.negate(quantity)
+      end
+
+    shocked_mark
+    |> Decimal.sub(mark)
+    |> Decimal.mult(signed)
   end
 
   defp shocked_mark_price(mark_price, shock_pct) do

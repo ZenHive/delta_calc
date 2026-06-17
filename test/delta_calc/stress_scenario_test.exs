@@ -128,12 +128,12 @@ defmodule DeltaCalc.StressScenarioTest do
       assert result.survives? == true
     end
 
-    test "liquidates highest-margin positions until the shocked book survives" do
+    test "keeps realized losses debited while cascading liquidations" do
       result = StressScenario.cascade(@net_long_account, Decimal.new("-20"))
 
-      assert result.liquidated_positions == [:btc_long]
+      assert result.liquidated_positions == [:btc_long, :btc_short]
       assert Decimal.equal?(result.margin_call, Decimal.new("224.00000000"))
-      assert result.survives? == true
+      assert result.survives? == false
     end
 
     test "reports survival false when equity remains negative after all positions are liquidated" do

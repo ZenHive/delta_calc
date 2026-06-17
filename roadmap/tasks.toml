@@ -116,22 +116,23 @@ id = 4
 phase = 1
 bundle = "calculators"
 milestone = "v0_1"
-status = "pending"
+status = "in_progress"
 title = "Port DeltaCalc.DCAPlanner"
-assignee = "claude"
-model = "claude-sonnet-4-6"
-module = "DeltaCalc.DCAPlanner"
 scores = { d = 2, b = 4, u = 4 }
 depends_on = [2, 3]
-files_to_modify = ["lib/delta_calc/dca_planner.ex"]
-touches = ["lib/delta_calc/dca_planner.ex"]
-body = "Lift TradingDashboard.Risk.DCAPlanner (lib/trading_dashboard/risk/dca_planner.ex) into DeltaCalc.DCAPlanner. Update the two aliases to DeltaCalc.Calc and DeltaCalc.Presets. Public surface: calculate_dca_ladder/1 (map) + /10 (backward-compat positional), build_defensive_preset/3, build_aggressive_preset/3, enhance_dca_steps/5. Logic unchanged — only the namespace of the aliased peers changes."
 acceptance_criteria = [
   "Compiles clean against the ported Calc/Presets",
   "Every public fn carries a Descripex api() declaration before its @doc (annotate at port time)",
   "mix credo --strict and mix dialyzer clean",
   "Tests added under task 7 cover calculate_dca_ladder/1",
 ]
+files_to_modify = ["lib/delta_calc/dca_planner.ex"]
+touches = ["lib/delta_calc/dca_planner.ex"]
+assignee = "claude"
+module = "DeltaCalc.DCAPlanner"
+model = "claude-sonnet-4-6"
+body = "Lift TradingDashboard.Risk.DCAPlanner (lib/trading_dashboard/risk/dca_planner.ex) into DeltaCalc.DCAPlanner. Update the two aliases to DeltaCalc.Calc and DeltaCalc.Presets. Public surface: calculate_dca_ladder/1 (map) + /10 (backward-compat positional), build_defensive_preset/3, build_aggressive_preset/3, enhance_dca_steps/5. Logic unchanged — only the namespace of the aliased peers changes."
+started_at = "2026-06-17"
 
 [[task]]
 id = 5

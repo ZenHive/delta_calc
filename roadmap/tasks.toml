@@ -61,16 +61,10 @@ id = 2
 phase = 1
 bundle = "calculators"
 milestone = "v0_1"
-status = "pending"
+status = "in_progress"
 title = "Port DeltaCalc.Calc (core engine) + its tests"
-assignee = "claude"
-model = "claude-sonnet-4-6"
-module = "DeltaCalc.Calc"
 scores = { d = 3, b = 5, u = 5 }
 depends_on = [1]
-files_to_modify = ["lib/delta_calc/calc.ex", "test/delta_calc/calc_test.exs", "test/delta_calc/golden_calc_test.exs", "test/delta_calc/dca_test.exs", "test/delta_calc/dca_property_test.exs"]
-touches = ["lib/delta_calc/calc.ex"]
-body = "Lift TradingDashboard.Risk.Calc (~/_DATA/code/TradingDashboard/lib/trading_dashboard/risk/calc.ex, 973 lines) into DeltaCalc.Calc. Pure Decimal, ZERO dependencies — namespace rename only, no logic changes. Port all 11 public fns: effective_leverage/2, leverage_to_aum/2, liquidation/4, allocate/5, position/5, multi_leg_position/3, safety/5, compare_dca_safety/8, convert_ladder_for_short/1, dca_ladder/8, quantize/1. Port the 4 source test files verbatim (rename module refs): test/trading_dashboard/risk/{calc_test,golden_calc_test,dca_test,dca_property_test}.exs."
 acceptance_criteria = [
   "All ~90 ported tests pass (incl. StreamData property tests)",
   "No reference to TradingDashboard.* remains",
@@ -78,6 +72,13 @@ acceptance_criteria = [
   "mix credo --strict and mix dialyzer clean",
   "Coverage of DeltaCalc.Calc >= 95% (critical money math)",
 ]
+files_to_modify = ["lib/delta_calc/calc.ex", "test/delta_calc/calc_test.exs", "test/delta_calc/golden_calc_test.exs", "test/delta_calc/dca_test.exs", "test/delta_calc/dca_property_test.exs"]
+touches = ["lib/delta_calc/calc.ex"]
+assignee = "claude"
+module = "DeltaCalc.Calc"
+model = "claude-sonnet-4-6"
+body = "Lift TradingDashboard.Risk.Calc (~/_DATA/code/TradingDashboard/lib/trading_dashboard/risk/calc.ex, 973 lines) into DeltaCalc.Calc. Pure Decimal, ZERO dependencies — namespace rename only, no logic changes. Port all 11 public fns: effective_leverage/2, leverage_to_aum/2, liquidation/4, allocate/5, position/5, multi_leg_position/3, safety/5, compare_dca_safety/8, convert_ladder_for_short/1, dca_ladder/8, quantize/1. Port the 4 source test files verbatim (rename module refs): test/trading_dashboard/risk/{calc_test,golden_calc_test,dca_test,dca_property_test}.exs."
+started_at = "2026-06-17"
 
 [[task]]
 id = 3

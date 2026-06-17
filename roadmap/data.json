@@ -869,7 +869,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Build DeltaCalc.PortfolioMargin (combined maintenance margin + netted liquidation)",
       "scores": {
         "d": 4,
@@ -899,6 +899,7 @@
       ],
       "body": "The capital-efficiency thesis: portfolio margin nets offsetting positions, which AccountMetrics (per-account/isolated) cannot express. Pure Decimal over the caller's position list + margin params (mmr rates, equity): combined_maintenance_margin/1 with netting, portfolio_liquidation_price/1 for the netted book, margin_usage/1. Inputs are exchange/account values the consumer already holds. No I/O. Feeds DeltaCalc.StressScenario (task 20). Manifest/README registration is task 23.",
       "created_at": "2026-06-17",
+      "started_at": "2026-06-17",
       "scored_at": "2026-06-17",
       "cross_repo": []
     },

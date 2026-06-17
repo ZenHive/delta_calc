@@ -212,6 +212,64 @@ defmodule DeltaCalc.MarginBridgeTest do
 
       assert result.kill_switch_day == nil
     end
+
+    test "default periods_per_day is 3 (8h funding cadence)" do
+      default =
+        MarginBridge.stress_test_prolonged_negative(
+          Decimal.new("-0.025"),
+          Decimal.new("60000"),
+          1
+        )
+
+      explicit =
+        MarginBridge.stress_test_prolonged_negative(
+          Decimal.new("-0.025"),
+          Decimal.new("60000"),
+          1,
+          periods_per_day: 3
+        )
+
+      assert Decimal.equal?(default.daily_cost, explicit.daily_cost)
+      assert Decimal.equal?(default.daily_cost, Decimal.new("45"))
+    end
+
+    test "Deribit hourly cadence (24 periods/day) scales daily cost 8x vs 8h default" do
+      result =
+        MarginBridge.stress_test_prolonged_negative(
+          Decimal.new("-0.025"),
+          Decimal.new("60000"),
+          90,
+          periods_per_day: 24
+        )
+
+      assert Decimal.equal?(result.daily_cost, Decimal.new("360"))
+      assert Decimal.equal?(result.total_cost, Decimal.new("32400"))
+    end
+
+    test "kill_switch_day shrinks with higher Deribit funding frequency" do
+      eight_hour =
+        MarginBridge.stress_test_prolonged_negative(
+          Decimal.new("-0.025"),
+          Decimal.new("60000"),
+          90,
+          periods_per_day: 3,
+          capital: Decimal.new("60000"),
+          initial_margin_ratio: Decimal.new("0.15")
+        )
+
+      deribit =
+        MarginBridge.stress_test_prolonged_negative(
+          Decimal.new("-0.025"),
+          Decimal.new("60000"),
+          90,
+          periods_per_day: 24,
+          capital: Decimal.new("60000"),
+          initial_margin_ratio: Decimal.new("0.15")
+        )
+
+      assert eight_hour.kill_switch_day == 134
+      assert deribit.kill_switch_day == 17
+    end
   end
 
   describe "check_kill_switch/2" do

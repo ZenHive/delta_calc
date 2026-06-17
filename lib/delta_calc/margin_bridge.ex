@@ -10,7 +10,7 @@ defmodule DeltaCalc.MarginBridge do
 
   @zero Decimal.new(0)
   @hundred Decimal.new(100)
-  @funding_periods_per_day Decimal.new(3)
+  @default_periods_per_day 3
   @kill_switch_margin_threshold Decimal.new("0.25")
   @default_kill_switch_funding_threshold Decimal.new("-0.02")
 
@@ -173,7 +173,9 @@ defmodule DeltaCalc.MarginBridge do
     params: [
       negative_rate: [
         kind: :value,
-        description: "Negative funding rate as percent per 8h period (e.g. -0.025).",
+        description:
+          "Negative funding rate as percent per funding period (e.g. -0.025); " <>
+            "scale to daily cost via `:periods_per_day` in opts.",
         schema: float()
       ],
       position_size: [
@@ -189,7 +191,10 @@ defmodule DeltaCalc.MarginBridge do
       opts: [
         kind: :value,
         default: [],
-        description: "Optional `:capital` and `:initial_margin_ratio` to compute kill_switch_day."
+        description:
+          "Optional keyword list. `:periods_per_day` — funding periods per calendar day " <>
+            "(default 3 for 8h venues; use 24 for Deribit hourly). " <>
+            "`:capital` and `:initial_margin_ratio` compute kill_switch_day."
       ]
     ],
     returns: %{
@@ -203,7 +208,8 @@ defmodule DeltaCalc.MarginBridge do
   @doc """
   Compute daily and total funding cost under prolonged negative rates.
 
-  Rate is percent per 8h funding period; daily cost assumes three periods per day.
+  `negative_rate` is percent per funding period. Scale to daily cost with
+  `periods_per_day` (default 3 for 8h funding; use 24 for Deribit hourly).
   """
   @spec stress_test_prolonged_negative(Decimal.t(), Decimal.t(), pos_integer(), keyword()) ::
           stress_test_result()
@@ -211,8 +217,9 @@ defmodule DeltaCalc.MarginBridge do
       when is_integer(duration_days) and duration_days > 0 do
     negative_rate = to_decimal(negative_rate)
     position_size = to_decimal(position_size)
+    periods_per_day = periods_per_day(opts)
 
-    daily_cost = negative_funding_daily_cost(negative_rate, position_size)
+    daily_cost = negative_funding_daily_cost(negative_rate, position_size, periods_per_day)
     total_cost = Decimal.mult(daily_cost, Decimal.new(duration_days))
 
     %{
@@ -308,12 +315,18 @@ defmodule DeltaCalc.MarginBridge do
     Date.add(from_date, days)
   end
 
-  defp negative_funding_daily_cost(negative_rate, position_size) do
+  defp periods_per_day(opts) do
+    opts
+    |> Keyword.get(:periods_per_day, @default_periods_per_day)
+    |> to_decimal()
+  end
+
+  defp negative_funding_daily_cost(negative_rate, position_size, periods_per_day) do
     negative_rate
     |> Decimal.abs()
     |> Decimal.div(@hundred)
     |> Decimal.mult(position_size)
-    |> Decimal.mult(@funding_periods_per_day)
+    |> Decimal.mult(periods_per_day)
   end
 
   defp kill_switch_day(_daily_cost, capital, initial_margin_ratio)

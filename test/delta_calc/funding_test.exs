@@ -100,6 +100,71 @@ defmodule DeltaCalc.FundingTest do
       assert Decimal.equal?(result.annual_apr_delta, Decimal.new("2518.50"))
     end
 
+    test "ranks mixed cadences by annualized rate instead of raw per-period rate" do
+      result =
+        Funding.compare_funding_rates(
+          %{
+            hourly: Decimal.new("0.0001"),
+            eight_hour: Decimal.new("0.0007")
+          },
+          %{hourly: 24, eight_hour: 3}
+        )
+
+      assert result.max_exchange == :hourly
+      assert result.min_exchange == :eight_hour
+      assert Decimal.equal?(result.delta, Decimal.new("0.0003"))
+      assert result.arbitrage_opportunity == false
+      refute Map.has_key?(result, :annual_apr_delta)
+
+      assert result.ranked == [
+               {:hourly, Decimal.new("0.0001")},
+               {:eight_hour, Decimal.new("0.0007")}
+             ]
+    end
+
+    test "keeps mixed-cadence annual APR delta positive after annualized ranking" do
+      result =
+        Funding.compare_funding_rates(
+          %{
+            hourly: Decimal.new("0.0003"),
+            eight_hour: Decimal.new("0.001")
+          },
+          %{hourly: 24, eight_hour: 3}
+        )
+
+      assert result.arbitrage_opportunity == true
+      assert result.max_exchange == :hourly
+      assert result.min_exchange == :eight_hour
+      assert Decimal.equal?(result.delta, Decimal.new("0.0042"))
+      assert Decimal.equal?(result.annual_apr_delta, Decimal.new("153.30"))
+      assert Decimal.compare(result.annual_apr_delta, Decimal.new(0)) == :gt
+    end
+
+    test "preserves scalar cadence comparison output" do
+      result =
+        Funding.compare_funding_rates(
+          %{
+            binance: Decimal.new("0.003"),
+            bybit: Decimal.new("0.001")
+          },
+          3
+        )
+
+      assert result == %{
+               binance: Decimal.new("0.003"),
+               bybit: Decimal.new("0.001"),
+               delta: Decimal.new("0.002000"),
+               max_exchange: :binance,
+               min_exchange: :bybit,
+               arbitrage_opportunity: true,
+               annual_apr_delta: Decimal.new("219.00"),
+               ranked: [
+                 {:binance, Decimal.new("0.003")},
+                 {:bybit, Decimal.new("0.001")}
+               ]
+             }
+    end
+
     test "returns insufficient_data for a single venue" do
       result = Funding.compare_funding_rates(%{binance: Decimal.new("0.001")})
 

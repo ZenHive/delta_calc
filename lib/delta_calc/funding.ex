@@ -15,6 +15,10 @@ defmodule DeltaCalc.Funding do
   @hours_per_day 24
   @days_per_year 365
   @hundred Decimal.new(100)
+  @mixed_cadence_arbitrage_threshold Decimal.mult(
+                                       @arbitrage_threshold,
+                                       Decimal.new(@default_periods_per_day)
+                                     )
 
   @type decimal_input :: Decimal.t() | number() | String.t()
   @type periods_per_day_input :: decimal_input() | %{atom() => decimal_input()}
@@ -127,6 +131,12 @@ defmodule DeltaCalc.Funding do
   `%{"BTCUSDT" => %{binance: rate, bybit: rate}}` for many.
   `periods_per_day` defaults to 3 for 8-hour funding; pass 24 for Deribit
   hourly funding or `%{venue => periods}` when venues use different cadences.
+  With a scalar cadence, `delta` and arbitrage detection use raw per-period
+  rates for unchanged 8-hour/24-hour behavior. With a venue cadence map, venues
+  are ranked by per-day-normalized rate (`rate * periods_per_day`), `delta` is
+  that daily spread, `annual_apr_delta` is the daily spread annualized to APR
+  percentage points, and the arbitrage threshold is the default 8-hour raw
+  threshold normalized to daily terms (`0.0005 * 3 = 0.0015`).
   """
   @spec compare_funding_rates(map(), periods_per_day_input()) :: map() | comparison_result()
   def compare_funding_rates(rates, periods_per_day \\ @default_periods_per_day)
@@ -235,6 +245,36 @@ defmodule DeltaCalc.Funding do
     }
   end
 
+  defp compare_single_symbol(rates, periods_per_day) when is_map(periods_per_day) do
+    decimal_rates = Map.new(rates, fn {venue, rate} -> {venue, ensure_decimal(rate)} end)
+    daily_rates = daily_rates(decimal_rates, periods_per_day)
+
+    {max_exchange, max_daily_rate} =
+      Enum.max_by(daily_rates, fn {_venue, rate} -> rate end, Decimal)
+
+    {min_exchange, min_daily_rate} =
+      Enum.min_by(daily_rates, fn {_venue, rate} -> rate end, Decimal)
+
+    delta = Decimal.sub(max_daily_rate, min_daily_rate)
+    arbitrage? = Decimal.compare(Decimal.abs(delta), @mixed_cadence_arbitrage_threshold) == :gt
+
+    base =
+      decimal_rates
+      |> Map.merge(%{
+        delta: Decimal.round(delta, 6),
+        max_exchange: max_exchange,
+        min_exchange: min_exchange,
+        arbitrage_opportunity: arbitrage?,
+        ranked: rank_venues(decimal_rates, daily_rates)
+      })
+
+    if arbitrage? do
+      Map.put(base, :annual_apr_delta, annual_apr_delta(delta))
+    else
+      base
+    end
+  end
+
   defp compare_single_symbol(rates, periods_per_day) do
     decimal_rates = Map.new(rates, fn {venue, rate} -> {venue, ensure_decimal(rate)} end)
     rate_values = Map.values(decimal_rates)
@@ -266,6 +306,21 @@ defmodule DeltaCalc.Funding do
     else
       base
     end
+  end
+
+  @spec daily_rates(map(), map()) :: map()
+  defp daily_rates(rates, periods_per_day_by_venue) do
+    Map.new(rates, fn {venue, rate} ->
+      {venue, Decimal.mult(rate, periods_per_day_for(periods_per_day_by_venue, venue))}
+    end)
+  end
+
+  @spec annual_apr_delta(Decimal.t()) :: Decimal.t()
+  defp annual_apr_delta(daily_delta) do
+    daily_delta
+    |> Decimal.mult(Decimal.new(@days_per_year))
+    |> Decimal.mult(@hundred)
+    |> Decimal.round(2)
   end
 
   @spec annual_apr_delta(
@@ -307,6 +362,16 @@ defmodule DeltaCalc.Funding do
     rates
     |> Enum.map(fn {venue, rate} -> {venue, ensure_decimal(rate)} end)
     |> Enum.sort_by(fn {_venue, rate} -> rate end, {:desc, Decimal})
+  end
+
+  @spec rank_venues(map(), map()) :: [{atom(), Decimal.t()}]
+  defp rank_venues(rates, comparable_rates) do
+    rates
+    |> Enum.map(fn {venue, rate} -> {venue, ensure_decimal(rate)} end)
+    |> Enum.sort_by(
+      fn {venue, _rate} -> Map.fetch!(comparable_rates, venue) end,
+      {:desc, Decimal}
+    )
   end
 
   @spec build_opportunity(String.t() | atom(), map()) :: map()

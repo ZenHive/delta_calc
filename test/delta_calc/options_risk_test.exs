@@ -290,6 +290,39 @@ defmodule DeltaCalc.OptionsRiskTest do
       assert result.health_status == :critical
     end
 
+    test "critical status between reduce and legacy 45% action threshold" do
+      result =
+        OptionsRisk.monitor_margin_bridge_health(%{
+          initial_margin: Decimal.new("13000"),
+          option_premium: Decimal.new("8500"),
+          capital: Decimal.new("60000"),
+          available_margin: Decimal.new("500"),
+          daily_burn: Decimal.new("10")
+        })
+
+      assert Decimal.compare(result.margin_ratio, Decimal.new("0.35")) == :gt
+      assert Decimal.compare(result.margin_ratio, Decimal.new("0.45")) == :lt
+      assert result.health_status == :critical
+    end
+
+    test "healthy at exactly the warning threshold" do
+      result =
+        OptionsRisk.monitor_margin_bridge_health(
+          %{
+            initial_margin: Decimal.new("6000"),
+            option_premium: Decimal.new("9000"),
+            capital: Decimal.new("60000"),
+            available_margin: Decimal.new("1000"),
+            daily_burn: Decimal.new("10")
+          },
+          warning: Decimal.new("0.25"),
+          reduce: Decimal.new("0.35")
+        )
+
+      assert Decimal.equal?(result.margin_ratio, Decimal.new("0.25"))
+      assert result.health_status == :healthy
+    end
+
     test "runway is nil when daily burn is non-positive" do
       result =
         OptionsRisk.monitor_margin_bridge_health(%{
@@ -303,7 +336,7 @@ defmodule DeltaCalc.OptionsRiskTest do
       assert result.runway_days == nil
     end
 
-    test "respects custom threshold opts" do
+    test "respects custom warning and reduce threshold opts" do
       result =
         OptionsRisk.monitor_margin_bridge_health(
           %{

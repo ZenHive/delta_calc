@@ -16,7 +16,6 @@ defmodule DeltaCalc.OptionsRisk do
   @default_duration_days 90
   @default_warning_threshold Decimal.new("0.25")
   @default_reduce_threshold Decimal.new("0.35")
-  @default_critical_threshold Decimal.new("0.45")
   @default_margin_impact_denominator Decimal.new("0.75")
 
   @type health_status :: :healthy | :warning | :critical
@@ -279,7 +278,8 @@ defmodule DeltaCalc.OptionsRisk do
       opts: [
         kind: :value,
         default: [],
-        description: "Optional :warning, :reduce, and :critical margin ratio thresholds."
+        description:
+          "Optional :warning and :reduce margin ratio thresholds (status becomes :critical above :reduce)."
       ]
     ],
     returns: %{
@@ -291,8 +291,9 @@ defmodule DeltaCalc.OptionsRisk do
   @doc """
   Evaluate margin-bridge health during the payback period.
 
-  Delegates ratio and runway math to `DeltaCalc.MarginBridge`. Status bands default to
-  phase7 thresholds: healthy ≤25%, warning ≤35%, critical above 35%.
+  Delegates ratio and runway math to `DeltaCalc.MarginBridge`. Three status bands default to
+  phase7 thresholds: healthy at or below 25%, warning above 25% through 35%, critical above
+  the `:reduce` threshold (default 35%).
   """
   @spec monitor_margin_bridge_health(map(), keyword()) :: margin_health()
   def monitor_margin_bridge_health(params, opts \\ []) do
@@ -307,12 +308,11 @@ defmodule DeltaCalc.OptionsRisk do
 
     warning = opts |> Keyword.get(:warning, @default_warning_threshold) |> to_decimal()
     reduce = opts |> Keyword.get(:reduce, @default_reduce_threshold) |> to_decimal()
-    critical = opts |> Keyword.get(:critical, @default_critical_threshold) |> to_decimal()
 
     %{
       margin_ratio: margin_ratio,
       runway_days: runway_days,
-      health_status: health_status(margin_ratio, warning, reduce, critical)
+      health_status: health_status(margin_ratio, warning, reduce)
     }
   end
 
@@ -371,8 +371,8 @@ defmodule DeltaCalc.OptionsRisk do
     end
   end
 
-  @spec health_status(Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t()) :: health_status()
-  defp health_status(margin_ratio, warning, reduce, _critical) do
+  @spec health_status(Decimal.t(), Decimal.t(), Decimal.t()) :: health_status()
+  defp health_status(margin_ratio, warning, reduce) do
     cond do
       Decimal.compare(margin_ratio, reduce) == :gt -> :critical
       Decimal.compare(margin_ratio, warning) == :gt -> :warning

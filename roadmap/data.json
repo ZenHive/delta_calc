@@ -675,7 +675,7 @@
       "phase": 2,
       "bundle": "calc_primitives",
       "milestone": "v0_2",
-      "status": "in_progress",
+      "status": "done",
       "title": "Build DeltaCalc.OptionsRisk (long-option risk + funding stress)",
       "scores": {
         "d": 4,
@@ -705,10 +705,15 @@
       "touches": [
         "lib/delta_calc/options_risk.ex"
       ],
+      "shipped_in": "4d0054e3ab50df9f9cc827bed6f392c3b704ec22",
       "body": "New module for the dashboard's task 7.6a (Risk Management for option buyers). Pure Decimal: max-loss = premium framing; calculate_total_exposure (spot + perp + options + margin_debt); calculate_negative_funding_impact (daily_cost, cash-flow risk); stress_test_extended_negative (scenarios x {rate, daily, total_90d, margin_impact}); monitor_margin_bridge_health (margin_ratio, runway_days, health_status) reusing DeltaCalc.MarginBridge. Source of truth: TradingDashboard phase7.md OptionsRisk/funding_stress_test specs. Manifest/README registration is task 16.",
       "created_at": "2026-06-17",
       "started_at": "2026-06-17",
+      "done_at": "2026-06-17",
       "scored_at": "2026-06-17",
+      "implemented": "Landed by cursor via merge-train; reviewer-approved (run run-1781662913473-cd6757e6, 4d0054e3ab50df9f9cc827bed6f392c3b704ec22).",
+      "delivered_by": "cursor",
+      "verified": true,
       "cross_repo": []
     },
     {

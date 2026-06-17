@@ -1411,7 +1411,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Fix Calc.compare_dca_safety side-blind PnL (multi_leg_position computes short as long)",
       "scores": {
         "d": 3,

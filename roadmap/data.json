@@ -1611,6 +1611,38 @@
       "delivered_by": "codex",
       "verified": true,
       "cross_repo": []
+    },
+    {
+      "id": 35,
+      "phase": 3,
+      "bundle": "consumer_math",
+      "status": "pending",
+      "title": "Fix Funding.compare_funding_rates cross-cadence ranking: max/min and arbitrage from raw rates, annualized at per-venue cadence",
+      "scores": {
+        "d": 4,
+        "b": 6,
+        "u": 6
+      },
+      "eff": 1.5,
+      "dep_layer": 0,
+      "unlocks": 0,
+      "markers": [],
+      "depends_on": [],
+      "acceptance_criteria": [
+        "Mixed-cadence compare_funding_rates never returns a negative annual_apr_delta",
+        "max_exchange/min_exchange reflect the highest/lowest ANNUALIZED rate when cadences differ",
+        "Same-cadence (scalar periods_per_day) output is byte-identical to current behavior",
+        "Arbitrage threshold semantics under mixed cadence are documented in the @doc",
+        "Regression test covers the hourly-vs-8h ranking-inversion trigger"
+      ],
+      "out_of_scope": [
+        "Changing same-cadence ranking behavior",
+        "Live exchange/ccxt integration"
+      ],
+      "body": "Audit-surfaced bug (Codex second-opinion, audit pass on 0da3fcf..HEAD; see .audit/bb6175c.md).\n\n`DeltaCalc.Funding.compare_single_symbol/2` selects `max_exchange`/`min_exchange`, `delta`, and the `arbitrage_opportunity` flag from RAW per-period funding rates, but `annual_apr_delta/5` then annualizes each venue at its OWN cadence (`periods_per_day_for(venue)`) and subtracts. When venues have different cadences (the `%{venue => periods}` form introduced by task 28), the annualized spread can come out NEGATIVE and the venue labels invert.\n\nSpecific trigger:\n  Funding.compare_funding_rates(\n    %{hourly: Decimal.new(\"0.0001\"), eight_hour: Decimal.new(\"0.0007\")},\n    %{hourly: 24, eight_hour: 3}\n  )\nranks :eight_hour as max by raw rate (0.0007 > 0.0001), then annual_apr_delta = (0.0007*3*365*100) - (0.0001*24*365*100) = 76.65 - 87.60 = -10.95 — even though the hourly venue has the HIGHER annualized rate (87.60% vs 76.65%). max_exchange/min_exchange are mislabeled and the APR delta is negative/nonsensical.\n\nThe deeper question is a domain decision: `@arbitrage_threshold 0.0005` is a raw per-period value with no defined meaning across cadences. Decide whether cross-cadence ranking + arbitrage detection should operate on annualized (or per-day-normalized) rates throughout, and what the threshold becomes in those units. Same-cadence (scalar periods_per_day) behavior must stay unchanged — raw and annualized ranking agree when the cadence is constant, so only the mixed-cadence path changes.\n\nAdd a property/unit test for the mixed-cadence ranking inversion so coverage no longer ratifies the bug.\n",
+      "created_at": "2026-06-17",
+      "scored_at": "2026-06-17",
+      "cross_repo": []
     }
   ]
 }

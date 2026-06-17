@@ -127,7 +127,7 @@ defmodule DeltaCalc.CcxtDifferentialTest do
       )
     end
 
-    test "Calc.liquidation approximation quantifies error vs venue within documented loose bound (informational)" do
+    test "Calc.liquidation approximation stays within the documented loose bound" do
       row = load_fixture!(@fixtures_path) |> Map.fetch!("liquidation")
       position = Map.fetch!(row, "position")
       venue_liquidation = decimal_at!(row, "venue_liquidation_price")
@@ -153,16 +153,12 @@ defmodule DeltaCalc.CcxtDifferentialTest do
         |> Decimal.div(venue_liquidation)
         |> Decimal.mult(@hundred)
 
-      within_bound = Decimal.compare(error_pct, bound) != :gt
-
-      # Informational — Calc.liquidation/4 is a simplified model (see moduledoc); warns, does not gate CI.
-      assert within_bound or
-               match?(
-                 :ok,
-                 IO.warn(
-                   "Calc.liquidation/4 error #{Decimal.to_string(error_pct, :normal)}% exceeds loose bound #{Decimal.to_string(bound, :normal)}% vs venue oracle"
-                 )
-               )
+      # Calc.liquidation/4 is a documented simplified model (see moduledoc); the fixture's
+      # loose bound (1.0% vs ~0.30% actual) gives headroom. A differential oracle must still
+      # gate: gross regression past the loose bound is a real failure, not informational noise.
+      assert Decimal.compare(error_pct, bound) != :gt,
+             "Calc.liquidation/4 error #{Decimal.to_string(error_pct, :normal)}% exceeds documented loose bound " <>
+               "#{Decimal.to_string(bound, :normal)}% vs venue oracle #{Decimal.to_string(venue_liquidation, :normal)}"
     end
   end
 

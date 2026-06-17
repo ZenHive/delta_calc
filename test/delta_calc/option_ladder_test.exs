@@ -219,6 +219,11 @@ defmodule DeltaCalc.OptionLadderTest do
       assert result.action == :reduce_size
       assert Decimal.equal?(result.adjusted_size, Decimal.new("60.00"))
     end
+
+    test "accepts default opts arity" do
+      assert OptionLadder.iv_adjusted_size(Decimal.new("100"), iv_percentile: 55).action ==
+               :normal_size
+    end
   end
 
   describe "api() hints" do

@@ -305,8 +305,8 @@
         5,
         6
       ],
-      "assignee": "claude",
-      "model": "claude-sonnet-4-6",
+      "assignee": "cursor",
+      "model": "composer-2.5-fast",
       "acceptance_criteria": [
         "calculate_position/2 and calculate_dca_ladder/1 each have dedicated passing tests",
         "DeltaCalc.Hedging fully covered incl. boundary cases",
@@ -346,8 +346,8 @@
         5,
         6
       ],
-      "assignee": "claude",
-      "model": "claude-sonnet-4-6",
+      "assignee": "grok",
+      "model": "grok-composer-2.5-fast",
       "acceptance_criteria": [
         "README documents each module with a runnable example",
         "DeltaCalc.Manifest.build/0 returns the aggregated api surface; Descripex.MCP.tools/1 lists every public fn",

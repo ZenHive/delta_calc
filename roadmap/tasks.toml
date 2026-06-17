@@ -199,8 +199,8 @@ bundle = "calculators"
 milestone = "v0_1"
 status = "pending"
 title = "Backfill tests for PositionCalculator, DCAPlanner, Hedging"
-assignee = "claude"
-model = "claude-sonnet-4-6"
+assignee = "cursor"
+model = "composer-2.5-fast"
 scores = { d = 3, b = 5, u = 4 }
 depends_on = [4, 5, 6]
 files_to_modify = ["test/delta_calc/position_calculator_test.exs", "test/delta_calc/dca_planner_test.exs", "test/delta_calc/hedging_test.exs"]
@@ -219,8 +219,8 @@ bundle = "calculators"
 milestone = "v0_1"
 status = "pending"
 title = "README + API docs + agent manifest + tighten doctor thresholds"
-assignee = "claude"
-model = "claude-sonnet-4-6"
+assignee = "grok"
+model = "grok-composer-2.5-fast"
 scores = { d = 1, b = 3, u = 4 }
 markers = ["docs"]
 depends_on = [2, 3, 4, 5, 6]

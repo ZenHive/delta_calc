@@ -1332,7 +1332,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "in_progress",
+      "status": "done",
       "title": "Fix Carry.annualized_basis misnomer: returns raw basis, not annualized (+ basis_yield stock/flow mismatch)",
       "scores": {
         "d": 3,
@@ -1361,10 +1361,15 @@
       "touches": [
         "lib/delta_calc/carry.ex"
       ],
+      "shipped_in": "11eb9b7349189058a03b3bd8c15e30ec469d6fb1",
       "body": "Quant audit finding (live-data grounded). Carry.annualized_basis/2 is misnamed: the body is raw (perp-spot)/spot*100 with no time component and no way to annualize (no expiry/days arg) — confirmed on live Deribit/BTC where it returns 0.33651323, exactly the raw instantaneous basis. The name and the api() hint both say 'annualized percentage', and net_carry exposes the value under an :annualized_basis key, so a consumer trusting the manifest gets a wrong-by-definition number. Compounding it, basis_yield time-prorates this one-time basis (a stock) by holding_days/365 and adds it to funding_yield (a per-period flow summed over the holding period) — different time bases summed into net_yield/profitable?. carry_test.exs ratifies the misnomer (asserts the raw value as an 'annual percentage'). This is exactly the domain-ground-truth blind spot from CLAUDE.md 'Review Blind Spots': internally consistent, fully tested, passes every mechanical gate, still wrong. Fix the naming/units and re-derive the goldens from first principles. Pure Decimal, no I/O.",
       "created_at": "2026-06-17",
       "started_at": "2026-06-17",
+      "done_at": "2026-06-17",
       "scored_at": "2026-06-17",
+      "implemented": "Landed by cursor via merge-train; reviewer-approved (run run-1781705396572-1d747bbe, 11eb9b7349189058a03b3bd8c15e30ec469d6fb1).",
+      "delivered_by": "cursor",
+      "verified": true,
       "cross_repo": []
     },
     {

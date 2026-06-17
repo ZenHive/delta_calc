@@ -138,8 +138,62 @@ defmodule DeltaCalc.FeesTest do
   end
 
   describe "funding_adjusted_breakeven/3" do
-    test "returns long breakeven with exact two-leg fee model" do
+    # Net PnL realized by closing a position of `size` opened at `entry` at price `close`,
+    # paying open/close fees on each leg's notional and collecting signed `funding`.
+    # At the true breakeven price this must be (approximately) zero.
+    defp net_pnl(:long, entry, close, size, open_rate, close_rate, funding) do
+      gross = entry |> Decimal.sub(close) |> Decimal.negate() |> Decimal.mult(size)
+      fees = leg_fees(entry, close, size, open_rate, close_rate)
+      gross |> Decimal.sub(fees) |> Decimal.add(funding)
+    end
+
+    defp net_pnl(:short, entry, close, size, open_rate, close_rate, funding) do
+      gross = entry |> Decimal.sub(close) |> Decimal.mult(size)
+      fees = leg_fees(entry, close, size, open_rate, close_rate)
+      gross |> Decimal.sub(fees) |> Decimal.add(funding)
+    end
+
+    defp leg_fees(entry, close, size, open_rate, close_rate) do
+      open_fee = entry |> Decimal.mult(size) |> Decimal.mult(open_rate)
+      close_fee = close |> Decimal.mult(size) |> Decimal.mult(close_rate)
+      Decimal.add(open_fee, close_fee)
+    end
+
+    defp assert_breaks_even(side, entry, breakeven, size, open_rate, close_rate, funding) do
+      net = net_pnl(side, entry, breakeven, size, open_rate, close_rate, funding)
+      # breakeven is quantized to 8 dp, so allow a sub-cent residual.
+      assert Decimal.compare(Decimal.abs(net), Decimal.new("0.0001")) == :lt,
+             "expected net PnL ~0 at breakeven, got #{Decimal.to_string(net)}"
+    end
+
+    test "long breakeven (no funding) yields zero net PnL" do
       result =
+        Fees.funding_adjusted_breakeven(
+          @fill,
+          %{
+            size: Decimal.new("2"),
+            open_fee_rate: @fee_rate,
+            close_fee_rate: Decimal.new("0.0002"),
+            side: :long
+          },
+          Decimal.new("0")
+        )
+
+      assert Decimal.compare(result, @fill) == :gt
+
+      assert_breaks_even(
+        :long,
+        @fill,
+        result,
+        Decimal.new("2"),
+        @fee_rate,
+        Decimal.new("0.0002"),
+        Decimal.new("0")
+      )
+    end
+
+    test "received funding lowers long breakeven and still nets zero" do
+      base =
         Fees.funding_adjusted_breakeven(
           @fill,
           %{
@@ -151,15 +205,25 @@ defmodule DeltaCalc.FeesTest do
           Decimal.new("0")
         )
 
-      expected =
-        @fill
-        |> Decimal.mult(Decimal.add(Decimal.new("1"), @fee_rate))
-        |> Decimal.div(Decimal.sub(Decimal.new("1"), @fee_rate))
+      funding = Decimal.new("10")
 
-      assert Decimal.equal?(result, Decimal.round(expected, 8))
+      result =
+        Fees.funding_adjusted_breakeven(
+          @fill,
+          %{
+            size: Decimal.new("1"),
+            open_fee_rate: @fee_rate,
+            close_fee_rate: @fee_rate,
+            side: :long
+          },
+          funding
+        )
+
+      assert Decimal.compare(result, base) == :lt
+      assert_breaks_even(:long, @fill, result, Decimal.new("1"), @fee_rate, @fee_rate, funding)
     end
 
-    test "adds paid funding to long breakeven" do
+    test "paid funding raises long breakeven and still nets zero" do
       funding = Decimal.new("-10")
 
       result =
@@ -174,17 +238,10 @@ defmodule DeltaCalc.FeesTest do
           funding
         )
 
-      numerator =
-        @fill
-        |> Decimal.mult(Decimal.add(Decimal.new("1"), @fee_rate))
-        |> Decimal.add(funding)
-
-      expected = Decimal.div(numerator, Decimal.sub(Decimal.new("1"), @fee_rate))
-
-      assert Decimal.equal?(result, Decimal.round(expected, 8))
+      assert_breaks_even(:long, @fill, result, Decimal.new("1"), @fee_rate, @fee_rate, funding)
     end
 
-    test "returns short breakeven below entry when funding is zero" do
+    test "short breakeven is below entry and nets zero" do
       result =
         Fees.funding_adjusted_breakeven(
           @fill,
@@ -197,16 +254,32 @@ defmodule DeltaCalc.FeesTest do
           Decimal.new("0")
         )
 
-      expected =
-        @fill
-        |> Decimal.mult(Decimal.sub(Decimal.new("1"), @fee_rate))
-        |> Decimal.div(Decimal.add(Decimal.new("1"), @fee_rate))
-
       assert Decimal.compare(result, @fill) == :lt
-      assert Decimal.equal?(result, Decimal.round(expected, 8))
+
+      assert_breaks_even(
+        :short,
+        @fill,
+        result,
+        Decimal.new("1"),
+        @fee_rate,
+        @fee_rate,
+        Decimal.new("0")
+      )
     end
 
-    test "subtracts received funding from short breakeven requirement" do
+    test "received funding raises short breakeven and still nets zero" do
+      base =
+        Fees.funding_adjusted_breakeven(
+          @fill,
+          %{
+            size: Decimal.new("1"),
+            open_fee_rate: @fee_rate,
+            close_fee_rate: @fee_rate,
+            side: :short
+          },
+          Decimal.new("0")
+        )
+
       funding = Decimal.new("10")
 
       result =
@@ -221,14 +294,8 @@ defmodule DeltaCalc.FeesTest do
           funding
         )
 
-      numerator =
-        @fill
-        |> Decimal.mult(Decimal.sub(Decimal.new("1"), @fee_rate))
-        |> Decimal.sub(funding)
-
-      expected = Decimal.div(numerator, Decimal.add(Decimal.new("1"), @fee_rate))
-
-      assert Decimal.equal?(result, Decimal.round(expected, 8))
+      assert Decimal.compare(result, base) == :gt
+      assert_breaks_even(:short, @fill, result, Decimal.new("1"), @fee_rate, @fee_rate, funding)
     end
 
     test "returns entry unchanged when size is zero" do

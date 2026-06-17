@@ -256,7 +256,7 @@ defmodule DeltaCalc.Fees do
       entry
       |> Decimal.mult(Decimal.add(@one, open_rate))
       |> Decimal.mult(size)
-      |> Decimal.add(funding)
+      |> Decimal.sub(funding)
 
     denominator = Decimal.mult(size, Decimal.sub(@one, close_rate))
     Decimal.div(numerator, denominator)
@@ -267,7 +267,7 @@ defmodule DeltaCalc.Fees do
       entry
       |> Decimal.mult(Decimal.sub(@one, open_rate))
       |> Decimal.mult(size)
-      |> Decimal.sub(funding)
+      |> Decimal.add(funding)
 
     denominator = Decimal.mult(size, Decimal.add(@one, close_rate))
     Decimal.div(numerator, denominator)

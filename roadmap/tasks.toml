@@ -786,7 +786,7 @@ id = 30
 phase = 3
 bundle = "consumer_math"
 milestone = "v0_3"
-status = "in_progress"
+status = "pending"
 title = "OptionsRisk: thread periods_per_day to MarginBridge (cadence locked to 3/day) + rename hardcoded total_90d field"
 scores = { d = 2, b = 3, u = 4 }
 acceptance_criteria = ["calculate_negative_funding_impact/1 and stress_test_extended_negative/2 expose funding cadence (periods_per_day, :value kind) and pass it through to MarginBridge.stress_test_prolonged_negative — currently they call it WITHOUT the param, silently locking every Deribit stress path to the 3/day default that task 26 made overridable; the venue assumption is reintroduced by omission at the consumer", "stress_test_extended_negative result key total_90d is renamed to reflect the configurable duration_days (default 90) — a caller passing duration_days: 30 currently gets a field literally named total_90d holding the 30-day total", "Tests cover a non-default cadence (24/day Deribit) flowing end-to-end through OptionsRisk into the per-row daily/total figures, proving the param is actually honored (not just accepted)", "Descripex api() updated for both functions; mix credo --strict and mix dialyzer.json clean; coverage >= 95% (money math)"]

@@ -431,6 +431,8 @@ Projects with `landing_policy: :auto` and `target_branch`:
 
 Conflict / push-rejected retains the branch for repair — never lands red. Witness notification (read-only sink) alerts the operator; it is **not** a merge gate.
 
+**🚨 Settle ≠ landed — don't conflate the two signals.** `dispatch-await` / `dispatch-await_runs` block until **reviewer settle** (`state: :done, verdict: approve`, or `:failed`), which fires the *moment the reviewer approves* — **before** the serialized `landing_<name>` job rebases and ff-pushes. So an `approve` from `await_runs` means "approved and *queued* to land," **not** "on `origin/<target>`." There is **no blocking await-landed tool**; landing is async and surfaces via the witness sink (`Harness.Notification.FileSink` tailing `~/.harness/settled.jsonl`, or `CommandSink`). To gate a next wave on the base actually moving forward, await settle **then** confirm the land against origin once (`git fetch origin <target> && git log --oneline origin/<target>` for the `task <id> -> done (shipped …)` commit) or consume the witness event — never treat approval as landed. This is the same root cause as the duplicate-land trap above, seen from the dispatch side: a poll loop watching `origin` for the landing commit is a workaround for a *fixed* `await_runs`, not a substitute for it — await settles, origin confirms the land.
+
 **Cron manual-approval mode.** A per-project cron poller in `:auto` mode dispatches unattended; in `:manual` mode it **parks** each dispatch decision instead of enqueuing — drain the parked decisions with `dispatch-pending` and approve them with `dispatch-approve`, keeping the orchestrator in the loop for autonomous polling.
 
 ### Portfolio Conventions
@@ -525,18 +527,18 @@ To start working in a new worktree, open a fresh Claude Code session in that dir
 
 ## After PR Merge — `audit-review` Is Deferred
 
-`staged-review:audit-review` catches hygiene drift (extractions, doc gaps, missing TODO markers, ROADMAP/CHANGELOG drift) that pre-commit `code-review` may have skipped, writes `.audit/<sha>.md` reports, and lands one `audit(...)` commit on the default branch.
+`review:audit-review` catches hygiene drift (extractions, doc gaps, missing TODO markers, ROADMAP/CHANGELOG drift) that pre-commit `code-review` may have skipped, writes `.audit/<sha>.md` reports, and lands one `audit(...)` commit on the default branch.
 
 **Not chained off `gh pr merge`.** The post-merge tail ends at branch cleanup. The `staged-review` plugin's SessionStart hook (`check-unaudited-commits.sh`, ≥3 unaudited threshold) surfaces accumulated tails next session:
 
 ```
-/staged-review:audit-status        # read-only snapshot of unaudited commits per branch
+/review:audit-status        # read-only snapshot of unaudited commits per branch
 Skill(audit-review) <range>        # batched audit over the accumulated range
 ```
 
 `<range>` is typically `<last-audit-sha>..<default-branch-HEAD>` — one batched pass covers all merge SHAs since the last audit.
 
-**Manual override:** `/staged-review:audit-review [<sha>|<range>]` for catch-up audits, batch passes, or compliance asks.
+**Manual override:** `/review:audit-review [<sha>|<range>]` for catch-up audits, batch passes, or compliance asks.
 
 **Tiny-commit fast path.** For commits ≤100 LOC AND no `lib/` (or language equivalent) touched, the skill skips Codex dispatch and writes a `verdict: clean — fast-path` report. No separate skip flag needed; if every commit in the range is fast-path-eligible, the audit is cosmetic and ends in seconds.
 
@@ -599,7 +601,7 @@ A project can opt out of the worktree workflow by pinning a memory file under `~
 - `~/.claude/includes/critical-rules.md` § "NEVER COMMIT WITHOUT EXPLICIT REQUEST" — the relaxed rule for tracked worktrees
 - `~/.claude/includes/delegation-rules.md` — strict rules that stay strict (cloud-agent branches); auto-merge loosened for cloud-agent PRs
 - `~/.claude/includes/task-prioritization.md` § "Parallel Work (`parallel` marker)" — when roadmap-tracked work uses worktrees
-- `staged-review:audit-review` skill — the post-merge hygiene pass
+- `review:audit-review` skill — the post-merge hygiene pass
 
 
 <!-- Setup-window imports — drop once the library is fully ported; the elixir:* /
@@ -967,6 +969,29 @@ value-out functions.
 `mix ci` (format, compile `--warnings-as-errors`, test, `credo --strict`, dialyzer,
 `ex_dna --max-clones 0`, `reach.check --arch --smells`). Coverage tiers: ≥80% standard,
 ≥95% on `Calc`/`Hedging` money math.
+
+## Review Blind Spots — Encode What Per-Task Review Can't See
+
+The harness reviewer grades **one diff against one task**: mechanical checks (credo/dialyzer/
+coverage), the task's stated acceptance criteria, and internal consistency. It cannot see two
+things, and real correctness bugs landed clean through both gaps (tasks 24/25/26):
+
+- **Domain ground truth.** A hardcoded venue constant (`@funding_periods_per_day 3`, an 8h-interval
+  assumption that overstates Deribit's hourly funding ~8×) is internally consistent, fully tested,
+  and passes every check — because the golden test was computed *with* the wrong constant, so
+  coverage ratifies the bug instead of catching it. The reviewer has no signal the value is wrong;
+  that knowledge lives in the consumer's head. **Fix: push domain invariants into acceptance
+  criteria** — e.g. "no venue-specific constants; funding cadence / fee tier / interval is a
+  caller-supplied `:value` param." Then the reviewer *can* reject the hardcode.
+- **Cross-module global invariants.** Write-set-disjoint parallel dispatch means two modules can
+  each define `project_payback_timeline` in separate worktrees and neither review sees the other —
+  the name collision only surfaces at the consumer. **Fix: the manifest-consistency test**
+  (`mix ci`) asserts public name+arity uniqueness across all registered modules, full module
+  registration in `DeltaCalc.Manifest`, and the `:hints`-present invariant. Turn global invariants
+  into CI failures, not consumer discoveries.
+
+Rule of thumb: if a defect can only be caught by knowing the *domain* or seeing the *whole surface*,
+no per-task reviewer will catch it — encode it as an acceptance criterion or a manifest-wide test.
 
 ## AGENTS.md is generated — regenerate after editing CLAUDE.md
 

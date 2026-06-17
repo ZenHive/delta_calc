@@ -44,6 +44,29 @@ value-out functions.
 `ex_dna --max-clones 0`, `reach.check --arch --smells`). Coverage tiers: ≥80% standard,
 ≥95% on `Calc`/`Hedging` money math.
 
+## Review Blind Spots — Encode What Per-Task Review Can't See
+
+The harness reviewer grades **one diff against one task**: mechanical checks (credo/dialyzer/
+coverage), the task's stated acceptance criteria, and internal consistency. It cannot see two
+things, and real correctness bugs landed clean through both gaps (tasks 24/25/26):
+
+- **Domain ground truth.** A hardcoded venue constant (`@funding_periods_per_day 3`, an 8h-interval
+  assumption that overstates Deribit's hourly funding ~8×) is internally consistent, fully tested,
+  and passes every check — because the golden test was computed *with* the wrong constant, so
+  coverage ratifies the bug instead of catching it. The reviewer has no signal the value is wrong;
+  that knowledge lives in the consumer's head. **Fix: push domain invariants into acceptance
+  criteria** — e.g. "no venue-specific constants; funding cadence / fee tier / interval is a
+  caller-supplied `:value` param." Then the reviewer *can* reject the hardcode.
+- **Cross-module global invariants.** Write-set-disjoint parallel dispatch means two modules can
+  each define `project_payback_timeline` in separate worktrees and neither review sees the other —
+  the name collision only surfaces at the consumer. **Fix: the manifest-consistency test**
+  (`mix ci`) asserts public name+arity uniqueness across all registered modules, full module
+  registration in `DeltaCalc.Manifest`, and the `:hints`-present invariant. Turn global invariants
+  into CI failures, not consumer discoveries.
+
+Rule of thumb: if a defect can only be caught by knowing the *domain* or seeing the *whole surface*,
+no per-task reviewer will catch it — encode it as an acceptance criterion or a manifest-wide test.
+
 ## AGENTS.md is generated — regenerate after editing CLAUDE.md
 
 `AGENTS.md` is **not** hand-authored: it's the Codex-facing view of this file, produced by

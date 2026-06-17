@@ -1125,7 +1125,7 @@
       ],
       "assignee": "cursor",
       "module": "DeltaCalc.OptionsRisk",
-      "model": "composer-2.5-fast",
+      "model": "composer-2.5",
       "acceptance_criteria": [
         "health_status either consumes the :critical threshold (4th band) or the :critical opt + @default_critical_threshold are removed and the api()/doc updated",
         "Decide intended band model: 3-band (healthy/warning/critical) vs 4-band; align type, thresholds, doc, and api() opts",
@@ -1165,7 +1165,7 @@
       ],
       "assignee": "cursor",
       "module": "DeltaCalc.MarginBridge",
-      "model": "composer-2.5-fast",
+      "model": "composer-2.5",
       "acceptance_criteria": [
         "The two project_payback_timeline functions no longer share a name OR the shared name is justified as one coherent concept",
         "Manifest/MCP tool list shows no two distinct-shape functions under the same bare name across namespaces",

@@ -664,7 +664,7 @@ files_to_modify = ["lib/delta_calc/options_risk.ex", "test/delta_calc/options_ri
 touches = ["lib/delta_calc/options_risk.ex"]
 assignee = "cursor"
 module = "DeltaCalc.OptionsRisk"
-model = "composer-2.5-fast"
+model = "composer-2.5"
 body = "Audit discovery (audit c695d69). monitor_margin_bridge_health/2 advertises an optional :critical margin threshold via its api() declaration and collects it (@default_critical_threshold 0.45, opts :critical at options_risk.ex:310), but health_status/4 never reads the 4th param (_critical at :375) — the cond only branches on reduce (=> :critical) and warning. health_status type is 3-band and the @doc says 'critical above 35%' (the reduce threshold, 0.35). Net: the :critical option is dead/misleading to agent (Descripex/MCP) consumers — it appears configurable but changes nothing. Resolve the design ambiguity: either add a genuine 4th band that uses the 0.45 critical threshold, or drop the :critical opt + constant and fix the api()/doc to match the real 3-band behavior. Behavior/surface change, so deferred from the hygiene audit rather than guessed."
 created_at = "2026-06-17"
 scored_at = "2026-06-17"
@@ -683,7 +683,7 @@ files_to_modify = ["lib/delta_calc/funding_projection.ex", "lib/delta_calc/margi
 touches = ["lib/delta_calc/funding_projection.ex", "lib/delta_calc/margin_bridge.ex"]
 assignee = "cursor"
 module = "DeltaCalc.MarginBridge"
-model = "composer-2.5-fast"
+model = "composer-2.5"
 body = "Audit discovery (audit c695d69). Two public functions share the name project_payback_timeline but model different things with incompatible shapes: FundingProjection.project_payback_timeline/1 takes a params map and returns %{best_case, expected, worst_case} (volatility scenarios); MarginBridge.project_payback_timeline/3 takes (debt, daily_funding, opts) positionally and returns %{remaining_debt, daily_funding, days_to_payoff, projected_payoff_date} (single-scenario + date). For an agent discovering the surface via Descripex Manifest/MCP tools, two identically-named tools with different params/returns across namespaces is a real discoverability hazard. Rename one (e.g. MarginBridge -> payback_timeline or project_payoff_date) and update its api() declaration + README. Public-surface rename, so deferred from the hygiene audit rather than applied unilaterally."
 created_at = "2026-06-17"
 scored_at = "2026-06-17"

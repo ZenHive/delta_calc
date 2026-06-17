@@ -140,6 +140,18 @@ defmodule DeltaCalc.OptionsRiskTest do
       assert Decimal.equal?(result.daily_cost, Decimal.new("0"))
       refute result.cash_flow_risk
     end
+
+    test "Deribit hourly cadence (24 periods/day) scales daily cost 8x vs 8h default" do
+      result =
+        OptionsRisk.calculate_negative_funding_impact(%{
+          negative_rate: Decimal.new("-0.03"),
+          position_size: Decimal.new("60000"),
+          periods_per_day: 24
+        })
+
+      assert Decimal.equal?(result.daily_cost, Decimal.new("432"))
+      assert result.cash_flow_risk
+    end
   end
 
   describe "stress_test_extended_negative/2" do
@@ -202,7 +214,22 @@ defmodule DeltaCalc.OptionsRiskTest do
         )
 
       scenario = hd(result.scenarios)
-      assert Decimal.equal?(scenario.total_90d, Decimal.new("1080"))
+      assert Decimal.equal?(scenario.total_30d, Decimal.new("1080"))
+    end
+
+    test "Deribit hourly cadence (24 periods/day) flows through to per-row daily and total figures" do
+      result =
+        OptionsRisk.stress_test_extended_negative(
+          %{
+            funding_rates: [Decimal.new("-0.02")],
+            position_size: Decimal.new("60000")
+          },
+          periods_per_day: 24
+        )
+
+      scenario = hd(result.scenarios)
+      assert Decimal.equal?(scenario.daily, Decimal.new("288"))
+      assert Decimal.equal?(scenario.total_90d, Decimal.new("25920"))
     end
 
     test "single kill-switch day is formatted without a range" do

@@ -14,6 +14,7 @@ defmodule DeltaCalc.OptionsRisk do
   @one Decimal.new(1)
   @hundred Decimal.new(100)
   @default_duration_days 90
+  @default_periods_per_day 3
   @default_warning_threshold Decimal.new("0.25")
   @default_reduce_threshold Decimal.new("0.35")
   @default_margin_impact_denominator Decimal.new("0.75")
@@ -45,7 +46,6 @@ defmodule DeltaCalc.OptionsRisk do
   @type stress_scenario :: %{
           rate: Decimal.t(),
           daily: Decimal.t(),
-          total_90d: Decimal.t(),
           margin_impact: String.t()
         }
 
@@ -147,7 +147,8 @@ defmodule DeltaCalc.OptionsRisk do
       params: [
         kind: :value,
         description:
-          "Map with :negative_rate, :position_size, optional :market_context and :capital_protected."
+          "Map with :negative_rate, :position_size, optional :market_context, :capital_protected, " <>
+            "and :periods_per_day (default 3 for 8h funding; use 24 for Deribit hourly)."
       ]
     ],
     returns: %{
@@ -169,9 +170,15 @@ defmodule DeltaCalc.OptionsRisk do
     position_size = params |> Map.fetch!(:position_size) |> to_decimal()
     capital_protected = Map.get(params, :capital_protected, true)
     market_context = Map.get(params, :market_context, :neutral)
+    periods_per_day = Map.get(params, :periods_per_day, @default_periods_per_day)
 
     daily_cost =
-      MarginBridge.stress_test_prolonged_negative(negative_rate, position_size, 1).daily_cost
+      MarginBridge.stress_test_prolonged_negative(
+        negative_rate,
+        position_size,
+        1,
+        periods_per_day: periods_per_day
+      ).daily_cost
 
     {market_setup, opportunity} = market_context_signals(market_context)
 
@@ -196,13 +203,14 @@ defmodule DeltaCalc.OptionsRisk do
         kind: :value,
         default: [],
         description:
-          "Optional :capital, :initial_margin_ratio, :duration_days (default 90), :margin_threshold."
+          "Optional :capital, :initial_margin_ratio, :duration_days (default 90), " <>
+            ":periods_per_day (default 3 for 8h funding; use 24 for Deribit hourly), :margin_threshold."
       ]
     ],
     returns: %{
       type: :map,
       description:
-        "Map with scenario, per-rate rows (rate, daily, total_90d, margin_impact), " <>
+        "Map with scenario, per-rate rows (rate, daily, total_{duration_days}d, margin_impact), " <>
           "kill_switch_trigger, and recommendation."
     }
   )
@@ -220,9 +228,12 @@ defmodule DeltaCalc.OptionsRisk do
     scenario = Map.get(params, :scenario, :bear_market_90d)
 
     duration_days = Keyword.get(opts, :duration_days, @default_duration_days)
+    periods_per_day = Keyword.get(opts, :periods_per_day, @default_periods_per_day)
     capital = opts |> Keyword.get(:capital, position_size) |> to_decimal()
     initial_margin_ratio = Keyword.get(opts, :initial_margin_ratio)
     margin_threshold = margin_threshold(opts)
+    total_key = total_duration_key(duration_days)
+    bridge_opts = prolonged_negative_opts(capital, initial_margin_ratio, periods_per_day)
 
     scenarios =
       Enum.map(funding_rates, fn rate ->
@@ -233,16 +244,15 @@ defmodule DeltaCalc.OptionsRisk do
             rate,
             position_size,
             duration_days,
-            capital: capital,
-            initial_margin_ratio: initial_margin_ratio
+            bridge_opts
           )
 
         %{
           rate: rate,
           daily: result.daily_cost,
-          total_90d: result.total_cost,
           margin_impact: format_margin_impact(result.total_cost, capital, margin_threshold)
         }
+        |> Map.put(total_key, result.total_cost)
       end)
 
     kill_switch_days =
@@ -252,8 +262,7 @@ defmodule DeltaCalc.OptionsRisk do
           rate,
           position_size,
           duration_days,
-          capital: capital,
-          initial_margin_ratio: initial_margin_ratio
+          bridge_opts
         ).kill_switch_day
       end)
       |> Enum.reject(&is_nil/1)
@@ -314,6 +323,18 @@ defmodule DeltaCalc.OptionsRisk do
       runway_days: runway_days,
       health_status: health_status(margin_ratio, warning, reduce)
     }
+  end
+
+  @spec total_duration_key(pos_integer()) :: atom()
+  defp total_duration_key(duration_days), do: :"total_#{duration_days}d"
+
+  @spec prolonged_negative_opts(Decimal.t(), term(), pos_integer()) :: keyword()
+  defp prolonged_negative_opts(capital, initial_margin_ratio, periods_per_day) do
+    [
+      capital: capital,
+      initial_margin_ratio: initial_margin_ratio,
+      periods_per_day: periods_per_day
+    ]
   end
 
   @spec market_context_signals(atom()) ::

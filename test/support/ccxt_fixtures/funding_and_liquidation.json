@@ -1,0 +1,91 @@
+{
+  "captured_at": "2026-06-17T04:00:00Z",
+  "captured_with": "ccxt-compatible public funding captures plus private-position liquidation fixture",
+  "funding": [
+    {
+      "venue": "binanceusdm",
+      "symbol": "BTC/USDT:USDT",
+      "ccxt_method": "fetchFundingRate",
+      "funding_rate": "-0.00006685",
+      "interval_hours": "8",
+      "notional": "60000",
+      "venue_daily_funding_cost": "-12.03300000",
+      "venue_annual_funding_cost": "-4392.04500000",
+      "venue_daily_rate_pct": "-0.0201",
+      "venue_annual_rate_pct": "-7.32",
+      "raw": {
+        "symbol": "BTCUSDT",
+        "fundingTime": 1781683200000,
+        "fundingRate": "-0.00006685",
+        "markPrice": "65507.05555797",
+        "fundingIntervalHours": 8
+      }
+    },
+    {
+      "venue": "deribit",
+      "symbol": "BTC-PERPETUAL",
+      "ccxt_method": "fetchFundingRate",
+      "funding_rate": "0.00001698989968162289",
+      "interval_hours": "8",
+      "notional": "60000",
+      "venue_daily_funding_cost": "3.0581819426921202",
+      "venue_annual_funding_cost": "1116.23640810",
+      "venue_daily_rate_pct": "0.0051",
+      "venue_annual_rate_pct": "1.86",
+      "raw": {
+        "instrument_name": "BTC-PERPETUAL",
+        "funding_8h": "0.00001698989968162289"
+      }
+    },
+    {
+      "venue": "hyperliquid",
+      "symbol": "BTC/USDC:USDC",
+      "ccxt_method": "fetchFundingRate",
+      "funding_rate": "0.0000125",
+      "interval_hours": "1",
+      "notional": "60000",
+      "venue_daily_funding_cost": "18.00000000",
+      "venue_annual_funding_cost": "6570.00000000",
+      "venue_daily_rate_pct": "0.0300",
+      "venue_annual_rate_pct": "10.95",
+      "raw": {
+        "coin": "BTC",
+        "funding": "0.0000125",
+        "oraclePx": "65220.0",
+        "markPx": "65203.0",
+        "fundingIntervalHours": 1
+      }
+    }
+  ],
+  "liquidation": {
+    "venue": "binanceusdm",
+    "symbol": "BTC/USDT:USDT",
+    "ccxt_method": "fetchPositions",
+    "equity": "5000",
+    "maintenance_margin_rate": "0.004",
+    "maintenance_margin_tier": {
+      "tier": 1,
+      "min_notional": "0",
+      "max_notional": "50000",
+      "maintenance_margin_rate": "0.004",
+      "maintenance_amount": "0"
+    },
+    "position": {
+      "side": "long",
+      "contracts": "0.25",
+      "entry_price": "100000",
+      "mark_price": "100000"
+    },
+    "venue_liquidation_price": "80321.28514056",
+    "calc_approximation_error_pct": "0.30039999999980064",
+    "calc_approximation_error_bound_pct": "1.0",
+    "raw": {
+      "symbol": "BTCUSDT",
+      "positionAmt": "0.25",
+      "entryPrice": "100000",
+      "markPrice": "100000",
+      "liquidationPrice": "80321.28514056",
+      "maintMarginRatio": "0.004"
+    }
+  }
+}

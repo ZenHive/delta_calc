@@ -139,16 +139,10 @@ id = 5
 phase = 1
 bundle = "calculators"
 milestone = "v0_1"
-status = "pending"
+status = "in_progress"
 title = "Port DeltaCalc.PositionCalculator (decouple from LiveView assigns)"
-assignee = "claude"
-model = "claude-sonnet-4-6"
-module = "DeltaCalc.PositionCalculator"
 scores = { d = 2, b = 4, u = 4 }
 depends_on = [2]
-files_to_modify = ["lib/delta_calc/position_calculator.ex"]
-touches = ["lib/delta_calc/position_calculator.ex"]
-body = "Lift TradingDashboard.Risk.PositionCalculator (lib/trading_dashboard/risk/position_calculator.ex) into DeltaCalc.PositionCalculator. The ONE decoupling: calculate_position/2's 2nd arg is named `assigns` and reads `assigns.risk_modes[mode]` (line ~119). It is a plain map at runtime — rename the param to `config`, update @doc to describe `%{risk_modes: %{...}}`, no struct/behaviour involved. Alias updates to DeltaCalc.Calc."
 acceptance_criteria = [
   "2nd param renamed assigns -> config, documented as a plain map",
   "Compiles clean against ported Calc",
@@ -156,6 +150,13 @@ acceptance_criteria = [
   "mix credo --strict and mix dialyzer clean",
   "Tests added under task 7 cover calculate_position/2",
 ]
+files_to_modify = ["lib/delta_calc/position_calculator.ex"]
+touches = ["lib/delta_calc/position_calculator.ex"]
+assignee = "claude"
+module = "DeltaCalc.PositionCalculator"
+model = "claude-sonnet-4-6"
+body = "Lift TradingDashboard.Risk.PositionCalculator (lib/trading_dashboard/risk/position_calculator.ex) into DeltaCalc.PositionCalculator. The ONE decoupling: calculate_position/2's 2nd arg is named `assigns` and reads `assigns.risk_modes[mode]` (line ~119). It is a plain map at runtime — rename the param to `config`, update @doc to describe `%{risk_modes: %{...}}`, no struct/behaviour involved. Alias updates to DeltaCalc.Calc."
+started_at = "2026-06-17"
 
 [[task]]
 id = 6

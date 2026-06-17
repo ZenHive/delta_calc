@@ -201,7 +201,7 @@
       "phase": 1,
       "bundle": "calculators",
       "milestone": "v0_1",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Port DeltaCalc.PositionCalculator (decouple from LiveView assigns)",
       "scores": {
         "d": 2,
@@ -232,6 +232,7 @@
         "lib/delta_calc/position_calculator.ex"
       ],
       "body": "Lift TradingDashboard.Risk.PositionCalculator (lib/trading_dashboard/risk/position_calculator.ex) into DeltaCalc.PositionCalculator. The ONE decoupling: calculate_position/2's 2nd arg is named `assigns` and reads `assigns.risk_modes[mode]` (line ~119). It is a plain map at runtime — rename the param to `config`, update @doc to describe `%{risk_modes: %{...}}`, no struct/behaviour involved. Alias updates to DeltaCalc.Calc.",
+      "started_at": "2026-06-17",
       "cross_repo": []
     },
     {

@@ -375,7 +375,7 @@ id = 14
 phase = 2
 bundle = "calc_primitives"
 milestone = "v0_2"
-status = "pending"
+status = "in_progress"
 title = "Build DeltaCalc.OptionLadder (rolling option strategy math)"
 scores = { d = 4, b = 3, u = 3 }
 acceptance_criteria = ["optimal_expiries, check_roll_conditions, select_strikes (IV percentile), sync_with_funding, IV-adjusted sizing implemented", "Every public fn carries a Descripex api() declaration before its @doc", "mix credo --strict and mix dialyzer.json clean; coverage >= 95%"]
@@ -386,6 +386,7 @@ module = "DeltaCalc.OptionLadder"
 model = "gpt-5.5"
 body = "New module for the dashboard's task 7.4 (Rolling Option Strategy Builder). Pure decision/calc functions: optimal_expiries/2 (allocation % across expiry buckets), check_roll_conditions/2 (decision tree on days_to_expiry/pnl%/spread), select_strikes/2 (strike ladder from IV percentile + risk profile), sync_with_funding/2 (roll cost vs funding income), IV-adjusted position sizing. Source of truth: TradingDashboard phase7.md RollingStrategy specs. Execution/scheduling stays in the dashboard. Manifest/README registration is task 16."
 created_at = "2026-06-17"
+started_at = "2026-06-17"
 scored_at = "2026-06-17"
 
 [[task]]

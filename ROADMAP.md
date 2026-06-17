@@ -12,6 +12,13 @@ Source of truth: `roadmap/tasks.toml` (managed by [`rmap`](https://hex.pm/)). Th
 - **status:** 🔄 active
 - **hypothesis:** Proves the salvaged calculators run standalone (no Phoenix/Ecto/I-O) with their original test suites green, so the TradingDashboard rebuild can depend on DeltaCalc instead of reimplementing the math.
 - **pinned tasks:** 8/8 done
+
+### v0_2 — Dashboard calc primitives
+
+- **target_version:** 0.2.0
+- **status:** ⬜ pending
+- **hypothesis:** Build the pure-Decimal calc primitives that TradingDashboard's future roadmap (hedging engine, risk monitoring, options strategy) specifies, so the dashboard consumes DeltaCalc.* rather than reimplementing the math. Source of truth: ~/_DATA/code/TradingDashboard/roadmap/phaseN.md specs.
+- **pinned tasks:** 0/8 done
 <!-- MILESTONES:END -->
 
 ## Phase 1 — Extraction

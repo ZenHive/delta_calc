@@ -8,9 +8,19 @@
       "name": "Extraction",
       "order": 1,
       "status": "in_progress"
+    },
+    "2": {
+      "name": "Calc primitives",
+      "order": 2,
+      "status": "pending"
     }
   },
   "bundles": {
+    "calc_primitives": {
+      "phase": 2,
+      "order": 2,
+      "description": "New pure-Decimal calc primitives the TradingDashboard rebuild's future roadmap needs — hedging engine, per-account/concentration metrics, options + margin-bridge math, funding math. Each is a delta_calc module the dashboard's future tasks consume instead of reimplementing."
+    },
     "calculators": {
       "phase": 1,
       "order": 1,
@@ -24,6 +34,13 @@
       "order": 1,
       "status": "active",
       "target_version": "0.1.0"
+    },
+    "v0_2": {
+      "name": "Dashboard calc primitives",
+      "description": "Build the pure-Decimal calc primitives that TradingDashboard's future roadmap (hedging engine, risk monitoring, options strategy) specifies, so the dashboard consumes DeltaCalc.* rather than reimplementing the math. Source of truth: ~/_DATA/code/TradingDashboard/roadmap/phaseN.md specs.",
+      "order": 2,
+      "status": "pending",
+      "target_version": "0.2.0"
     }
   },
   "task": [
@@ -41,7 +58,7 @@
       },
       "eff": 5.0,
       "dep_layer": 0,
-      "unlocks": 7,
+      "unlocks": 10,
       "markers": [
         "docs"
       ],
@@ -81,7 +98,7 @@
       },
       "eff": 1.67,
       "dep_layer": 1,
-      "unlocks": 4,
+      "unlocks": 6,
       "markers": [],
       "depends_on": [
         1
@@ -259,7 +276,7 @@
       },
       "eff": 1.33,
       "dep_layer": 1,
-      "unlocks": 2,
+      "unlocks": 4,
       "markers": [],
       "depends_on": [
         1
@@ -379,6 +396,328 @@
       "implemented": "Landed by grok via merge-train; reviewer-approved (run run-1781658993089-540d1d4d, dd56c44db73c51be075a81101e2bcbef4d1b4e75).",
       "delivered_by": "grok",
       "verified": true,
+      "cross_repo": []
+    },
+    {
+      "id": 9,
+      "phase": 2,
+      "bundle": "calc_primitives",
+      "milestone": "v0_2",
+      "status": "pending",
+      "title": "Build DeltaCalc.Funding (funding-rate math)",
+      "scores": {
+        "d": 3,
+        "b": 4,
+        "u": 4
+      },
+      "eff": 1.33,
+      "dep_layer": 0,
+      "unlocks": 1,
+      "markers": [],
+      "depends_on": [],
+      "assignee": "cursor",
+      "module": "DeltaCalc.Funding",
+      "model": "composer-2.5-fast",
+      "acceptance_criteria": [
+        "Pure Decimal value-in/value-out — no I/O, no exchange-client coupling (rates are :value inputs)",
+        "funding_apr, compare_funding_rates, find_arbitrage_opportunities, funding_trend implemented",
+        "Every public fn carries a Descripex api() declaration before its @doc",
+        "mix credo --strict and mix dialyzer.json clean",
+        "Coverage >= 95% (money math)"
+      ],
+      "files_to_modify": [
+        "lib/delta_calc/funding.ex",
+        "test/delta_calc/funding_test.exs"
+      ],
+      "touches": [
+        "lib/delta_calc/funding.ex"
+      ],
+      "body": "New module DeltaCalc.Funding for the funding-rate Decimal math the dashboard's tasks 1.6.5 (re-home market-analysis math) and 1.5.4 (funding-rate comparison) need. Implement: funding_apr (per-period rate -> annualised %), compare_funding_rates (rank venues by funding), find_arbitrage_opportunities (cross-venue funding spread -> opportunity list), funding_trend (series -> direction/slope). Source of truth: TradingDashboard market_analysis.ex (calculate_funding_apr/compare_funding_rates/find_arbitrage_opportunities/get_funding_trend) + phase1 ccxt-migration notes. Pure Decimal, rates passed in as :value. Manifest/README registration is handled by task 16 — do NOT edit manifest.ex or README here.",
+      "created_at": "2026-06-17",
+      "scored_at": "2026-06-17",
+      "cross_repo": []
+    },
+    {
+      "id": 10,
+      "phase": 2,
+      "bundle": "calc_primitives",
+      "milestone": "v0_2",
+      "status": "pending",
+      "title": "Extend DeltaCalc.Hedging (engine primitives)",
+      "scores": {
+        "d": 3,
+        "b": 5,
+        "u": 5
+      },
+      "eff": 1.67,
+      "dep_layer": 2,
+      "unlocks": 1,
+      "markers": [],
+      "depends_on": [
+        6
+      ],
+      "assignee": "grok",
+      "module": "DeltaCalc.Hedging",
+      "model": "grok-composer-2.5-fast",
+      "acceptance_criteria": [
+        "calculate_hedge_requirements/2, calculate_funding_cost/3, needs_cex_transfer?/2, get_basis_spread/2 implemented",
+        "1:1 max hedge enforced (never over-hedge in portfolio margin)",
+        "suggest_hedge_distribution/1 splits a hedge target across venues; 110%-coverage + CEX-sufficiency helpers",
+        "Edge cases covered: zero spot, full hedge",
+        "Every new public fn carries a Descripex api() declaration before its @doc",
+        "mix credo --strict and mix dialyzer.json clean; coverage >= 95%"
+      ],
+      "files_to_modify": [
+        "lib/delta_calc/hedging.ex",
+        "test/delta_calc/hedging_test.exs"
+      ],
+      "touches": [
+        "lib/delta_calc/hedging.ex"
+      ],
+      "body": "Extend the existing DeltaCalc.Hedging with the hedging-engine primitives the dashboard's tasks 2.1 (Hedging Engine), 1.5.4 (multi-exchange distribution), 6.2 (main-account hedging) and 4.1 (per-position hedge calc) need. Add: calculate_hedge_requirements/2 (total_spot, cex_spot, target% -> required hedge), calculate_funding_cost/3 (position_size, funding_rate -> daily cost), needs_cex_transfer?/2, get_basis_spread/2 (spot vs perp), 1:1-max enforcement, suggest_hedge_distribution/1 (split target across venues by capital efficiency), and 110%-coverage + CEX-sufficiency helpers. Source of truth: TradingDashboard phase2.md + phase6.md hedge_calculator specs. Pure Decimal. Keep existing fns intact. B1 (dashboard dep swap) depends on this. Manifest/README registration is task 16 — do NOT edit manifest.ex/README.",
+      "created_at": "2026-06-17",
+      "scored_at": "2026-06-17",
+      "cross_repo": []
+    },
+    {
+      "id": 11,
+      "phase": 2,
+      "bundle": "calc_primitives",
+      "milestone": "v0_2",
+      "status": "pending",
+      "title": "Build DeltaCalc.AccountMetrics + DeltaCalc.Concentration",
+      "scores": {
+        "d": 3,
+        "b": 4,
+        "u": 4
+      },
+      "eff": 1.33,
+      "dep_layer": 2,
+      "unlocks": 1,
+      "markers": [],
+      "depends_on": [
+        2
+      ],
+      "assignee": "codex",
+      "module": "DeltaCalc.AccountMetrics",
+      "model": "gpt-5.5",
+      "acceptance_criteria": [
+        "AccountMetrics: per-account liquidation distance, leverage, margin-usage % (reuse DeltaCalc.Calc.liquidation/safety)",
+        "Concentration: Herfindahl-Hirschman Index over asset weights",
+        "Every public fn carries a Descripex api() declaration before its @doc",
+        "mix credo --strict and mix dialyzer.json clean; coverage >= 95%"
+      ],
+      "files_to_modify": [
+        "lib/delta_calc/account_metrics.ex",
+        "lib/delta_calc/concentration.ex",
+        "test/delta_calc/account_metrics_test.exs",
+        "test/delta_calc/concentration_test.exs"
+      ],
+      "touches": [
+        "lib/delta_calc/account_metrics.ex",
+        "lib/delta_calc/concentration.ex"
+      ],
+      "body": "Two new modules for the dashboard's task 3.2 (Risk Monitoring Dashboard) and WS.3 (cascade-risk scoring). DeltaCalc.AccountMetrics: per-account liquidation-distance, leverage, margin-usage % — pure Decimal, reuse DeltaCalc.Calc.liquidation/4 and safety/5. DeltaCalc.Concentration: Herfindahl-Hirschman Index (HHI) over per-asset weights for concentration risk. Source of truth: TradingDashboard phase3.md (account_metrics.ex, concentration.ex specs). Alert thresholds stay in the dashboard — only the math here. Manifest/README registration is task 16.",
+      "created_at": "2026-06-17",
+      "scored_at": "2026-06-17",
+      "cross_repo": []
+    },
+    {
+      "id": 12,
+      "phase": 2,
+      "bundle": "calc_primitives",
+      "milestone": "v0_2",
+      "status": "pending",
+      "title": "Build DeltaCalc.MarginBridge (perp-funded option financing math)",
+      "scores": {
+        "d": 4,
+        "b": 3,
+        "u": 3
+      },
+      "eff": 0.75,
+      "dep_layer": 0,
+      "unlocks": 2,
+      "markers": [],
+      "depends_on": [],
+      "assignee": "cursor",
+      "module": "DeltaCalc.MarginBridge",
+      "model": "composer-2.5-fast",
+      "acceptance_criteria": [
+        "margin_ratio, margin_runway_days, payback-timeline projection, stress_test_prolonged_negative implemented",
+        "kill-switch condition computed (avg_funding_24h < threshold AND margin_ratio > 0.25)",
+        "Every public fn carries a Descripex api() declaration before its @doc",
+        "mix credo --strict and mix dialyzer.json clean; coverage >= 95%"
+      ],
+      "files_to_modify": [
+        "lib/delta_calc/margin_bridge.ex",
+        "test/delta_calc/margin_bridge_test.exs"
+      ],
+      "touches": [
+        "lib/delta_calc/margin_bridge.ex"
+      ],
+      "body": "New module for the dashboard's task 7.2 (Portfolio Margin Bridge Financing). Pure Decimal: margin_ratio = (initial_margin + option_premium)/capital; margin_runway_days = available_margin/daily_burn; payback = remaining_debt/daily_funding; stress_test_prolonged_negative (negative_rate x position_size x days -> total cost); kill-switch condition (avg_funding_24h < threshold AND margin_ratio > 0.25). Source of truth: TradingDashboard phase7.md MarginBridge/kill_switch specs. No OTP/persistence — math only. Manifest/README registration is task 16.",
+      "created_at": "2026-06-17",
+      "scored_at": "2026-06-17",
+      "cross_repo": []
+    },
+    {
+      "id": 13,
+      "phase": 2,
+      "bundle": "calc_primitives",
+      "milestone": "v0_2",
+      "status": "pending",
+      "title": "Build DeltaCalc.FundingProjection (payback timeline)",
+      "scores": {
+        "d": 2,
+        "b": 3,
+        "u": 3
+      },
+      "eff": 1.5,
+      "dep_layer": 0,
+      "unlocks": 1,
+      "markers": [],
+      "depends_on": [],
+      "assignee": "grok",
+      "module": "DeltaCalc.FundingProjection",
+      "model": "grok-composer-2.5-fast",
+      "acceptance_criteria": [
+        "project_payback_timeline/1 returns best/expected/worst from remaining_debt, daily_funding, funding_volatility",
+        "Every public fn carries a Descripex api() declaration before its @doc",
+        "mix credo --strict and mix dialyzer.json clean; coverage >= 95%"
+      ],
+      "files_to_modify": [
+        "lib/delta_calc/funding_projection.ex",
+        "test/delta_calc/funding_projection_test.exs"
+      ],
+      "touches": [
+        "lib/delta_calc/funding_projection.ex"
+      ],
+      "body": "New module for the dashboard's task 7.3 (Funding Income Tracker). Pure Decimal projection: project_payback_timeline/1 computes best/expected/worst-case payback from remaining_debt, daily_funding income, and funding_volatility. Source of truth: TradingDashboard phase7.md FundingTracker.project_payback_timeline. Actual income tracking/persistence stays in the dashboard — projection math only. Manifest/README registration is task 16.",
+      "created_at": "2026-06-17",
+      "scored_at": "2026-06-17",
+      "cross_repo": []
+    },
+    {
+      "id": 14,
+      "phase": 2,
+      "bundle": "calc_primitives",
+      "milestone": "v0_2",
+      "status": "pending",
+      "title": "Build DeltaCalc.OptionLadder (rolling option strategy math)",
+      "scores": {
+        "d": 4,
+        "b": 3,
+        "u": 3
+      },
+      "eff": 0.75,
+      "dep_layer": 0,
+      "unlocks": 1,
+      "markers": [],
+      "depends_on": [],
+      "assignee": "codex",
+      "module": "DeltaCalc.OptionLadder",
+      "model": "gpt-5.5",
+      "acceptance_criteria": [
+        "optimal_expiries, check_roll_conditions, select_strikes (IV percentile), sync_with_funding, IV-adjusted sizing implemented",
+        "Every public fn carries a Descripex api() declaration before its @doc",
+        "mix credo --strict and mix dialyzer.json clean; coverage >= 95%"
+      ],
+      "files_to_modify": [
+        "lib/delta_calc/option_ladder.ex",
+        "test/delta_calc/option_ladder_test.exs"
+      ],
+      "touches": [
+        "lib/delta_calc/option_ladder.ex"
+      ],
+      "body": "New module for the dashboard's task 7.4 (Rolling Option Strategy Builder). Pure decision/calc functions: optimal_expiries/2 (allocation % across expiry buckets), check_roll_conditions/2 (decision tree on days_to_expiry/pnl%/spread), select_strikes/2 (strike ladder from IV percentile + risk profile), sync_with_funding/2 (roll cost vs funding income), IV-adjusted position sizing. Source of truth: TradingDashboard phase7.md RollingStrategy specs. Execution/scheduling stays in the dashboard. Manifest/README registration is task 16.",
+      "created_at": "2026-06-17",
+      "scored_at": "2026-06-17",
+      "cross_repo": []
+    },
+    {
+      "id": 15,
+      "phase": 2,
+      "bundle": "calc_primitives",
+      "milestone": "v0_2",
+      "status": "pending",
+      "title": "Build DeltaCalc.OptionsRisk (long-option risk + funding stress)",
+      "scores": {
+        "d": 4,
+        "b": 3,
+        "u": 3
+      },
+      "eff": 0.75,
+      "dep_layer": 1,
+      "unlocks": 1,
+      "markers": [],
+      "depends_on": [
+        12
+      ],
+      "assignee": "cursor",
+      "module": "DeltaCalc.OptionsRisk",
+      "model": "composer-2.5-fast",
+      "acceptance_criteria": [
+        "max-loss = premium framing for long options",
+        "calculate_total_exposure, calculate_negative_funding_impact, stress_test_extended_negative, monitor_margin_bridge_health implemented",
+        "Every public fn carries a Descripex api() declaration before its @doc",
+        "mix credo --strict and mix dialyzer.json clean; coverage >= 95%"
+      ],
+      "files_to_modify": [
+        "lib/delta_calc/options_risk.ex",
+        "test/delta_calc/options_risk_test.exs"
+      ],
+      "touches": [
+        "lib/delta_calc/options_risk.ex"
+      ],
+      "body": "New module for the dashboard's task 7.6a (Risk Management for option buyers). Pure Decimal: max-loss = premium framing; calculate_total_exposure (spot + perp + options + margin_debt); calculate_negative_funding_impact (daily_cost, cash-flow risk); stress_test_extended_negative (scenarios x {rate, daily, total_90d, margin_impact}); monitor_margin_bridge_health (margin_ratio, runway_days, health_status) reusing DeltaCalc.MarginBridge. Source of truth: TradingDashboard phase7.md OptionsRisk/funding_stress_test specs. Manifest/README registration is task 16.",
+      "created_at": "2026-06-17",
+      "scored_at": "2026-06-17",
+      "cross_repo": []
+    },
+    {
+      "id": 16,
+      "phase": 2,
+      "bundle": "calc_primitives",
+      "milestone": "v0_2",
+      "status": "pending",
+      "title": "Register v0_2 modules in DeltaCalc.Manifest + README",
+      "scores": {
+        "d": 1,
+        "b": 3,
+        "u": 4
+      },
+      "eff": 3.5,
+      "dep_layer": 3,
+      "unlocks": 0,
+      "markers": [],
+      "depends_on": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "assignee": "grok",
+      "model": "grok-composer-2.5-fast",
+      "acceptance_criteria": [
+        "DeltaCalc.Manifest @modules includes Funding, AccountMetrics, Concentration, MarginBridge, FundingProjection, OptionLadder, OptionsRisk",
+        "Manifest.build/0 and Manifest.modules/0 return the new surface; MCP tools/1 enumerates it",
+        "README API-surface section lists the new modules",
+        "mix ci green (incl. api()-hints validation test over all public modules)"
+      ],
+      "files_to_modify": [
+        "lib/delta_calc/manifest.ex",
+        "README.md"
+      ],
+      "touches": [
+        "lib/delta_calc/manifest.ex",
+        "README.md"
+      ],
+      "body": "Consolidation task (kept separate so the seven module-build tasks stay write-set-disjoint and dispatch in parallel). Add the new v0_2 modules to DeltaCalc.Manifest @modules: Funding, AccountMetrics, Concentration, MarginBridge, FundingProjection, OptionLadder, OptionsRisk (Hedging already listed). Add a README API-surface entry for each. Verify Manifest.build/0 / modules/0 / tools/1 surface them and the api()-hints validation test passes.",
+      "created_at": "2026-06-17",
+      "scored_at": "2026-06-17",
       "cross_repo": []
     }
   ]

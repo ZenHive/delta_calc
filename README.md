@@ -537,8 +537,8 @@ Fees.funding_adjusted_breakeven(
 Basis yield, break-even funding, and net carry for spot/perp hedge profitability.
 
 ```elixir
-# annualized_basis(spot_price, perp_price) -> Decimal
-Carry.annualized_basis(Decimal.new("60000"), Decimal.new("60600"))
+# basis(spot_price, perp_price) -> Decimal (instantaneous premium/discount, not annualized)
+Carry.basis(Decimal.new("60000"), Decimal.new("60600"))
 #=> #Decimal<1.00000000>
 
 # breakeven_funding(params) -> Decimal (per-period rate)
@@ -547,7 +547,7 @@ Carry.breakeven_funding(%{
   perp_price: Decimal.new("60600"),
   holding_days: 30
 })
-#=> #Decimal<-0.00000913>
+#=> #Decimal<-0.00011111>
 
 # net_carry(params) -> carry decision map
 Carry.net_carry(%{
@@ -557,11 +557,11 @@ Carry.net_carry(%{
   holding_days: 30
 })
 #=> %{
-#     annualized_basis: #Decimal<1.00000000>,
-#     basis_yield: #Decimal<0.08219178>,
+#     basis: #Decimal<1.00000000>,
+#     basis_yield: #Decimal<1.00000000>,
 #     funding_yield: #Decimal<0.90000000>,
-#     net_yield: #Decimal<0.98219178>,
-#     breakeven_funding: #Decimal<-0.00000913>,
+#     net_yield: #Decimal<1.90000000>,
+#     breakeven_funding: #Decimal<-0.00011111>,
 #     profitable?: true
 #   }
 ```

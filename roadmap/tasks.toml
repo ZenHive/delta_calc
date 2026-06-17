@@ -805,7 +805,7 @@ id = 31
 phase = 3
 bundle = "consumer_math"
 milestone = "v0_3"
-status = "in_progress"
+status = "pending"
 title = "Fix Calc.compare_dca_safety side-blind PnL (multi_leg_position computes short as long)"
 scores = { d = 3, b = 4, u = 4 }
 acceptance_criteria = ["Short DCA example: legs [125@3000, 125@3200], current_price 3200, equity 50 -> unrealized_pnl is NEGATIVE (about -8.33), not +8.33; effective_leverage about 6x, not 4.29x", "Long path outputs unchanged: existing long tests pass with identical values", "New short-side test would FAIL against the pre-fix long-only formula (verifies, does not ratify)", "Calc money-math coverage >= 95%"]

@@ -790,7 +790,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "in_progress",
+      "status": "done",
       "title": "Build DeltaCalc.PnL (position PnL, ROE, breakeven net of fees + funding)",
       "scores": {
         "d": 2,
@@ -820,10 +820,15 @@
       "touches": [
         "lib/delta_calc/pnl.ex"
       ],
+      "shipped_in": "2902d576c915225278f7d20266146f910551fa48",
       "body": "Consumer reaches for this on every position row. Pure Decimal value-in/value-out over the caller's own state: entry_price, mark_price, size, side, fees, accrued_funding. unrealized_pnl (mark vs entry x size, side-aware), realized_pnl (exit-based), roe (pnl / margin), breakeven (entry adjusted for roundtrip fees + accrued funding so 'where do I turn green' is honest). Reuse DeltaCalc.Fees for the fee component. No I/O, no exchange fetch — the consumer supplies mark/funding from its state. Manifest/README registration is task 23.",
       "created_at": "2026-06-17",
       "started_at": "2026-06-17",
+      "done_at": "2026-06-17",
       "scored_at": "2026-06-17",
+      "implemented": "Landed by cursor via merge-train; reviewer-approved (run run-1781668320384-03cb795c, 2902d576c915225278f7d20266146f910551fa48).",
+      "delivered_by": "cursor",
+      "verified": true,
       "cross_repo": []
     },
     {

@@ -1514,7 +1514,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Add stream_data property-test layer encoding quant-audit invariants (anti-ratification guard)",
       "scores": {
         "d": 4,

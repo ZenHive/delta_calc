@@ -530,7 +530,7 @@
       "phase": 2,
       "bundle": "calc_primitives",
       "milestone": "v0_2",
-      "status": "in_progress",
+      "status": "done",
       "title": "Build DeltaCalc.MarginBridge (perp-funded option financing math)",
       "scores": {
         "d": 4,
@@ -558,10 +558,15 @@
       "touches": [
         "lib/delta_calc/margin_bridge.ex"
       ],
+      "shipped_in": "077b8f70f6faa7126a38b24283d67568b7951162",
       "body": "New module for the dashboard's task 7.2 (Portfolio Margin Bridge Financing). Pure Decimal: margin_ratio = (initial_margin + option_premium)/capital; margin_runway_days = available_margin/daily_burn; payback = remaining_debt/daily_funding; stress_test_prolonged_negative (negative_rate x position_size x days -> total cost); kill-switch condition (avg_funding_24h < threshold AND margin_ratio > 0.25). Source of truth: TradingDashboard phase7.md MarginBridge/kill_switch specs. No OTP/persistence — math only. Manifest/README registration is task 16.",
       "created_at": "2026-06-17",
       "started_at": "2026-06-17",
+      "done_at": "2026-06-17",
       "scored_at": "2026-06-17",
+      "implemented": "Landed by cursor via merge-train; reviewer-approved (run run-1781661575696-6bbc2d73, 077b8f70f6faa7126a38b24283d67568b7951162).",
+      "delivered_by": "cursor",
+      "verified": true,
       "cross_repo": []
     },
     {

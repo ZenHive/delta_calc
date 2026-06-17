@@ -825,7 +825,7 @@ id = 31
 phase = 3
 bundle = "consumer_math"
 milestone = "v0_3"
-status = "in_progress"
+status = "done"
 title = "Fix Calc.compare_dca_safety side-blind PnL (multi_leg_position computes short as long)"
 scores = { d = 3, b = 4, u = 4 }
 acceptance_criteria = ["Short DCA example: legs [125@3000, 125@3200], current_price 3200, equity 50 -> unrealized_pnl is NEGATIVE (about -8.33), not +8.33; effective_leverage about 6x, not 4.29x", "Long path outputs unchanged: existing long tests pass with identical values", "New short-side test would FAIL against the pre-fix long-only formula (verifies, does not ratify)", "Calc money-math coverage >= 95%"]
@@ -838,9 +838,14 @@ compare_dca_safety/8 accepts a :side and uses it correctly for liquidation/4 and
 
 Fix: thread side through the aggregate so a short uses tokens*(entry-current). Either add a :side parameter to multi_leg_position/3 + calculate_leg_totals/2, or compute the signed PnL inside compare_dca_safety before calling. Keep the long path bit-identical to today. Add short-side tests that FAIL under the current long-only math (do not author the golden values by running the buggy code).
 """
+implemented = "Landed by cursor via merge-train; reviewer-approved (run run-1781705401329-61cbacb1, f71086474d49d28de614c0d40990bcc77d7af3c6)."
+delivered_by = "cursor"
+verified = true
 created_at = "2026-06-17"
 started_at = "2026-06-17"
 scored_at = "2026-06-17"
+done_at = "2026-06-17"
+shipped_in = "f71086474d49d28de614c0d40990bcc77d7af3c6"
 
 [[task]]
 id = 32

@@ -1149,7 +1149,7 @@
       "phase": 2,
       "bundle": "calc_primitives",
       "milestone": "v0_2",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Disambiguate project_payback_timeline name collision (FundingProjection vs MarginBridge)",
       "scores": {
         "d": 2,
@@ -1183,6 +1183,7 @@
       ],
       "body": "Audit discovery (audit c695d69). Two public functions share the name project_payback_timeline but model different things with incompatible shapes: FundingProjection.project_payback_timeline/1 takes a params map and returns %{best_case, expected, worst_case} (volatility scenarios); MarginBridge.project_payback_timeline/3 takes (debt, daily_funding, opts) positionally and returns %{remaining_debt, daily_funding, days_to_payoff, projected_payoff_date} (single-scenario + date). For an agent discovering the surface via Descripex Manifest/MCP tools, two identically-named tools with different params/returns across namespaces is a real discoverability hazard. Rename one (e.g. MarginBridge -> payback_timeline or project_payoff_date) and update its api() declaration + README. Public-surface rename, so deferred from the hygiene audit rather than applied unilaterally.",
       "created_at": "2026-06-17",
+      "started_at": "2026-06-17",
       "scored_at": "2026-06-17",
       "cross_repo": []
     },

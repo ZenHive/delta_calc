@@ -202,20 +202,21 @@ id = 7
 phase = 1
 bundle = "calculators"
 milestone = "v0_1"
-status = "pending"
+status = "in_progress"
 title = "Backfill tests for PositionCalculator, DCAPlanner, Hedging"
-assignee = "cursor"
-model = "composer-2.5-fast"
 scores = { d = 3, b = 5, u = 4 }
 depends_on = [4, 5, 6]
-files_to_modify = ["test/delta_calc/position_calculator_test.exs", "test/delta_calc/dca_planner_test.exs", "test/delta_calc/hedging_test.exs"]
-body = "PositionCalculator and DCAPlanner shipped UNTESTED in the source app (only exercised transitively through the LiveView); Hedging is brand new. Write dedicated tests: calculate_position/2 full pipeline (allocation -> notional -> leverage -> safety -> mmr_info) incl. long/short and each risk mode; calculate_dca_ladder/1 defensive + aggressive incl. short conversion; all DeltaCalc.Hedging formulas incl. edge cases (zero spot, 0%/100%/120%+ hedge, nil-safe boundaries). Use golden numbers cross-checked against the source behaviour."
 acceptance_criteria = [
   "calculate_position/2 and calculate_dca_ladder/1 each have dedicated passing tests",
   "DeltaCalc.Hedging fully covered incl. boundary cases",
   "Overall coverage >= 80% (>= 95% on Calc/Hedging money math)",
   "No test hides errors (explicit flunk on unexpected branches)",
 ]
+files_to_modify = ["test/delta_calc/position_calculator_test.exs", "test/delta_calc/dca_planner_test.exs", "test/delta_calc/hedging_test.exs"]
+assignee = "cursor"
+model = "composer-2.5-fast"
+body = "PositionCalculator and DCAPlanner shipped UNTESTED in the source app (only exercised transitively through the LiveView); Hedging is brand new. Write dedicated tests: calculate_position/2 full pipeline (allocation -> notional -> leverage -> safety -> mmr_info) incl. long/short and each risk mode; calculate_dca_ladder/1 defensive + aggressive incl. short conversion; all DeltaCalc.Hedging formulas incl. edge cases (zero spot, 0%/100%/120%+ hedge, nil-safe boundaries). Use golden numbers cross-checked against the source behaviour."
+started_at = "2026-06-17"
 
 [[task]]
 id = 8

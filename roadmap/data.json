@@ -294,7 +294,7 @@
       "phase": 1,
       "bundle": "calculators",
       "milestone": "v0_1",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Backfill tests for PositionCalculator, DCAPlanner, Hedging",
       "scores": {
         "d": 3,
@@ -324,6 +324,7 @@
         "test/delta_calc/hedging_test.exs"
       ],
       "body": "PositionCalculator and DCAPlanner shipped UNTESTED in the source app (only exercised transitively through the LiveView); Hedging is brand new. Write dedicated tests: calculate_position/2 full pipeline (allocation -> notional -> leverage -> safety -> mmr_info) incl. long/short and each risk mode; calculate_dca_ladder/1 defensive + aggressive incl. short conversion; all DeltaCalc.Hedging formulas incl. edge cases (zero spot, 0%/100%/120%+ hedge, nil-safe boundaries). Use golden numbers cross-checked against the source behaviour.",
+      "started_at": "2026-06-17",
       "cross_repo": []
     },
     {

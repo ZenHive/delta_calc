@@ -154,6 +154,7 @@ defmodule DeltaCalc.FundingTest do
                binance: Decimal.new("0.003"),
                bybit: Decimal.new("0.001"),
                delta: Decimal.new("0.002000"),
+               delta_unit: :raw_per_period,
                max_exchange: :binance,
                min_exchange: :bybit,
                arbitrage_opportunity: true,
@@ -250,6 +251,29 @@ defmodule DeltaCalc.FundingTest do
       assert opp.symbol == :unknown
       assert opp.long_exchange == :bybit
       assert opp.short_exchange == :binance
+    end
+
+    test "normalizes min_delta for venue-cadence-map comparison entries" do
+      comparison =
+        Funding.compare_funding_rates(
+          %{
+            "BTCUSDT" => %{
+              hourly: Decimal.new("0.0002"),
+              eight_hour: Decimal.new("0.001")
+            }
+          },
+          %{hourly: 24, eight_hour: 3}
+        )
+
+      assert comparison["BTCUSDT"].delta_unit == :daily_normalized
+
+      [opp] = Funding.find_arbitrage_opportunities(comparison, Decimal.new("0.0045"))
+
+      assert opp.symbol == "BTCUSDT"
+      assert opp.long_exchange == :eight_hour
+      assert opp.short_exchange == :hourly
+      assert Decimal.equal?(opp.delta, Decimal.new("0.0018"))
+      assert Decimal.equal?(opp.annual_apr_delta, Decimal.new("65.70"))
     end
 
     test "uses default min_delta when omitted" do

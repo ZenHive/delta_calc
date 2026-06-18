@@ -15,6 +15,8 @@ defmodule DeltaCalc.Funding do
   @hours_per_day 24
   @days_per_year 365
   @hundred Decimal.new(100)
+  @delta_unit_raw_per_period :raw_per_period
+  @delta_unit_daily_normalized :daily_normalized
   @mixed_cadence_arbitrage_threshold Decimal.mult(
                                        @arbitrage_threshold,
                                        Decimal.new(@default_periods_per_day)
@@ -22,6 +24,7 @@ defmodule DeltaCalc.Funding do
 
   @type decimal_input :: Decimal.t() | number() | String.t()
   @type periods_per_day_input :: decimal_input() | %{atom() => decimal_input()}
+  @type delta_unit :: :raw_per_period | :daily_normalized
 
   @typedoc "Annualised funding-rate breakdown as percentage Decimals."
   @type apr_result :: %{
@@ -35,6 +38,7 @@ defmodule DeltaCalc.Funding do
           optional(:insufficient_data) => true,
           optional(:arbitrage_opportunity) => boolean(),
           optional(:delta) => Decimal.t(),
+          optional(:delta_unit) => delta_unit(),
           optional(:max_exchange) => atom(),
           optional(:min_exchange) => atom(),
           optional(:annual_apr_delta) => Decimal.t(),
@@ -120,7 +124,7 @@ defmodule DeltaCalc.Funding do
     returns: %{
       type: :map,
       description:
-        "Per-symbol comparison with venue rates, delta, arbitrage flag, and :ranked venue list."
+        "Per-symbol comparison with venue rates, :delta, :delta_unit, arbitrage flag, and :ranked venue list."
     }
   )
 
@@ -131,11 +135,12 @@ defmodule DeltaCalc.Funding do
   `%{"BTCUSDT" => %{binance: rate, bybit: rate}}` for many.
   `periods_per_day` defaults to 3 for 8-hour funding; pass 24 for Deribit
   hourly funding or `%{venue => periods}` when venues use different cadences.
-  With a scalar cadence, `delta` and arbitrage detection use raw per-period
-  rates for unchanged 8-hour/24-hour behavior. With a venue cadence map, venues
-  are ranked by per-day-normalized rate (`rate * periods_per_day`), `delta` is
-  that daily spread, `annual_apr_delta` is the daily spread annualized to APR
-  percentage points, and the arbitrage threshold is the default 8-hour raw
+  Each result tags `delta_unit`. With a scalar cadence, `delta` is a raw
+  per-period spread (`:raw_per_period`) for unchanged 8-hour/24-hour behavior.
+  With a venue cadence map, venues are ranked by per-day-normalized rate
+  (`rate * periods_per_day`), `delta` is that daily-normalized spread
+  (`:daily_normalized`), `annual_apr_delta` is the daily spread annualized to
+  APR percentage points, and the arbitrage threshold is the default 8-hour raw
   threshold normalized to daily terms (`0.0005 * 3 = 0.0015`).
   """
   @spec compare_funding_rates(map(), periods_per_day_input()) :: map() | comparison_result()
@@ -162,7 +167,8 @@ defmodule DeltaCalc.Funding do
       min_delta: [
         kind: :value,
         default: 0.001,
-        description: "Minimum absolute rate spread to include.",
+        description:
+          "Minimum absolute raw-period spread to include. Daily-normalized comparison entries are scaled before filtering.",
         schema: float()
       ]
     ],
@@ -174,7 +180,14 @@ defmodule DeltaCalc.Funding do
     }
   )
 
-  @doc "Return arbitrage opportunities from a comparison map, filtered by `min_delta`."
+  @doc """
+  Return arbitrage opportunities from a comparison map, filtered by `min_delta`.
+
+  `min_delta` keeps the legacy scalar raw-period threshold scale. Entries tagged
+  `:daily_normalized` compare against `min_delta` divided by the default
+  periods per day so scalar- and map-cadence comparison results can be filtered
+  together without scale skew.
+  """
   @spec find_arbitrage_opportunities(map(), Decimal.t() | number()) :: [map()]
   def find_arbitrage_opportunities(comparison, min_delta \\ Decimal.new("0.001")) do
     min_delta = ensure_decimal(min_delta)
@@ -183,9 +196,10 @@ defmodule DeltaCalc.Funding do
     |> normalize_comparison_entries()
     |> Enum.filter(fn {_symbol, data} ->
       delta = Map.get(data, :delta, Decimal.new(0))
+      threshold = threshold_for_delta_unit(data, min_delta)
 
       Map.get(data, :arbitrage_opportunity, false) and
-        Decimal.compare(Decimal.abs(delta), min_delta) != :lt
+        Decimal.compare(Decimal.abs(delta), threshold) != :lt
     end)
     |> Enum.map(fn {symbol, data} -> build_opportunity(symbol, data) end)
     |> Enum.sort_by(& &1.annual_apr_delta, :desc)
@@ -262,6 +276,7 @@ defmodule DeltaCalc.Funding do
       decimal_rates
       |> Map.merge(%{
         delta: Decimal.round(delta, 6),
+        delta_unit: @delta_unit_daily_normalized,
         max_exchange: max_exchange,
         min_exchange: min_exchange,
         arbitrage_opportunity: arbitrage?,
@@ -292,6 +307,7 @@ defmodule DeltaCalc.Funding do
       decimal_rates
       |> Map.merge(%{
         delta: Decimal.round(delta, 6),
+        delta_unit: @delta_unit_raw_per_period,
         max_exchange: max_exchange,
         min_exchange: min_exchange,
         arbitrage_opportunity: arbitrage?,
@@ -384,6 +400,7 @@ defmodule DeltaCalc.Funding do
         :min_exchange,
         :arbitrage_opportunity,
         :annual_apr_delta,
+        :delta_unit,
         :insufficient_data,
         :ranked
       ])
@@ -406,6 +423,13 @@ defmodule DeltaCalc.Funding do
       [{:unknown, comparison}]
     end
   end
+
+  @spec threshold_for_delta_unit(map(), Decimal.t()) :: Decimal.t()
+  defp threshold_for_delta_unit(%{delta_unit: @delta_unit_daily_normalized}, min_delta) do
+    Decimal.div(min_delta, Decimal.new(@default_periods_per_day))
+  end
+
+  defp threshold_for_delta_unit(_data, min_delta), do: min_delta
 
   @spec multi_symbol?(map()) :: boolean()
   defp multi_symbol?(map) do

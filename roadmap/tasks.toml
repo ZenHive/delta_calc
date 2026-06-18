@@ -978,7 +978,7 @@ shipped_in = "241ee793845f7648ca84e222a891a01dd004c7fd"
 id = 36
 phase = 3
 bundle = "consumer_math"
-status = "pending"
+status = "in_progress"
 title = "Reconcile Funding :delta units across scalar vs venue-map cadence paths (find_arbitrage_opportunities min_delta scale)"
 scores = { d = 3, b = 5, u = 5 }
 acceptance_criteria = ["find_arbitrage_opportunities applies consistent threshold semantics to both scalar- and map-cadence comparison results", ":delta field unit is documented and unambiguous (single unit, or explicitly tagged)", "Test covers a venue-cadence-map comparison passed through find_arbitrage_opportunities", "Scalar-cadence behavior remains unchanged"]
@@ -989,4 +989,5 @@ body = """
 Decide the domain-correct contract: either (a) make `:delta` a single consistent unit across both paths and adjust `annual_apr_delta` accordingly, or (b) keep dual units but make `find_arbitrage_opportunities` cadence-aware (normalize its `min_delta`, or read a unit tag off the comparison entry). Whichever path, document the chosen unit on the `:delta` field and cover it with a test that runs a map-cadence comparison through `find_arbitrage_opportunities`.
 """
 created_at = "2026-06-17"
+started_at = "2026-06-18"
 scored_at = "2026-06-17"

@@ -1654,7 +1654,7 @@
       "id": 36,
       "phase": 3,
       "bundle": "consumer_math",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Reconcile Funding :delta units across scalar vs venue-map cadence paths (find_arbitrage_opportunities min_delta scale)",
       "scores": {
         "d": 3,
@@ -1678,6 +1678,7 @@
       ],
       "body": "`Funding.compare_funding_rates/2` now returns a `:delta` whose unit depends on the SHAPE of the `periods_per_day` argument: a scalar cadence yields a raw per-period spread (e.g. `0.002`), while a `%{venue => periods}` map yields a per-day-normalized spread (e.g. `0.0003`). This is documented in the `@doc` and intentional, but it leaks into `find_arbitrage_opportunities/2`, whose default `min_delta` (`0.001`) was tuned for the raw per-period scale. Mixed-cadence comparison maps are filtered against a threshold ~3x too large, so genuine daily-normalized spreads can be silently dropped, and a caller cannot mix scalar- and map-derived comparison results in one `find_arbitrage_opportunities` call without scale skew.\n\nDecide the domain-correct contract: either (a) make `:delta` a single consistent unit across both paths and adjust `annual_apr_delta` accordingly, or (b) keep dual units but make `find_arbitrage_opportunities` cadence-aware (normalize its `min_delta`, or read a unit tag off the comparison entry). Whichever path, document the chosen unit on the `:delta` field and cover it with a test that runs a map-cadence comparison through `find_arbitrage_opportunities`.\n",
       "created_at": "2026-06-17",
+      "started_at": "2026-06-18",
       "scored_at": "2026-06-17",
       "cross_repo": []
     }

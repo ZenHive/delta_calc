@@ -1232,7 +1232,7 @@ scored_at = "2026-06-19"
 id = 49
 phase = 3
 bundle = "calc_primitives"
-status = "in_progress"
+status = "done"
 title = "Disambiguate zero-as-sentinel vs legitimate zero in Calc returns"
 scores = { d = 3, b = 4, u = 4 }
 acceptance_criteria = ["Calc functions distinguish invalid input from a legitimate zero result (tagged tuples, documented sentinels, or :error) for effective_leverage, liquidation, leverage_to_aum, and safety", "A programmatic consumer can tell 'no liquidation risk / no position' from 'bad input'", "Existing callers are updated to the new contract", "mix ci clean"]
@@ -1242,9 +1242,14 @@ model = "gpt-5.5"
 body = """
 Calc.effective_leverage, liquidation, leverage_to_aum, and safety all return 0 (or zeroed maps) both for a legitimate zero AND for invalid input (zero equity, non-positive entry). A consumer — especially an AI agent reading the manifest — cannot distinguish 'no liquidation risk' from 'you passed bad input'. Introduce an unambiguous contract (tagged tuples, a documented sentinel, or {:error, reason}) and update internal callers. Pairs with the coercion task but is about return values, not inputs.
 """
+implemented = "Landed by codex via merge-train; reviewer-approved (run run-1781959741941-d750d254, efea01e9e20213f0c73925d1aac747eb5ed1c9b2)."
+delivered_by = "codex"
+verified = true
 created_at = "2026-06-19"
 started_at = "2026-06-20"
 scored_at = "2026-06-19"
+done_at = "2026-06-20"
+shipped_in = "efea01e9e20213f0c73925d1aac747eb5ed1c9b2"
 
 [[task]]
 id = 50

@@ -2105,7 +2105,7 @@
       "id": 49,
       "phase": 3,
       "bundle": "calc_primitives",
-      "status": "in_progress",
+      "status": "done",
       "title": "Disambiguate zero-as-sentinel vs legitimate zero in Calc returns",
       "scores": {
         "d": 3,
@@ -2128,10 +2128,15 @@
       "out_of_scope": [
         "Changing the underlying formulas"
       ],
+      "shipped_in": "efea01e9e20213f0c73925d1aac747eb5ed1c9b2",
       "body": "Calc.effective_leverage, liquidation, leverage_to_aum, and safety all return 0 (or zeroed maps) both for a legitimate zero AND for invalid input (zero equity, non-positive entry). A consumer — especially an AI agent reading the manifest — cannot distinguish 'no liquidation risk' from 'you passed bad input'. Introduce an unambiguous contract (tagged tuples, a documented sentinel, or {:error, reason}) and update internal callers. Pairs with the coercion task but is about return values, not inputs.\n",
       "created_at": "2026-06-19",
       "started_at": "2026-06-20",
+      "done_at": "2026-06-20",
       "scored_at": "2026-06-19",
+      "implemented": "Landed by codex via merge-train; reviewer-approved (run run-1781959741941-d750d254, efea01e9e20213f0c73925d1aac747eb5ed1c9b2).",
+      "delivered_by": "codex",
+      "verified": true,
       "cross_repo": []
     },
     {

@@ -32,8 +32,7 @@ defmodule DeltaCalc.StressScenario do
           side: PortfolioMargin.side(),
           quantity: Decimal.t(),
           mark_price: Decimal.t(),
-          margin: Decimal.t(),
-          liquidated?: boolean()
+          margin: Decimal.t()
         }
 
   @typedoc "Result of applying a uniform price shock to the book."
@@ -42,7 +41,8 @@ defmodule DeltaCalc.StressScenario do
           equity: Decimal.t(),
           positions: [shocked_position()],
           portfolio_margin: Decimal.t(),
-          liquidation_price: Decimal.t() | nil
+          liquidation_price: Decimal.t() | nil,
+          portfolio_liquidated?: boolean()
         }
 
   @typedoc "Cascade liquidation outcome under a price shock."
@@ -70,8 +70,9 @@ defmodule DeltaCalc.StressScenario do
     returns: %{
       type: :map,
       description:
-        "Map with :shock_pct, shocked :equity, per-position :positions (:margin, :liquidated?), " <>
-          ":portfolio_margin, and :liquidation_price from portfolio-margin netting."
+        "Map with :shock_pct, shocked :equity, per-position :positions (:margin), " <>
+          ":portfolio_margin, :liquidation_price from portfolio-margin netting, and " <>
+          "book-wide :portfolio_liquidated?."
     }
   )
 
@@ -93,8 +94,7 @@ defmodule DeltaCalc.StressScenario do
           side: position.side,
           quantity: to_decimal(position.quantity),
           mark_price: shocked_mark,
-          margin: position_margin(position, shocked_mark),
-          liquidated?: portfolio_liquidated?
+          margin: position_margin(position, shocked_mark)
         }
       end)
 
@@ -103,7 +103,8 @@ defmodule DeltaCalc.StressScenario do
       equity: shocked_account.equity,
       positions: positions,
       portfolio_margin: PortfolioMargin.combined_maintenance_margin(shocked_account),
-      liquidation_price: PortfolioMargin.portfolio_liquidation_price(shocked_account)
+      liquidation_price: PortfolioMargin.portfolio_liquidation_price(shocked_account),
+      portfolio_liquidated?: portfolio_liquidated?
     }
   end
 

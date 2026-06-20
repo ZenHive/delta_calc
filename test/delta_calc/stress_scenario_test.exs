@@ -39,19 +39,52 @@ defmodule DeltaCalc.StressScenarioTest do
       assert Decimal.equal?(short.margin, Decimal.new("13.50000000"))
     end
 
-    test "marks positions liquidated when shocked equity is below portfolio maintenance margin" do
+    test "reports portfolio_liquidated? when shocked equity is below portfolio maintenance margin" do
       result = StressScenario.apply_shock(@net_long_account, Decimal.new("-20"))
 
       assert Decimal.equal?(result.equity, Decimal.new("-200.00000000"))
       assert Decimal.equal?(result.portfolio_margin, Decimal.new("24.00000000"))
-      assert Enum.all?(result.positions, &(&1.liquidated? == true))
+      assert result.portfolio_liquidated? == true
+      assert Enum.all?(result.positions, &(not Map.has_key?(&1, :liquidated?)))
     end
 
-    test "keeps positions alive when shocked equity covers portfolio maintenance margin" do
+    test "reports portfolio_liquidated? false when shocked equity covers portfolio maintenance margin" do
       result = StressScenario.apply_shock(@net_long_account, Decimal.new("-10"))
 
       assert Decimal.equal?(result.portfolio_margin, Decimal.new("27.00000000"))
-      assert Enum.all?(result.positions, &(&1.liquidated? == false))
+      assert result.portfolio_liquidated? == false
+      assert Enum.all?(result.positions, &(not Map.has_key?(&1, :liquidated?)))
+    end
+
+    test "does not mark profitable hedge legs with a per-position liquidated? when the book survives" do
+      account = %{
+        equity: Decimal.new("20"),
+        positions: [
+          %{
+            id: :losing_long,
+            side: :long,
+            quantity: Decimal.new("5"),
+            mark_price: Decimal.new("100"),
+            mmr: Decimal.new("0.01")
+          },
+          %{
+            id: :hedge_short,
+            side: :short,
+            quantity: Decimal.new("4"),
+            mark_price: Decimal.new("100"),
+            mmr: Decimal.new("0.01")
+          }
+        ]
+      }
+
+      result = StressScenario.apply_shock(account, Decimal.new("-15"))
+
+      assert result.portfolio_liquidated? == false
+      assert Decimal.equal?(result.equity, Decimal.new("5.00000000"))
+
+      short = Enum.find(result.positions, &(&1.id == :hedge_short))
+      assert short.side == :short
+      assert not Map.has_key?(short, :liquidated?)
     end
 
     test "uses PortfolioMargin for netted liquidation price and maintenance margin" do

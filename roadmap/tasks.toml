@@ -1189,7 +1189,7 @@ scored_at = "2026-06-19"
 id = 47
 phase = 3
 bundle = "consumer_math"
-status = "in_progress"
+status = "done"
 title = "Move presentation strings out of pure-calc results"
 scores = { d = 2, b = 5, u = 5 }
 acceptance_criteria = ["OptionsRisk results return structured Decimal/atom fields instead of formatted strings (e.g. margin_impact as a Decimal, kill-switch timing as numeric day fields)", "No pure-calc result map contains human-formatted prose a consumer must parse to recover a number", "Any formatting helpers are clearly caller-side or removed", "mix ci clean"]
@@ -1199,9 +1199,14 @@ model = "composer-2.5"
 body = """
 OptionsRisk embeds presentation strings inside otherwise-pure calc results: format_margin_impact returns things like "+45%" and kill_switch_trigger returns prose like "Day 12-30 depending on rate". A headless value-in/value-out engine should not force consumers to regex numbers back out of formatted strings. Return the underlying Decimals/atoms (e.g. an impact ratio Decimal, numeric min/max kill-switch day fields) and leave formatting to callers.
 """
+implemented = "Landed by cursor via merge-train; reviewer-approved (run run-1781959667651-8855b9af, 4093ce33fc22e6b2b9a8700adff3b09189a3291e)."
+delivered_by = "cursor"
+verified = true
 created_at = "2026-06-19"
 started_at = "2026-06-20"
 scored_at = "2026-06-19"
+done_at = "2026-06-20"
+shipped_in = "4093ce33fc22e6b2b9a8700adff3b09189a3291e"
 
 [[task]]
 id = 48

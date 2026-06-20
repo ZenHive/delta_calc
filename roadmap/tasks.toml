@@ -1005,8 +1005,10 @@ status = "pending"
 title = "Fix inverted min_delta raw→daily scaling in Funding.find_arbitrage_opportunities (divide vs multiply)"
 scores = { d = 3, b = 5, u = 5 }
 depends_on = [36]
-acceptance_criteria = ["find_arbitrage_opportunities raw→daily min_delta scaling matches the file's own arbitrage-threshold convention (raw threshold × periods_per_day to reach daily terms), or a documented justification is given for why min_delta diverges", "A raw per-period spread strictly below min_delta is excluded after daily normalization; one at/above is included — proven by a worked dimensional example in the test, not re-asserting current output", "The task-36 golden test 'normalizes min_delta for venue-cadence-map comparison entries' is re-derived from first principles, not from the inverted scaling", ":raw_per_period (scalar-cadence) filtering behavior is unchanged", "mix ci clean; Funding coverage stays >= 95% (money math)"]
+acceptance_criteria = ["find_arbitrage_opportunities raw→daily min_delta scaling matches the file's own arbitrage-threshold convention (raw threshold × periods_per_day to reach daily terms), or a documented justification is given for why min_delta diverges", "A raw per-period spread strictly below min_delta is excluded after daily normalization; one at/above is included — proven by a worked dimensional example in the test, not re-asserting current output", "The task-36 golden test 'normalizes min_delta for venue-cadence-map comparison entries' is re-derived from first principles, not from the inverted scaling", ":raw_per_period (scalar-cadence) filtering behavior is unchanged", "mix ci clean; Funding coverage stays >= 95% (money math)", "Remove the `@tag :domain_pending` from the task-37 raw→daily scaling test in test/delta_calc/domain_invariants_test.exs so the invariant runs green under mix ci"]
 out_of_scope = ["Changing the arbitrage threshold domain constant (@arbitrage_threshold) itself", "Changing the :delta unit tagging contract introduced by task 36", "Adding new venue cadence presets"]
+assignee = "codex"
+model = "gpt-5.5"
 body = """
 Task 36 added `threshold_for_delta_unit/2` so `find_arbitrage_opportunities/2` filters `:daily_normalized` comparison entries against a cadence-aware threshold. The scaling DIRECTION appears inverted. For `:daily_normalized` entries it computes `min_delta / @default_periods_per_day` (divide by 3), but the daily delta is `raw_rate * periods_per_day` — LARGER than a raw per-period spread, not smaller. To express a raw per-period `min_delta` on the same daily basis as the delta it is compared against, it should be MULTIPLIED by periods, not divided.
 
@@ -1026,7 +1028,7 @@ bundle = "consumer_math"
 status = "pending"
 title = "Standardize funding-rate unit (fraction) across all DeltaCalc modules"
 scores = { d = 4, b = 8, u = 7 }
-acceptance_criteria = ["Every funding-rate :value parameter across the library uses ONE documented unit (fraction, e.g. 0.0001 = 0.01%)", "MarginBridge and OptionsRisk no longer divide funding inputs by 100; their docs/examples updated to the fraction convention", "A caller can feed the same funding-rate value to Hedging.calculate_funding_cost AND MarginBridge.stress_test_prolonged_negative and get dimensionally consistent results", "A manifest/consistency test (or doctest) pins the unit convention so drift fails CI", "mix ci clean; money-math modules stay >= 95% coverage"]
+acceptance_criteria = ["Every funding-rate :value parameter across the library uses ONE documented unit (fraction, e.g. 0.0001 = 0.01%)", "MarginBridge and OptionsRisk no longer divide funding inputs by 100; their docs/examples updated to the fraction convention", "A caller can feed the same funding-rate value to Hedging.calculate_funding_cost AND MarginBridge.stress_test_prolonged_negative and get dimensionally consistent results", "A manifest/consistency test (or doctest) pins the unit convention so drift fails CI", "mix ci clean; money-math modules stay >= 95% coverage", "Remove the `@tag :domain_pending` from the task-38 funding-unit test in test/delta_calc/domain_invariants_test.exs so the invariant runs green under mix ci"]
 out_of_scope = ["Changing funding cadence defaults", "Changing the arbitrage threshold constant"]
 body = """
 The library uses two incompatible funding-rate units. Funding.*, Carry.funding_yield, and Hedging.calculate_funding_cost/3 treat the rate as a FRACTION (0.0001 = 0.01%, no /100). MarginBridge.stress_test_prolonged_negative / check_kill_switch and OptionsRisk (which delegates to MarginBridge) treat it as a PERCENT number and divide by 100 internally. A consumer who derives one funding rate and passes it to both a Hedging function and a MarginBridge function is off by 100x, silently.
@@ -1062,6 +1064,8 @@ title = "Manifest consistency test must cover unannotated public functions"
 scores = { d = 2, b = 6, u = 6 }
 acceptance_criteria = ["ManifestConsistencyTest asserts every public function in a registered module is advertised via api() (compare __info__(:functions) against __api__(), excluding generated/callback functions)", "DCAPlanner.calculate_dca_ladder/10 is either annotated with api() or made private/deprecated so it is no longer an unadvertised public function", "The new check fails CI when a public function lacks api()", "mix ci clean"]
 out_of_scope = ["Adding new public functions", "Changing the existing three invariants"]
+assignee = "grok"
+model = "grok-composer-2.5-fast"
 body = """
 All three ManifestConsistencyTest invariants iterate mod.__api__() — the ADVERTISED surface — never mod.__info__(:functions). So a public function with no api() annotation is invisible to every check: it is not tested for uniqueness, registration, or :hints. DCAPlanner.calculate_dca_ladder/10 is exactly such an escaped public function.
 
@@ -1077,7 +1081,7 @@ bundle = "consumer_math"
 status = "pending"
 title = "Remove baked-in venue risk constants from generic margin/liquidation math"
 scores = { d = 4, b = 6, u = 6 }
-acceptance_criteria = ["Calc.dca_ladder MMR re-tiering no longer hardcodes notional thresholds (50k/250k/1M) and multipliers; the tier schedule is caller-supplied or the tiering is removed from the generic engine", "MarginBridge kill-switch / cadence assumptions are caller-supplied :value params rather than implicit 8h defaults", "Defaults, if any remain, are documented as conventions and overridable", "Tests cover a non-default tier schedule and a non-8h cadence", "mix ci clean"]
+acceptance_criteria = ["Calc.dca_ladder MMR re-tiering no longer hardcodes notional thresholds (50k/250k/1M) and multipliers; the tier schedule is caller-supplied or the tiering is removed from the generic engine", "MarginBridge kill-switch / cadence assumptions are caller-supplied :value params rather than implicit 8h defaults", "Defaults, if any remain, are documented as conventions and overridable", "Tests cover a non-default tier schedule and a non-8h cadence", "mix ci clean", "Replace the task-41 `flunk` placeholder and remove its `@tag :domain_pending` in test/delta_calc/domain_invariants_test.exs (caller-supplied tier schedule changes the liquidation result) so the invariant runs green under mix ci"]
 out_of_scope = ["Funding-rate unit standardization (separate task)", "Adding venue presets"]
 body = """
 Generic calc functions bake in venue/risk-engine constants. Calc.calculate_tiered_mmr hardcodes a tier ladder (0-50k base, 50k-250k x1.5, 250k-1M x2, 1M+ x2.5) inside the DCA liquidation path; MarginBridge's kill-switch thresholds assume an 8h/default cadence while sibling functions accept periods_per_day. These are the venue-constant anti-pattern this repo's CLAUDE.md explicitly warns about: internally consistent, fully tested, and wrong for any venue that differs.
@@ -1111,6 +1115,8 @@ title = "Fix PortfolioMargin netted mark price for offsetting legs"
 scores = { d = 4, b = 7, u = 6 }
 acceptance_criteria = ["Net exposure no longer uses a single gross-quantity-weighted mark across offsetting long/short legs when those legs have different marks", "Maintenance margin and liquidation price are correct for a book with offsetting legs at different mark prices (worked example in test)", "Behavior for a single-instrument, single-mark book is unchanged", "mix ci clean; PortfolioMargin coverage >= 95%"]
 out_of_scope = ["Multi-instrument cross-margin correlations", "Changing the netting model for same-mark books"]
+assignee = "cursor"
+model = "composer-2.5"
 body = """
 PortfolioMargin.net_exposure collapses the book to one gross-quantity-weighted average mark price, then applies it to the NET quantity for maintenance margin and liquidation. For offsetting legs marked at different prices, that blended mark is not the net position's mark, so combined_maintenance_margin and portfolio_liquidation_price are wrong. Group by instrument (or compute signed notional over net quantity, or require identical marks per netted exposure) so the netted-book math is correct when longs and shorts are marked differently. Prove it with a worked offsetting-legs example, and keep single-mark books unchanged.
 """
@@ -1141,7 +1147,7 @@ bundle = "consumer_math"
 status = "pending"
 title = "Replace formula-derived golden values with independent fixtures"
 scores = { d = 3, b = 6, u = 6 }
-acceptance_criteria = ["Golden tests for liquidation, position sizing, DCA, fees, and funding assert against independently-sourced expected values, not values computed from the same formula under test", "At least the highest-risk domain formulas have a fixture whose provenance is documented (hand-computed, spec, or external reference)", "Decimal results are compared as Decimals with explicit tolerances rather than converted to floats", "mix ci clean"]
+acceptance_criteria = ["Golden tests for liquidation, position sizing, DCA, fees, and funding assert against independently-sourced expected values, not values computed from the same formula under test", "At least the highest-risk domain formulas have a fixture whose provenance is documented (hand-computed, spec, or external reference)", "Decimal results are compared as Decimals with explicit tolerances rather than converted to floats", "mix ci clean", "Replace the task-45 `flunk` placeholder and remove its `@tag :domain_pending` in test/delta_calc/domain_invariants_test.exs (independently-sourced liquidation fixture) so the invariant runs green under mix ci"]
 out_of_scope = ["Rewriting the property tests", "Adding integration/live-venue tests"]
 body = """
 Several golden tests compute their expected values from the same formula they exercise, so they verify implementation consistency, not domain correctness — any constant error baked into the formula is ratified by its own golden (the exact failure CLAUDE.md warns about, and how tasks 24-26 shipped wrong constants clean). Some assertions also convert Decimals to floats, hiding precision/rounding regressions.
@@ -1175,6 +1181,8 @@ title = "Move presentation strings out of pure-calc results"
 scores = { d = 2, b = 5, u = 5 }
 acceptance_criteria = ["OptionsRisk results return structured Decimal/atom fields instead of formatted strings (e.g. margin_impact as a Decimal, kill-switch timing as numeric day fields)", "No pure-calc result map contains human-formatted prose a consumer must parse to recover a number", "Any formatting helpers are clearly caller-side or removed", "mix ci clean"]
 out_of_scope = ["Adding a presentation/formatting layer to the library"]
+assignee = "cursor"
+model = "composer-2.5"
 body = """
 OptionsRisk embeds presentation strings inside otherwise-pure calc results: format_margin_impact returns things like "+45%" and kill_switch_trigger returns prose like "Day 12-30 depending on rate". A headless value-in/value-out engine should not force consumers to regex numbers back out of formatted strings. Return the underlying Decimals/atoms (e.g. an impact ratio Decimal, numeric min/max kill-switch day fields) and leave formatting to callers.
 """
@@ -1205,6 +1213,8 @@ title = "Disambiguate zero-as-sentinel vs legitimate zero in Calc returns"
 scores = { d = 3, b = 4, u = 4 }
 acceptance_criteria = ["Calc functions distinguish invalid input from a legitimate zero result (tagged tuples, documented sentinels, or :error) for effective_leverage, liquidation, leverage_to_aum, and safety", "A programmatic consumer can tell 'no liquidation risk / no position' from 'bad input'", "Existing callers are updated to the new contract", "mix ci clean"]
 out_of_scope = ["Changing the underlying formulas"]
+assignee = "codex"
+model = "gpt-5.5"
 body = """
 Calc.effective_leverage, liquidation, leverage_to_aum, and safety all return 0 (or zeroed maps) both for a legitimate zero AND for invalid input (zero equity, non-positive entry). A consumer — especially an AI agent reading the manifest — cannot distinguish 'no liquidation risk' from 'you passed bad input'. Introduce an unambiguous contract (tagged tuples, a documented sentinel, or {:error, reason}) and update internal callers. Pairs with the coercion task but is about return values, not inputs.
 """
@@ -1220,6 +1230,8 @@ title = "Fix per-position liquidated? semantics in StressScenario.apply_shock"
 scores = { d = 2, b = 4, u = 4 }
 acceptance_criteria = ["apply_shock no longer copies one portfolio-level boolean onto every position's liquidated? field, OR the field is renamed to reflect that it is a book-wide flag", "A position's reported liquidation state matches its actual state under the portfolio-margin model", "Tests cover a book where the portfolio survives but the field would previously mislabel legs", "mix ci clean"]
 out_of_scope = ["Changing the cascade simulation", "Per-instrument liquidation modeling"]
+assignee = "grok"
+model = "grok-composer-2.5-fast"
 body = """
 StressScenario.apply_shock computes one portfolio-level liquidated? boolean and copies it onto every position in the result, so a healthy leg reports liquidated?: true whenever the book as a whole is under water. The field name implies per-position truth it does not carry. Either compute per-position liquidation state, or rename the field to a book-wide flag (e.g. portfolio_liquidated?) so the result is not misleading.
 """

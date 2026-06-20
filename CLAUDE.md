@@ -67,6 +67,38 @@ things, and real correctness bugs landed clean through both gaps (tasks 24/25/26
 Rule of thumb: if a defect can only be caught by knowing the *domain* or seeing the *whole surface*,
 no per-task reviewer will catch it — encode it as an acceptance criterion or a manifest-wide test.
 
+## Domain Invariants — The Load-Bearing Truths a Per-Task Reviewer Can't See
+
+These are the cross-cutting domain rules that every module must honor and that no single-diff
+review can verify. They are **enforced as executable assertions** in
+`test/delta_calc/domain_invariants_test.exs` (run by `mix ci`), computed independently of the
+formulas under test — never re-asserting current output. State them here so the cross-family
+reviewer (which reads `AGENTS.md`, generated from this file) can reject a diff that violates one.
+When a new invariant is discovered, add it both here and as a test; the test is the gate, this list
+is the rationale.
+
+- **Funding rate is a fraction, everywhere.** Every funding-rate `:value` input across the surface
+  is a decimal fraction (`0.0001` = 0.01%), matching `Funding`/`Carry`/`Hedging` — the canonical
+  convention. No module may treat the same numeric rate as a percent and divide by 100 internally.
+  The same rate fed to two modules must give dimensionally consistent results, not a silent 100x.
+- **Raw→daily scales by ×periods, in one direction.** `daily = raw_per_period × periods_per_day`,
+  so a raw threshold expressed on a daily basis is **larger**, not smaller. Any raw→daily
+  conversion (arbitrage threshold, `min_delta` normalization) multiplies by periods; a `÷periods`
+  on this conversion is the bug.
+- **No baked-in venue constants in generic math.** Funding cadence, MMR tier schedules, fee tiers,
+  and kill-switch thresholds are caller-supplied `:value` params. Any default left in place is
+  documented as a convention and is overridable — proven by a test feeding a non-default value.
+- **Goldens are independently sourced.** High-risk formula fixtures (liquidation, sizing, DCA, fees,
+  funding) assert against values computed *outside* the code under test — hand-computed, from a
+  spec, or external reference — with documented provenance, compared as `Decimal` with explicit
+  tolerances (never `to_float`). A golden derived from the same formula proves consistency, not
+  correctness, and ratifies any constant error baked into the formula.
+
+**Pending invariants** (target post-fix state for an open roadmap task) are tagged
+`@tag :domain_pending` and excluded from the default run so the harness bundle stays green; they are
+real red assertions, not `assert true`. Run them with `mix test --include domain_pending` to watch
+each go green as its task lands — the fixing task's acceptance criteria include removing its tag.
+
 ## AGENTS.md is generated — regenerate after editing CLAUDE.md
 
 `AGENTS.md` is **not** hand-authored: it's the Codex-facing view of this file, produced by

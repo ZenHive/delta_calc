@@ -52,7 +52,7 @@ defmodule DeltaCalc.PositionCalculator do
     returns: %{
       type: :map,
       description:
-        "Map with allocation, position, effective_leverage, leverage_to_aum, safety, and mmr_info"
+        "Map with allocation, position, effective_leverage, leverage_to_aum, safety, and mmr_info, or {:error, reason}"
     }
   )
 
@@ -103,7 +103,7 @@ defmodule DeltaCalc.PositionCalculator do
 
       calculate_position(params, config)
   """
-  @spec calculate_position(params(), map()) :: calculation_result()
+  @spec calculate_position(params(), map()) :: calculation_result() | {:error, atom()}
   def calculate_position(params, config) do
     %{
       aum: _aum,
@@ -125,39 +125,42 @@ defmodule DeltaCalc.PositionCalculator do
     initial_position_allocation = Decimal.mult(subaccount_equity, initial_position_pct)
     position_size = Decimal.mult(initial_position_allocation, ui_leverage)
     dca_reserve = Decimal.sub(subaccount_equity, initial_position_allocation)
-    effective_leverage = Calc.effective_leverage(position_size, subaccount_equity)
-    leverage_to_aum = Calc.leverage_to_aum(position_size, params.aum)
-
     mmr_total = Decimal.add(mmr_rate, mark_buffer)
-    liquidation_price = Calc.liquidation(entry_price, effective_leverage, mmr_total, side)
-    black_swan_price = calculate_black_swan_price(entry_price, black_swan_pct, side)
-    is_safe = check_black_swan_safety(liquidation_price, black_swan_price, side)
-    distance_to_liq = calculate_liquidation_distance(entry_price, liquidation_price, side)
-    leftover = calculate_leftover(params.aum, subaccount_equity)
 
-    %{
-      allocation:
-        build_allocation_result(
-          subaccount_equity,
-          initial_position_allocation,
-          dca_reserve,
-          initial_position_pct,
-          leftover,
-          mode_config
-        ),
-      position: build_position_result(position_size, effective_leverage, entry_price, side),
-      effective_leverage: Calc.quantize(effective_leverage),
-      leverage_to_aum: Calc.quantize(leverage_to_aum),
-      safety:
-        build_safety_result(
-          is_safe,
-          liquidation_price,
-          black_swan_price,
-          distance_to_liq,
-          black_swan_pct
-        ),
-      mmr_info: build_mmr_info(mmr_rate)
-    }
+    with %Decimal{} = effective_leverage <-
+           Calc.effective_leverage(position_size, subaccount_equity),
+         %Decimal{} = leverage_to_aum <- Calc.leverage_to_aum(position_size, params.aum),
+         %Decimal{} = liquidation_price <-
+           Calc.liquidation(entry_price, effective_leverage, mmr_total, side) do
+      black_swan_price = calculate_black_swan_price(entry_price, black_swan_pct, side)
+      is_safe = check_black_swan_safety(liquidation_price, black_swan_price, side)
+      distance_to_liq = calculate_liquidation_distance(entry_price, liquidation_price, side)
+      leftover = calculate_leftover(params.aum, subaccount_equity)
+
+      %{
+        allocation:
+          build_allocation_result(
+            subaccount_equity,
+            initial_position_allocation,
+            dca_reserve,
+            initial_position_pct,
+            leftover,
+            mode_config
+          ),
+        position: build_position_result(position_size, effective_leverage, entry_price, side),
+        effective_leverage: Calc.quantize(effective_leverage),
+        leverage_to_aum: Calc.quantize(leverage_to_aum),
+        safety:
+          build_safety_result(
+            is_safe,
+            liquidation_price,
+            black_swan_price,
+            distance_to_liq,
+            black_swan_pct
+          ),
+        mmr_info: build_mmr_info(mmr_rate)
+      }
+    end
   end
 
   @spec calculate_subaccount_equity(Decimal.t(), map()) :: Decimal.t()

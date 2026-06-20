@@ -61,6 +61,20 @@ defmodule DeltaCalc.AccountMetricsTest do
 
       assert result.safety.verdict == :safe
     end
+
+    test "returns Calc error when account equity is invalid" do
+      account = %{
+        entry_price: Decimal.new("3000"),
+        notional: Decimal.new("10000"),
+        equity: Decimal.new("0"),
+        margin_used: Decimal.new("1000"),
+        mmr_total: Decimal.new("0.005"),
+        side: :long,
+        swan_pct: Decimal.new("25")
+      }
+
+      assert AccountMetrics.calculate(account) == {:error, :non_positive_wallet_equity}
+    end
   end
 
   describe "margin_usage_pct/2" do

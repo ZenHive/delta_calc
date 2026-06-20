@@ -9,14 +9,19 @@ defmodule DeltaCalc.CalcTest do
       assert Decimal.equal?(result, Decimal.new("2.00000000"))
     end
 
-    test "returns zero for zero equity" do
+    test "returns error for zero equity" do
       result = Calc.effective_leverage(Decimal.new(10_000), Decimal.new(0))
-      assert Decimal.equal?(result, Decimal.new(0))
+      assert result == {:error, :non_positive_wallet_equity}
     end
 
-    test "returns zero for negative equity" do
+    test "returns error for negative equity" do
       result = Calc.effective_leverage(Decimal.new(10_000), Decimal.new(-100))
-      assert Decimal.equal?(result, Decimal.new(0))
+      assert result == {:error, :non_positive_wallet_equity}
+    end
+
+    test "returns numeric zero for no position" do
+      result = Calc.effective_leverage(Decimal.new(0), Decimal.new(5000))
+      assert Decimal.equal?(result, Decimal.new("0.00000000"))
     end
 
     test "handles fractional leverage" do
@@ -41,14 +46,19 @@ defmodule DeltaCalc.CalcTest do
       assert Decimal.equal?(result, Decimal.new("0.10000000"))
     end
 
-    test "returns zero for zero AUM" do
+    test "returns error for zero AUM" do
       result = Calc.leverage_to_aum(Decimal.new(10_000), Decimal.new(0))
-      assert Decimal.equal?(result, Decimal.new(0))
+      assert result == {:error, :non_positive_total_aum}
     end
 
-    test "returns zero for negative AUM" do
+    test "returns error for negative AUM" do
       result = Calc.leverage_to_aum(Decimal.new(10_000), Decimal.new(-100_000))
-      assert Decimal.equal?(result, Decimal.new(0))
+      assert result == {:error, :non_positive_total_aum}
+    end
+
+    test "returns numeric zero for no position" do
+      result = Calc.leverage_to_aum(Decimal.new(0), Decimal.new(100_000))
+      assert Decimal.equal?(result, Decimal.new("0.00000000"))
     end
 
     test "handles fractional leverage to AUM" do
@@ -97,14 +107,19 @@ defmodule DeltaCalc.CalcTest do
       assert_in_delta(Decimal.to_float(result), 4492.5, 0.01)
     end
 
-    test "returns zero for zero leverage" do
+    test "returns zero for zero leverage no-position case" do
       result = Calc.liquidation(Decimal.new(3000), Decimal.new(0), Decimal.new("0.005"), :long)
-      assert Decimal.equal?(result, Decimal.new(0))
+      assert Decimal.equal?(result, Decimal.new("0.00000000"))
     end
 
-    test "returns zero for negative leverage" do
+    test "returns error for negative leverage" do
       result = Calc.liquidation(Decimal.new(3000), Decimal.new(-1), Decimal.new("0.005"), :short)
-      assert Decimal.equal?(result, Decimal.new(0))
+      assert result == {:error, :negative_effective_leverage}
+    end
+
+    test "returns error for non-positive entry" do
+      assert Calc.liquidation(Decimal.new(0), Decimal.new(2), Decimal.new("0.005"), :long) ==
+               {:error, :non_positive_entry}
     end
 
     test "handles high leverage long" do
@@ -433,21 +448,14 @@ defmodule DeltaCalc.CalcTest do
       assert result.verdict in [:safe, :tight, :unsafe]
     end
 
-    test "handles entry == 0 without division by zero" do
+    test "returns error for entry == 0" do
       result = Calc.safety(Decimal.new(0), Decimal.new(0), Decimal.new(25), :long, %{})
-      # Expect safe fallback behavior (unsafe verdict with zeros)
-      assert result.verdict == :unsafe
-      assert Decimal.equal?(result.distance_to_liq_pct, Decimal.new(0))
-      assert Decimal.equal?(result.distance_to_liq_usd, Decimal.new(0))
-      assert Decimal.equal?(result.composite_score, Decimal.new(0))
+      assert result == {:error, :non_positive_entry}
     end
 
-    test "handles negative entry safely" do
+    test "returns error for negative entry" do
       result = Calc.safety(Decimal.new(2500), Decimal.new(-100), Decimal.new(25), :long, %{})
-      # Should return unsafe with zero values
-      assert result.verdict == :unsafe
-      assert Decimal.equal?(result.distance_to_liq_pct, Decimal.new(0))
-      assert Decimal.equal?(result.composite_score, Decimal.new(0))
+      assert result == {:error, :non_positive_entry}
     end
   end
 

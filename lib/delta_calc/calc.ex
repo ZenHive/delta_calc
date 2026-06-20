@@ -27,17 +27,24 @@ defmodule DeltaCalc.Calc do
   @one Decimal.new(1)
   @hundred Decimal.new(100)
 
+  @type decimal_result :: Decimal.t() | {:error, atom()}
+  @type safety_result :: map() | {:error, :non_positive_entry}
+
   api(:effective_leverage, "Calculate effective leverage from notional and wallet equity.",
     params: [
       notional: [kind: :value, description: "Position notional value"],
       wallet_equity: [kind: :value, description: "Wallet/subaccount equity"]
     ],
-    returns: %{type: :decimal, description: "Effective leverage (notional / equity)"}
+    returns: %{
+      type: :decimal,
+      description:
+        "Effective leverage (notional / equity), or {:error, :non_positive_wallet_equity}"
+    }
   )
 
   @doc """
   Calculates the effective leverage based on notional and wallet equity.
-  Guards against zero equity to prevent division errors.
+  Returns `{:error, :non_positive_wallet_equity}` for zero or negative equity.
   Uses absolute notional value for consistent leverage calculation.
 
   ## Examples
@@ -49,9 +56,9 @@ defmodule DeltaCalc.Calc do
       #Decimal<2.00000000>
 
       iex> effective_leverage(Decimal.new(10000), Decimal.new(0))
-      #Decimal<0>
+      {:error, :non_positive_wallet_equity}
   """
-  @spec effective_leverage(Decimal.t(), Decimal.t()) :: Decimal.t()
+  @spec effective_leverage(Decimal.t(), Decimal.t()) :: decimal_result()
   def effective_leverage(notional, wallet_equity) do
     notional = to_decimal(notional)
     wallet_equity = to_decimal(wallet_equity)
@@ -64,7 +71,7 @@ defmodule DeltaCalc.Calc do
         |> quantize()
 
       _ ->
-        @zero
+        {:error, :non_positive_wallet_equity}
     end
   end
 
@@ -73,7 +80,10 @@ defmodule DeltaCalc.Calc do
       notional: [kind: :value, description: "Position notional value"],
       total_aum: [kind: :value, description: "Total assets under management"]
     ],
-    returns: %{type: :decimal, description: "Exposure ratio (notional / AUM)"}
+    returns: %{
+      type: :decimal,
+      description: "Exposure ratio (notional / AUM), or {:error, :non_positive_total_aum}"
+    }
   )
 
   @doc """
@@ -91,9 +101,9 @@ defmodule DeltaCalc.Calc do
       #Decimal<0.10000000>  # 10% of AUM at risk
 
       iex> leverage_to_aum(Decimal.new(10000), Decimal.new(0))
-      #Decimal<0>
+      {:error, :non_positive_total_aum}
   """
-  @spec leverage_to_aum(Decimal.t(), Decimal.t()) :: Decimal.t()
+  @spec leverage_to_aum(Decimal.t(), Decimal.t()) :: decimal_result()
   def leverage_to_aum(notional, total_aum) do
     notional = to_decimal(notional)
     total_aum = to_decimal(total_aum)
@@ -106,7 +116,7 @@ defmodule DeltaCalc.Calc do
         |> quantize()
 
       _ ->
-        @zero
+        {:error, :non_positive_total_aum}
     end
   end
 
@@ -117,15 +127,19 @@ defmodule DeltaCalc.Calc do
       mmr_total: [kind: :value, description: "Total minimum margin requirement (0-1)"],
       side: [kind: :value, description: "Position side (:long or :short)"]
     ],
-    returns: %{type: :decimal, description: "Estimated liquidation price"}
+    returns: %{
+      type: :decimal,
+      description:
+        "Estimated liquidation price, or {:error, :non_positive_entry | :negative_effective_leverage}"
+    }
   )
 
   @doc """
   Calculates the liquidation price for a position using simplified analytical model.
 
   ## Parameters
-    - entry: Entry price (must be > 0)
-    - leff: Effective leverage (must be ≥ 0, returns 0 if ≤ 0)
+    - entry: Entry price (must be > 0, returns `{:error, :non_positive_entry}` if ≤ 0)
+    - leff: Effective leverage (must be ≥ 0, returns 0 if 0 and error if < 0)
     - mmr_total: Total minimum margin requirement (decimal 0-1, automatically clamped)
     - side: :long or :short
 
@@ -152,7 +166,9 @@ defmodule DeltaCalc.Calc do
   ## Safety Guards
   - MMR is clamped to [0, 0.99999999] to prevent invalid values
   - Long liquidation prices are clamped to non-negative values
-  - Returns 0 for invalid leverage (≤ 0)
+  - Returns 0 for zero leverage (no position)
+  - Returns `{:error, :negative_effective_leverage}` for negative leverage
+  - Returns `{:error, :non_positive_entry}` for non-positive entry
 
   ## Examples
 
@@ -162,7 +178,7 @@ defmodule DeltaCalc.Calc do
       iex> liquidation(Decimal.new(3000), Decimal.new(2), Decimal.new("0.005"), :short)
       #Decimal<4492.50000000>
   """
-  @spec liquidation(Decimal.t(), Decimal.t(), Decimal.t(), :long | :short) :: Decimal.t()
+  @spec liquidation(Decimal.t(), Decimal.t(), Decimal.t(), :long | :short) :: decimal_result()
   def liquidation(entry, leff, mmr_total, side) do
     entry = to_decimal(entry)
     leff = to_decimal(leff)
@@ -174,12 +190,17 @@ defmodule DeltaCalc.Calc do
       |> Decimal.max(@zero)
       |> Decimal.min(Decimal.new("0.99999999"))
 
-    # Guard against zero or negative leverage
-    case Decimal.compare(leff, @zero) do
-      x when x in [:lt, :eq] ->
-        @zero
+    cond do
+      Decimal.compare(entry, @zero) in [:lt, :eq] ->
+        {:error, :non_positive_entry}
 
-      :gt ->
+      Decimal.compare(leff, @zero) == :lt ->
+        {:error, :negative_effective_leverage}
+
+      Decimal.compare(leff, @zero) == :eq ->
+        quantize(@zero)
+
+      true ->
         case side do
           :long ->
             # entry * (1 - (1 - mmr_total) / leff)
@@ -334,7 +355,10 @@ defmodule DeltaCalc.Calc do
     notional = Decimal.mult(init_margin, ui_lev)
 
     # Calculate effective leverage
-    eff_lev = effective_leverage(notional, sub_eq)
+    eff_lev =
+      notional
+      |> effective_leverage(sub_eq)
+      |> decimal_result_or_zero()
 
     # For both long and short, return notional and effective leverage
     %{
@@ -482,7 +506,8 @@ defmodule DeltaCalc.Calc do
     ],
     returns: %{
       type: :map,
-      description: "Map with verdict, distance metrics, and composite_score"
+      description:
+        "Map with verdict, distance metrics, and composite_score, or {:error, :non_positive_entry}"
     }
   )
 
@@ -491,7 +516,7 @@ defmodule DeltaCalc.Calc do
 
   ## Parameters
     - liq: Liquidation price (any value)
-    - entry: Entry price (must be > 0, returns :unsafe with zeros if ≤ 0)
+    - entry: Entry price (must be > 0, returns `{:error, :non_positive_entry}` if ≤ 0)
     - swan_pct: Black swan percentage threshold (≥ 0, typically 0-100)
     - side: :long or :short
     - cfg: Safety configuration with thresholds
@@ -512,7 +537,7 @@ defmodule DeltaCalc.Calc do
     - composite_score: Overall safety score (0-100)
 
   ## Safety Guards
-    - Returns :unsafe with zero distances if entry ≤ 0
+    - Returns `{:error, :non_positive_entry}` if entry ≤ 0
     - Handles swan_pct = 0 without division errors
     - Caps composite score at 100 for distances beyond swan threshold
 
@@ -529,7 +554,7 @@ defmodule DeltaCalc.Calc do
         composite_score: #Decimal<75.00000000>
       }
   """
-  @spec safety(Decimal.t(), Decimal.t(), Decimal.t(), :long | :short, map()) :: map()
+  @spec safety(Decimal.t(), Decimal.t(), Decimal.t(), :long | :short, map()) :: safety_result()
   def safety(liq, entry, swan_pct, side, cfg \\ %{}) do
     liq = to_decimal(liq)
     entry = to_decimal(entry)
@@ -537,23 +562,10 @@ defmodule DeltaCalc.Calc do
 
     # Guard against zero or negative entry price
     if Decimal.compare(entry, @zero) in [:eq, :lt] do
-      build_unsafe_safety_result(swan_pct)
+      {:error, :non_positive_entry}
     else
       calculate_safety_metrics(liq, entry, swan_pct, side, cfg)
     end
-  end
-
-  # Helper function for building unsafe safety result
-  @spec build_unsafe_safety_result(Decimal.t()) :: map()
-  defp build_unsafe_safety_result(swan_pct) do
-    %{
-      verdict: :unsafe,
-      distance_to_liq_pct: quantize(@zero),
-      distance_to_liq_usd: quantize(@zero),
-      distance_to_swan_pct: quantize(swan_pct),
-      distance_to_swan_usd: quantize(@zero),
-      composite_score: quantize(@zero)
-    }
   end
 
   # Calculate safety metrics for valid entry prices
@@ -736,7 +748,7 @@ defmodule DeltaCalc.Calc do
           Decimal.t(),
           map()
         ) ::
-          map()
+          map() | {:error, atom()}
   def compare_dca_safety(
         single_leg,
         dca_leg,
@@ -747,34 +759,35 @@ defmodule DeltaCalc.Calc do
         swan_pct,
         safety_cfg \\ %{}
       ) do
-    # Calculate single leg position
     single_notional = to_decimal(single_leg.notional)
     single_entry = to_decimal(single_leg.entry)
-    single_lev = effective_leverage(single_notional, initial_equity)
-    single_liq = liquidation(single_entry, single_lev, mmr, side)
-
-    # Calculate multi-leg position after DCA
     legs = [single_leg, dca_leg]
     multi_pos = multi_leg_position(legs, current_price, initial_equity, side)
-    multi_liq = liquidation(multi_pos.avg_entry, multi_pos.effective_leverage, mmr, side)
 
-    # Calculate safety metrics
-    pre_dca_safety = safety(single_liq, single_entry, swan_pct, side, safety_cfg)
-    post_dca_safety = safety(multi_liq, multi_pos.avg_entry, swan_pct, side, safety_cfg)
+    with %Decimal{} = single_lev <- effective_leverage(single_notional, initial_equity),
+         %Decimal{} = single_liq <- liquidation(single_entry, single_lev, mmr, side),
+         %Decimal{} = multi_liq <-
+           liquidation(multi_pos.avg_entry, multi_pos.effective_leverage, mmr, side),
+         %{} = pre_dca_safety <- safety(single_liq, single_entry, swan_pct, side, safety_cfg),
+         %{} = post_dca_safety <-
+           safety(multi_liq, multi_pos.avg_entry, swan_pct, side, safety_cfg) do
+      leverage_change = Decimal.sub(multi_pos.effective_leverage, single_lev)
+      liquidation_change = Decimal.sub(multi_liq, single_liq)
 
-    # Calculate changes
-    leverage_change = Decimal.sub(multi_pos.effective_leverage, single_lev)
-    liquidation_change = Decimal.sub(multi_liq, single_liq)
-
-    %{
-      pre_dca: pre_dca_safety,
-      post_dca: post_dca_safety,
-      leverage_change: quantize(leverage_change),
-      liquidation_change: quantize(liquidation_change)
-    }
+      %{
+        pre_dca: pre_dca_safety,
+        post_dca: post_dca_safety,
+        leverage_change: quantize(leverage_change),
+        liquidation_change: quantize(liquidation_change)
+      }
+    end
   end
 
   # Helper functions
+
+  @spec decimal_result_or_zero(decimal_result()) :: Decimal.t()
+  defp decimal_result_or_zero(%Decimal{} = value), do: value
+  defp decimal_result_or_zero({:error, _reason}), do: @zero
 
   defp to_decimal(value) when is_binary(value), do: Decimal.new(value)
   defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
@@ -1045,12 +1058,19 @@ defmodule DeltaCalc.Calc do
     new_wallet_equity = state.wallet_equity
 
     # Calculate new effective leverage
-    new_eff_lev = effective_leverage(cumulative_notional, new_wallet_equity)
+    new_eff_lev =
+      cumulative_notional
+      |> effective_leverage(new_wallet_equity)
+      |> decimal_result_or_zero()
 
     # Calculate new liquidation price with re-tiered MMR
     # Re-tier MMR based on new cumulative notional for more accurate liquidation calculations
     adjusted_mmr_rate = calculate_tiered_mmr(cumulative_notional, mmr_rate)
-    new_liq = liquidation(new_avg_entry, new_eff_lev, adjusted_mmr_rate, side)
+
+    new_liq =
+      new_avg_entry
+      |> liquidation(new_eff_lev, adjusted_mmr_rate, side)
+      |> decimal_result_or_zero()
 
     %{
       step_num: step_num,
@@ -1123,7 +1143,10 @@ defmodule DeltaCalc.Calc do
         steps: [],
         final_avg_entry: entry_price,
         final_notional: initial_notional,
-        final_liq: liquidation(entry_price, initial_eff_lev, mmr_rate, side),
+        final_liq:
+          entry_price
+          |> liquidation(initial_eff_lev, mmr_rate, side)
+          |> decimal_result_or_zero(),
         final_eff_lev: initial_eff_lev
       }
     else

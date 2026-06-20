@@ -152,6 +152,13 @@ defmodule DeltaCalc.PositionCalculatorTest do
       assert D.equal?(result.mmr_info.mmr, D.new("0.00500000"))
       assert D.equal?(result.mmr_info.rate_display, D.new("0.50000000"))
     end
+
+    test "returns Calc error when entry price is invalid" do
+      result =
+        PositionCalculator.calculate_position(base_params(entry_price: D.new("0")), @config)
+
+      assert result == {:error, :non_positive_entry}
+    end
   end
 
   describe "calculate_position/2 — BTC short golden (source scenario 2)" do

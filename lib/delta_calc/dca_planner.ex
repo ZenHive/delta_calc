@@ -318,7 +318,7 @@ defmodule DeltaCalc.DCAPlanner do
     returns: %{
       type: :list,
       description:
-        "Enhanced steps with leverage_to_aum, passes_black_swan, and black_swan_price fields"
+        "Enhanced steps with leverage_to_aum, passes_black_swan, and black_swan_price fields, or {:error, reason}"
     }
   )
 
@@ -349,11 +349,9 @@ defmodule DeltaCalc.DCAPlanner do
       #=> [%{..., leverage_to_aum: Decimal.new("0.02"), passes_black_swan: true, ...}]
   """
   @spec enhance_dca_steps([dca_step()], Decimal.t(), Decimal.t(), Decimal.t(), :long | :short) ::
-          [dca_step()]
+          [dca_step()] | {:error, atom()}
   def enhance_dca_steps(steps, aum, black_swan_pct, entry_price, side) do
-    Enum.map(steps, fn step ->
-      leverage_to_aum = Calc.leverage_to_aum(step.cumulative_notional, aum)
-
+    Enum.reduce_while(steps, [], fn step, acc ->
       black_swan_price =
         if side == :long do
           Decimal.mult(entry_price, Decimal.sub(@default_one, black_swan_pct))
@@ -368,12 +366,25 @@ defmodule DeltaCalc.DCAPlanner do
           Decimal.compare(step.new_liq, black_swan_price) == :gt
         end
 
-      Map.merge(step, %{
-        leverage_to_aum: Calc.quantize(leverage_to_aum),
-        passes_black_swan: passes_black_swan,
-        black_swan_price: Calc.quantize(black_swan_price)
-      })
+      case Calc.leverage_to_aum(step.cumulative_notional, aum) do
+        %Decimal{} = leverage_to_aum ->
+          step =
+            Map.merge(step, %{
+              leverage_to_aum: Calc.quantize(leverage_to_aum),
+              passes_black_swan: passes_black_swan,
+              black_swan_price: Calc.quantize(black_swan_price)
+            })
+
+          {:cont, [step | acc]}
+
+        {:error, reason} ->
+          {:halt, {:error, reason}}
+      end
     end)
+    |> case do
+      {:error, reason} -> {:error, reason}
+      enhanced_steps -> Enum.reverse(enhanced_steps)
+    end
   end
 
   @spec resolve_prices(list(), list()) :: list()

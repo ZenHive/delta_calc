@@ -195,6 +195,18 @@ defmodule DeltaCalc.DCAPlannerTest do
       assert D.equal?(step.black_swan_price, D.new("3450.00000000"))
       refute step.passes_black_swan
     end
+
+    test "returns Calc error when AUM is invalid" do
+      steps = [%{cumulative_notional: D.new("130"), new_liq: D.new("695.40")}]
+
+      assert DCAPlanner.enhance_dca_steps(
+               steps,
+               D.new("0"),
+               D.new("0.15"),
+               D.new("3000"),
+               :long
+             ) == {:error, :non_positive_total_aum}
+    end
   end
 
   describe "Descripex api() declarations" do

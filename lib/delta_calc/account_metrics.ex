@@ -54,7 +54,7 @@ defmodule DeltaCalc.AccountMetrics do
     returns: %{
       type: :map,
       description:
-        "Map with effective_leverage, liquidation_price, liquidation_distance_pct, margin_usage_pct, and safety."
+        "Map with effective_leverage, liquidation_price, liquidation_distance_pct, margin_usage_pct, and safety, or {:error, reason}."
     }
   )
 
@@ -63,31 +63,33 @@ defmodule DeltaCalc.AccountMetrics do
 
   `:safety_cfg` in `opts` is passed through to `DeltaCalc.Calc.safety/5`.
   """
-  @spec calculate(account(), map()) :: metrics()
+  @spec calculate(account(), map()) :: metrics() | {:error, atom()}
   def calculate(account, opts \\ %{}) do
-    effective_leverage = Calc.effective_leverage(account.notional, account.equity)
-
-    liquidation_price =
-      Calc.liquidation(account.entry_price, effective_leverage, account.mmr_total, account.side)
-
-    safety_cfg = Map.get(opts, :safety_cfg, %{})
-
-    safety =
-      Calc.safety(
-        liquidation_price,
-        account.entry_price,
-        account.swan_pct,
-        account.side,
-        safety_cfg
-      )
-
-    %{
-      effective_leverage: effective_leverage,
-      liquidation_price: liquidation_price,
-      liquidation_distance_pct: safety.distance_to_liq_pct,
-      margin_usage_pct: margin_usage_pct(account.margin_used, account.equity),
-      safety: safety
-    }
+    with %Decimal{} = effective_leverage <-
+           Calc.effective_leverage(account.notional, account.equity),
+         %Decimal{} = liquidation_price <-
+           Calc.liquidation(
+             account.entry_price,
+             effective_leverage,
+             account.mmr_total,
+             account.side
+           ),
+         %{} = safety <-
+           Calc.safety(
+             liquidation_price,
+             account.entry_price,
+             account.swan_pct,
+             account.side,
+             Map.get(opts, :safety_cfg, %{})
+           ) do
+      %{
+        effective_leverage: effective_leverage,
+        liquidation_price: liquidation_price,
+        liquidation_distance_pct: safety.distance_to_liq_pct,
+        margin_usage_pct: margin_usage_pct(account.margin_used, account.equity),
+        safety: safety
+      }
+    end
   end
 
   api(:margin_usage_pct, "Calculate margin used as a percentage of account equity.",

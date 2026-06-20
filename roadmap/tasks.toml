@@ -1001,7 +1001,7 @@ shipped_in = "4cca5c7a70b887e665ad90e790c38c20b27e7e3e"
 id = 37
 phase = 3
 bundle = "consumer_math"
-status = "pending"
+status = "in_progress"
 title = "Fix inverted min_delta raw→daily scaling in Funding.find_arbitrage_opportunities (divide vs multiply)"
 scores = { d = 3, b = 5, u = 5 }
 depends_on = [36]
@@ -1019,6 +1019,7 @@ Root cause to watch for: task 36's own body framed the original bug as "filtered
 Verify against the daily path's arbitrage threshold convention and a worked example: a raw per-period spread below `min_delta` must NOT pass once normalized to daily, and one at/above must. Pure Decimal, no I/O. Scalar-cadence (`:raw_per_period`) filtering must remain unchanged.
 """
 created_at = "2026-06-18"
+started_at = "2026-06-20"
 scored_at = "2026-06-18"
 
 [[task]]

@@ -1691,7 +1691,7 @@
       "id": 37,
       "phase": 3,
       "bundle": "consumer_math",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Fix inverted min_delta raw→daily scaling in Funding.find_arbitrage_opportunities (divide vs multiply)",
       "scores": {
         "d": 3,
@@ -1722,6 +1722,7 @@
       ],
       "body": "Task 36 added `threshold_for_delta_unit/2` so `find_arbitrage_opportunities/2` filters `:daily_normalized` comparison entries against a cadence-aware threshold. The scaling DIRECTION appears inverted. For `:daily_normalized` entries it computes `min_delta / @default_periods_per_day` (divide by 3), but the daily delta is `raw_rate * periods_per_day` — LARGER than a raw per-period spread, not smaller. To express a raw per-period `min_delta` on the same daily basis as the delta it is compared against, it should be MULTIPLIED by periods, not divided.\n\nThe decisive internal evidence: the SAME daily code path normalizes its arbitrage gate raw→daily by MULTIPLYING — `@mixed_cadence_arbitrage_threshold = @arbitrage_threshold * @default_periods_per_day` (0.0005 * 3 = 0.0015), with a docstring that explicitly calls this \"the default 8-hour raw threshold normalized to daily terms\". So the file uses ×periods for one raw→daily conversion (arbitrage threshold) and ÷periods for the other (min_delta) — contradictory directions for the identical conversion. Consequence: daily-normalized entries pass `min_delta` filtering ~9x more permissively than intended, the opposite of \"filter scalar- and map-cadence results together without scale skew\".\n\nRoot cause to watch for: task 36's own body framed the original bug as \"filtered against a threshold ~3x too large, so genuine daily-normalized spreads can be silently dropped\" and illustrated the map delta as `0.0003` (smaller than raw) — both dimensionally backwards, since daily = raw × periods is larger. The implementer faithfully encoded the backwards premise, and the golden test (`normalizes min_delta for venue-cadence-map comparison entries`, min_delta 0.0045 → threshold 0.0015) was computed WITH the inverted scaling, so coverage ratifies it. Re-derive the threshold from dimensional analysis, not from the existing golden.\n\nVerify against the daily path's arbitrage threshold convention and a worked example: a raw per-period spread below `min_delta` must NOT pass once normalized to daily, and one at/above must. Pure Decimal, no I/O. Scalar-cadence (`:raw_per_period`) filtering must remain unchanged.\n",
       "created_at": "2026-06-18",
+      "started_at": "2026-06-20",
       "scored_at": "2026-06-18",
       "cross_repo": []
     },

@@ -253,7 +253,7 @@ defmodule DeltaCalc.FundingTest do
       assert opp.short_exchange == :binance
     end
 
-    test "normalizes min_delta for venue-cadence-map comparison entries" do
+    test "normalizes raw min_delta upward for venue-cadence-map comparison entries" do
       comparison =
         Funding.compare_funding_rates(
           %{
@@ -267,7 +267,9 @@ defmodule DeltaCalc.FundingTest do
 
       assert comparison["BTCUSDT"].delta_unit == :daily_normalized
 
-      [opp] = Funding.find_arbitrage_opportunities(comparison, Decimal.new("0.0045"))
+      assert Funding.find_arbitrage_opportunities(comparison, Decimal.new("0.0007")) == []
+
+      [opp] = Funding.find_arbitrage_opportunities(comparison, Decimal.new("0.0006"))
 
       assert opp.symbol == "BTCUSDT"
       assert opp.long_exchange == :eight_hour

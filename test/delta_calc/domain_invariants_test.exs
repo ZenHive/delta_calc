@@ -84,7 +84,6 @@ defmodule DeltaCalc.DomainInvariantsTest do
     #   daily threshold = 0.001 * 3 = 0.003
     #   a daily delta of 0.002 is BELOW 0.003  -> excluded
     #   a daily delta of 0.004 is ABOVE 0.003  -> included
-    @tag :domain_pending
     test "a daily-normalized spread below the daily-scaled min_delta is excluded" do
       comparison = %{
         "BELOW" => daily_entry("0.002"),
@@ -133,7 +132,7 @@ defmodule DeltaCalc.DomainInvariantsTest do
       assert_close(hourly, Decimal.new("24.0"))
     end
 
-    # TODO(Task 41): once Calc.dca_ladder accepts a caller-supplied MMR tier
+    # Task 41 pending: once Calc.dca_ladder accepts a caller-supplied MMR tier
     # schedule, assert a NON-default schedule changes the liquidation result.
     # Tag :domain_pending until the tier schedule is a :value param.
     @tag :domain_pending
@@ -163,7 +162,7 @@ defmodule DeltaCalc.DomainInvariantsTest do
       assert_close(five_day, Decimal.new("15.0"))
     end
 
-    # TODO(Task 45): add independently-sourced fixtures for liquidation price
+    # Task 45 pending: add independently-sourced fixtures for liquidation price
     # and position sizing. Each must document its provenance (hand-computed
     # worked example or external reference) and compare Decimals with a stated
     # tolerance — never to_float. Tag :domain_pending until the fixtures exist.

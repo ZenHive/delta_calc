@@ -184,7 +184,7 @@ defmodule DeltaCalc.Funding do
   Return arbitrage opportunities from a comparison map, filtered by `min_delta`.
 
   `min_delta` keeps the legacy scalar raw-period threshold scale. Entries tagged
-  `:daily_normalized` compare against `min_delta` divided by the default
+  `:daily_normalized` compare against `min_delta` multiplied by the default
   periods per day so scalar- and map-cadence comparison results can be filtered
   together without scale skew.
   """
@@ -426,7 +426,7 @@ defmodule DeltaCalc.Funding do
 
   @spec threshold_for_delta_unit(map(), Decimal.t()) :: Decimal.t()
   defp threshold_for_delta_unit(%{delta_unit: @delta_unit_daily_normalized}, min_delta) do
-    Decimal.div(min_delta, Decimal.new(@default_periods_per_day))
+    Decimal.mult(min_delta, Decimal.new(@default_periods_per_day))
   end
 
   defp threshold_for_delta_unit(_data, min_delta), do: min_delta

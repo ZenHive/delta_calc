@@ -1897,7 +1897,7 @@
       "id": 43,
       "phase": 3,
       "bundle": "consumer_math",
-      "status": "in_progress",
+      "status": "done",
       "title": "Fix PortfolioMargin netted mark price for offsetting legs",
       "scores": {
         "d": 4,
@@ -1921,10 +1921,15 @@
         "Multi-instrument cross-margin correlations",
         "Changing the netting model for same-mark books"
       ],
+      "shipped_in": "1f5d92bbcecebb86fdb68a85e27b82fcf3cee005",
       "body": "PortfolioMargin.net_exposure collapses the book to one gross-quantity-weighted average mark price, then applies it to the NET quantity for maintenance margin and liquidation. For offsetting legs marked at different prices, that blended mark is not the net position's mark, so combined_maintenance_margin and portfolio_liquidation_price are wrong. Group by instrument (or compute signed notional over net quantity, or require identical marks per netted exposure) so the netted-book math is correct when longs and shorts are marked differently. Prove it with a worked offsetting-legs example, and keep single-mark books unchanged.\n",
       "created_at": "2026-06-19",
       "started_at": "2026-06-20",
+      "done_at": "2026-06-20",
       "scored_at": "2026-06-19",
+      "implemented": "Landed by cursor via merge-train; reviewer-approved (run run-1781958190432-a9b2f477, 1f5d92bbcecebb86fdb68a85e27b82fcf3cee005).",
+      "delivered_by": "cursor",
+      "verified": true,
       "cross_repo": []
     },
     {

@@ -1065,7 +1065,7 @@ scored_at = "2026-06-19"
 id = 40
 phase = 3
 bundle = "calc_primitives"
-status = "in_progress"
+status = "done"
 title = "Manifest consistency test must cover unannotated public functions"
 scores = { d = 2, b = 6, u = 6 }
 acceptance_criteria = ["ManifestConsistencyTest asserts every public function in a registered module is advertised via api() (compare __info__(:functions) against __api__(), excluding generated/callback functions)", "DCAPlanner.calculate_dca_ladder/10 is either annotated with api() or made private/deprecated so it is no longer an unadvertised public function", "The new check fails CI when a public function lacks api()", "mix ci clean"]
@@ -1077,9 +1077,14 @@ All three ManifestConsistencyTest invariants iterate mod.__api__() — the ADVER
 
 Add an invariant that compares each registered module's actual public functions against its advertised api() set, so an unannotated public function fails CI. Then resolve calculate_dca_ladder/10 (annotate or privatize). This closes the whole-surface blind spot the manifest test exists to cover.
 """
+implemented = "Landed by grok via merge-train; reviewer-approved (run run-1781959665152-9ef40a11, e9563b05b64324a48ada669560a18227a1477abe)."
+delivered_by = "grok"
+verified = true
 created_at = "2026-06-19"
 started_at = "2026-06-20"
 scored_at = "2026-06-19"
+done_at = "2026-06-20"
+shipped_in = "e9563b05b64324a48ada669560a18227a1477abe"
 
 [[task]]
 id = 41

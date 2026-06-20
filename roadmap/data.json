@@ -2115,7 +2115,7 @@
       "id": 50,
       "phase": 3,
       "bundle": "consumer_math",
-      "status": "in_progress",
+      "status": "done",
       "title": "Fix per-position liquidated? semantics in StressScenario.apply_shock",
       "scores": {
         "d": 2,
@@ -2139,10 +2139,15 @@
         "Changing the cascade simulation",
         "Per-instrument liquidation modeling"
       ],
+      "shipped_in": "91171823b21ccc9ef70993e323a2f7aea81f2927",
       "body": "StressScenario.apply_shock computes one portfolio-level liquidated? boolean and copies it onto every position in the result, so a healthy leg reports liquidated?: true whenever the book as a whole is under water. The field name implies per-position truth it does not carry. Either compute per-position liquidation state, or rename the field to a book-wide flag (e.g. portfolio_liquidated?) so the result is not misleading.\n",
       "created_at": "2026-06-19",
       "started_at": "2026-06-20",
+      "done_at": "2026-06-20",
       "scored_at": "2026-06-19",
+      "implemented": "Landed by grok via merge-train; reviewer-approved (run run-1781958193664-0111709d, 91171823b21ccc9ef70993e323a2f7aea81f2927).",
+      "delivered_by": "grok",
+      "verified": true,
       "cross_repo": []
     },
     {

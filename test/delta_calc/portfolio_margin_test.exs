@@ -68,6 +68,31 @@ defmodule DeltaCalc.PortfolioMarginTest do
 
       assert Decimal.equal?(result, Decimal.new("30.00000000"))
     end
+
+    test "uses signed-notional net mark when offsetting legs have different marks" do
+      # Long 3 @ 3000, short 1 @ 3100 → net long 2 @ 2950 (not gross-blended 3025).
+      account = %{
+        positions: [
+          %{
+            side: :long,
+            quantity: Decimal.new("3"),
+            mark_price: Decimal.new("3000"),
+            mmr: Decimal.new("0.005")
+          },
+          %{
+            side: :short,
+            quantity: Decimal.new("1"),
+            mark_price: Decimal.new("3100"),
+            mmr: Decimal.new("0.005")
+          }
+        ]
+      }
+
+      result = PortfolioMargin.combined_maintenance_margin(account)
+
+      # |2| × 2950 × 0.005 = 29.50
+      assert Decimal.equal?(result, Decimal.new("29.50000000"))
+    end
   end
 
   describe "portfolio_liquidation_price/1" do
@@ -155,6 +180,31 @@ defmodule DeltaCalc.PortfolioMarginTest do
       }
 
       assert PortfolioMargin.portfolio_liquidation_price(account) == nil
+    end
+
+    test "uses signed-notional net mark for liquidation when offsetting legs differ" do
+      account = %{
+        equity: Decimal.new("1000"),
+        positions: [
+          %{
+            side: :long,
+            quantity: Decimal.new("3"),
+            mark_price: Decimal.new("3000"),
+            mmr: Decimal.new("0.005")
+          },
+          %{
+            side: :short,
+            quantity: Decimal.new("1"),
+            mark_price: Decimal.new("3100"),
+            mmr: Decimal.new("0.005")
+          }
+        ]
+      }
+
+      result = PortfolioMargin.portfolio_liquidation_price(account)
+
+      # Net long 2 @ 2950: (2×2950 − 1000) / (2×0.995) = 2462.31155779…
+      assert Decimal.equal?(result, Decimal.new("2462.31155779"))
     end
   end
 

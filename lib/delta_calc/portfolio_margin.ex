@@ -176,37 +176,31 @@ defmodule DeltaCalc.PortfolioMargin do
   end
 
   defp net_exposure(positions) do
-    Enum.reduce(
-      positions,
-      %{net_quantity: @zero, weighted_mark: @zero, gross_quantity: @zero, mmr: @zero},
-      fn
-        position, acc ->
-          quantity = to_decimal(position.quantity)
-          mark_price = to_decimal(position.mark_price)
-          mmr = to_decimal(position.mmr)
-          signed_quantity = signed_quantity(position.side, quantity)
-          abs_quantity = Decimal.abs(quantity)
+    positions
+    |> Enum.reduce(%{net_quantity: @zero, signed_notional: @zero, mmr: @zero}, fn position, acc ->
+      quantity = to_decimal(position.quantity)
+      mark_price = to_decimal(position.mark_price)
+      mmr = to_decimal(position.mmr)
+      signed_quantity = signed_quantity(position.side, quantity)
 
-          %{
-            net_quantity: Decimal.add(acc.net_quantity, signed_quantity),
-            weighted_mark: Decimal.add(acc.weighted_mark, Decimal.mult(abs_quantity, mark_price)),
-            gross_quantity: Decimal.add(acc.gross_quantity, abs_quantity),
-            mmr: Decimal.max(acc.mmr, mmr)
-          }
-      end
-    )
-    |> Map.put_new(:mark_price, @zero)
+      %{
+        net_quantity: Decimal.add(acc.net_quantity, signed_quantity),
+        signed_notional:
+          Decimal.add(acc.signed_notional, Decimal.mult(signed_quantity, mark_price)),
+        mmr: Decimal.max(acc.mmr, mmr)
+      }
+    end)
     |> normalize_mark_price()
   end
 
-  defp normalize_mark_price(%{gross_quantity: gross_quantity} = exposure) do
+  defp normalize_mark_price(%{net_quantity: net_quantity} = exposure) do
     mark_price =
-      case Decimal.compare(gross_quantity, @zero) do
-        :gt -> Decimal.div(exposure.weighted_mark, gross_quantity)
-        _ -> @zero
+      case Decimal.compare(net_quantity, @zero) do
+        :eq -> @zero
+        _ -> Decimal.div(exposure.signed_notional, net_quantity)
       end
 
-    %{exposure | mark_price: mark_price}
+    Map.put(exposure, :mark_price, mark_price)
   end
 
   defp signed_quantity(:long, quantity), do: quantity

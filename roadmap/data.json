@@ -2031,7 +2031,7 @@
       "id": 47,
       "phase": 3,
       "bundle": "consumer_math",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Move presentation strings out of pure-calc results",
       "scores": {
         "d": 2,
@@ -2056,6 +2056,7 @@
       ],
       "body": "OptionsRisk embeds presentation strings inside otherwise-pure calc results: format_margin_impact returns things like \"+45%\" and kill_switch_trigger returns prose like \"Day 12-30 depending on rate\". A headless value-in/value-out engine should not force consumers to regex numbers back out of formatted strings. Return the underlying Decimals/atoms (e.g. an impact ratio Decimal, numeric min/max kill-switch day fields) and leave formatting to callers.\n",
       "created_at": "2026-06-19",
+      "started_at": "2026-06-20",
       "scored_at": "2026-06-19",
       "cross_repo": []
     },

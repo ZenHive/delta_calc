@@ -175,20 +175,20 @@ defmodule DeltaCalc.OptionsRiskTest do
       assert Decimal.equal?(low.rate, Decimal.new("-0.02"))
       assert Decimal.equal?(low.daily, Decimal.new("36"))
       assert Decimal.equal?(low.total_90d, Decimal.new("3240"))
-      assert low.margin_impact == "+7%"
+      assert Decimal.equal?(low.margin_impact, Decimal.new("0.07"))
 
       assert Decimal.equal?(mid.rate, Decimal.new("-0.025"))
       assert Decimal.equal?(mid.daily, Decimal.new("45"))
       assert Decimal.equal?(mid.total_90d, Decimal.new("4050"))
-      assert mid.margin_impact == "+9%"
+      assert Decimal.equal?(mid.margin_impact, Decimal.new("0.09"))
 
       assert Decimal.equal?(high.rate, Decimal.new("-0.03"))
       assert Decimal.equal?(high.daily, Decimal.new("54"))
       assert Decimal.equal?(high.total_90d, Decimal.new("4860"))
-      assert high.margin_impact == "+11%"
+      assert Decimal.equal?(high.margin_impact, Decimal.new("0.11"))
 
-      assert result.kill_switch_trigger == "Day 117-175 depending on rate"
-      assert result.recommendation =~ "cash buffer"
+      assert result.kill_switch_day_min == 117
+      assert result.kill_switch_day_max == 175
     end
 
     test "defaults scenario atom and capital to position size" do
@@ -199,8 +199,9 @@ defmodule DeltaCalc.OptionsRiskTest do
         })
 
       assert result.scenario == :bear_market_90d
-      assert hd(result.scenarios).margin_impact == "+7%"
-      assert result.kill_switch_trigger == "Not projected at current margin levels"
+      assert Decimal.equal?(hd(result.scenarios).margin_impact, Decimal.new("0.07"))
+      assert result.kill_switch_day_min == nil
+      assert result.kill_switch_day_max == nil
     end
 
     test "respects custom duration days" do
@@ -232,7 +233,7 @@ defmodule DeltaCalc.OptionsRiskTest do
       assert Decimal.equal?(scenario.total_90d, Decimal.new("25920"))
     end
 
-    test "single kill-switch day is formatted without a range" do
+    test "single kill-switch day sets min and max to the same value" do
       result =
         OptionsRisk.stress_test_extended_negative(
           %{
@@ -243,7 +244,8 @@ defmodule DeltaCalc.OptionsRiskTest do
           initial_margin_ratio: Decimal.new("0.15")
         )
 
-      assert result.kill_switch_trigger == "Day 134"
+      assert result.kill_switch_day_min == 134
+      assert result.kill_switch_day_max == 134
     end
 
     test "uses fallback denominator when margin threshold consumes all headroom" do
@@ -257,7 +259,7 @@ defmodule DeltaCalc.OptionsRiskTest do
           margin_threshold: Decimal.new("1")
         )
 
-      assert hd(result.scenarios).margin_impact == "+7%"
+      assert Decimal.equal?(hd(result.scenarios).margin_impact, Decimal.new("0.07"))
     end
 
     test "zero capital uses neutral margin impact denominator" do
@@ -271,7 +273,7 @@ defmodule DeltaCalc.OptionsRiskTest do
           margin_threshold: Decimal.new("1")
         )
 
-      assert hd(result.scenarios).margin_impact == "+324000%"
+      assert Decimal.equal?(hd(result.scenarios).margin_impact, Decimal.new("3240"))
     end
   end
 

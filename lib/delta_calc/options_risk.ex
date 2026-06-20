@@ -46,14 +46,14 @@ defmodule DeltaCalc.OptionsRisk do
   @type stress_scenario :: %{
           rate: Decimal.t(),
           daily: Decimal.t(),
-          margin_impact: String.t()
+          margin_impact: Decimal.t()
         }
 
   @type extended_stress_result :: %{
           scenario: atom(),
           scenarios: [stress_scenario()],
-          kill_switch_trigger: String.t(),
-          recommendation: String.t()
+          kill_switch_day_min: pos_integer() | nil,
+          kill_switch_day_max: pos_integer() | nil
         }
 
   @type margin_health :: %{
@@ -210,16 +210,16 @@ defmodule DeltaCalc.OptionsRisk do
     returns: %{
       type: :map,
       description:
-        "Map with scenario, per-rate rows (rate, daily, total_{duration_days}d, margin_impact), " <>
-          "kill_switch_trigger, and recommendation."
+        "Map with scenario, per-rate rows (rate, daily, total_{duration_days}d, margin_impact ratio), " <>
+          "kill_switch_day_min, and kill_switch_day_max."
     }
   )
 
   @doc """
   Run extended negative-funding scenarios (default 90 days) across multiple rates.
 
-  `margin_impact` expresses funding drain as extra margin pressure relative to free
-  capital headroom below the kill-switch threshold.
+  `margin_impact` is the funding drain as a ratio of free capital headroom below the
+  kill-switch threshold (e.g. `0.07` for 7% of headroom).
   """
   @spec stress_test_extended_negative(map(), keyword()) :: extended_stress_result()
   def stress_test_extended_negative(params, opts \\ []) do
@@ -250,7 +250,7 @@ defmodule DeltaCalc.OptionsRisk do
         %{
           rate: rate,
           daily: result.daily_cost,
-          margin_impact: format_margin_impact(result.total_cost, capital, margin_threshold)
+          margin_impact: margin_impact_ratio(result.total_cost, capital, margin_threshold)
         }
         |> Map.put(total_key, result.total_cost)
       end)
@@ -267,11 +267,13 @@ defmodule DeltaCalc.OptionsRisk do
       end)
       |> Enum.reject(&is_nil/1)
 
+    {kill_switch_day_min, kill_switch_day_max} = kill_switch_day_range(kill_switch_days)
+
     %{
       scenario: scenario,
       scenarios: scenarios,
-      kill_switch_trigger: kill_switch_trigger(kill_switch_days),
-      recommendation: "Maintain 5-10k cash buffer for extended negative funding"
+      kill_switch_day_min: kill_switch_day_min,
+      kill_switch_day_max: kill_switch_day_max
     }
   end
 
@@ -346,8 +348,8 @@ defmodule DeltaCalc.OptionsRisk do
   defp market_context_signals(:bull_market), do: {:bearish, :low}
   defp market_context_signals(_), do: {:neutral, :moderate}
 
-  @spec format_margin_impact(Decimal.t(), Decimal.t(), Decimal.t()) :: String.t()
-  defp format_margin_impact(total_cost, capital, margin_threshold) do
+  @spec margin_impact_ratio(Decimal.t(), Decimal.t(), Decimal.t()) :: Decimal.t()
+  defp margin_impact_ratio(total_cost, capital, margin_threshold) do
     headroom = Decimal.mult(capital, Decimal.sub(@one, margin_threshold))
 
     denominator =
@@ -362,13 +364,11 @@ defmodule DeltaCalc.OptionsRisk do
           @one
       end
 
-    impact_pct =
-      total_cost
-      |> Decimal.div(denominator)
-      |> Decimal.mult(@hundred)
-      |> Decimal.round(0)
-
-    "+#{Decimal.to_string(impact_pct, :normal)}%"
+    total_cost
+    |> Decimal.div(denominator)
+    |> Decimal.mult(@hundred)
+    |> Decimal.round(0)
+    |> Decimal.div(@hundred)
   end
 
   @spec margin_threshold(keyword()) :: Decimal.t()
@@ -378,18 +378,13 @@ defmodule DeltaCalc.OptionsRisk do
     |> to_decimal()
   end
 
-  @spec kill_switch_trigger([pos_integer()]) :: String.t()
-  defp kill_switch_trigger([]), do: "Not projected at current margin levels"
+  @spec kill_switch_day_range([pos_integer()]) :: {pos_integer() | nil, pos_integer() | nil}
+  defp kill_switch_day_range([]), do: {nil, nil}
 
-  defp kill_switch_trigger(days) do
-    min_day = Enum.min(days)
-    max_day = Enum.max(days)
-
-    if min_day == max_day do
-      "Day #{min_day}"
-    else
-      "Day #{min_day}-#{max_day} depending on rate"
-    end
+  defp kill_switch_day_range([first | rest]) do
+    Enum.reduce(rest, {first, first}, fn day, {min_day, max_day} ->
+      {min(min_day, day), max(max_day, day)}
+    end)
   end
 
   @spec health_status(Decimal.t(), Decimal.t(), Decimal.t()) :: health_status()

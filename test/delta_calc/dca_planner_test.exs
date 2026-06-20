@@ -93,30 +93,6 @@ defmodule DeltaCalc.DCAPlannerTest do
     end
   end
 
-  describe "calculate_dca_ladder/10 backward compatibility" do
-    test "delegates to map-based API with identical results" do
-      {dca_params, _} = position_setup()
-
-      map_result = DCAPlanner.calculate_dca_ladder(dca_params)
-
-      arity_result =
-        DCAPlanner.calculate_dca_ladder(
-          dca_params.params,
-          dca_params.position_with_tokens,
-          dca_params.dca_reserve,
-          dca_params.entry_price,
-          dca_params.ui_leverage,
-          dca_params.side,
-          dca_params.mmr_rate,
-          dca_params.mark_buffer,
-          dca_params.aum,
-          dca_params.black_swan_pct
-        )
-
-      assert map_result == arity_result
-    end
-  end
-
   describe "build_defensive_preset/3" do
     test "converts custom prices and allocations to multipliers" do
       params = %{

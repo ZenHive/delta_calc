@@ -3,8 +3,9 @@ defmodule DeltaCalc.ManifestConsistencyTest do
   Global invariants for `DeltaCalc.Manifest` that per-module review cannot see.
 
   Enforces uniqueness of public function name+arity across registered modules,
-  full registration of every api()-bearing module under `lib/delta_calc/`, and
-  `:hints` metadata on every advertised function.
+  full registration of every api()-bearing module under `lib/delta_calc/`,
+  `:hints` metadata on every advertised function, and complete api() coverage
+  of every public function in registered modules.
 
   Note: the review convention that an advertised option must actually change output
   is not checked here — that would require mutation testing or behavioral fixtures.
@@ -66,6 +67,28 @@ defmodule DeltaCalc.ManifestConsistencyTest do
              #{Enum.map_join(missing, "\n", &"  - #{&1}")}
              """
     end
+
+    test "every public function in a registered module is advertised via api()" do
+      unadvertised =
+        Manifest.modules()
+        |> Enum.flat_map(&unadvertised_public_functions/1)
+        |> Enum.sort()
+
+      assert unadvertised == [],
+             """
+             Registered public functions missing api() advertisement:
+             #{Enum.map_join(unadvertised, "\n", &"  - #{&1}")}
+             """
+    end
+
+    test "advertised arity set includes default-argument arities" do
+      entries = [%{name: :funding_apr, arity: 2, defaults: 1}]
+      arities = advertised_arities(entries)
+
+      assert MapSet.member?(arities, {:funding_apr, 1})
+      assert MapSet.member?(arities, {:funding_apr, 2})
+      refute MapSet.member?(arities, {:funding_apr, 3})
+    end
   end
 
   defp api_modules_from_lib do
@@ -98,6 +121,30 @@ defmodule DeltaCalc.ManifestConsistencyTest do
       {:error, _} ->
         false
     end
+  end
+
+  @generated_functions [:__api__]
+
+  defp unadvertised_public_functions(mod) do
+    advertised = advertised_arities(mod.__api__())
+
+    mod.__info__(:functions)
+    |> Enum.reject(fn {name, arity} ->
+      name in @generated_functions or MapSet.member?(advertised, {name, arity})
+    end)
+    |> Enum.map(fn {name, arity} -> "#{inspect(mod)}.#{name}/#{arity}" end)
+  end
+
+  defp advertised_arities(api_entries) do
+    api_entries
+    |> Enum.flat_map(fn %{name: name, arity: arity, defaults: defaults} ->
+      min_arity = arity - defaults
+
+      for a <- min_arity..arity do
+        {name, a}
+      end
+    end)
+    |> MapSet.new()
   end
 
   defp missing_hints_for_module(mod) do

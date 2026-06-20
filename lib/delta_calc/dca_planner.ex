@@ -110,55 +110,6 @@ defmodule DeltaCalc.DCAPlanner do
     do_calculate_dca_ladder(dca_params)
   end
 
-  @doc """
-  Calculates DCA ladder results with individual parameters (backward compatibility).
-
-  This function maintains backward compatibility by accepting individual parameters
-  and internally constructing the dca_params map.
-
-  See `calculate_dca_ladder/1` for full documentation.
-  """
-  @spec calculate_dca_ladder(
-          map(),
-          map(),
-          Decimal.t(),
-          Decimal.t(),
-          Decimal.t(),
-          :long | :short,
-          Decimal.t(),
-          Decimal.t(),
-          Decimal.t(),
-          Decimal.t()
-        ) :: dca_result() | nil
-  # credo:disable-for-next-line Credo.Check.Refactor.FunctionArity
-  def calculate_dca_ladder(
-        params,
-        position_with_tokens,
-        dca_reserve,
-        entry_price,
-        ui_leverage,
-        side,
-        mmr_rate,
-        mark_buffer,
-        aum,
-        black_swan_pct
-      ) do
-    calculate_dca_ladder(
-      build_dca_params(
-        params,
-        position_with_tokens,
-        dca_reserve,
-        entry_price,
-        ui_leverage,
-        side,
-        mmr_rate,
-        mark_buffer,
-        aum,
-        black_swan_pct
-      )
-    )
-  end
-
   @spec do_calculate_dca_ladder(dca_params()) :: dca_result() | nil
   defp do_calculate_dca_ladder(dca_params) do
     if Decimal.compare(dca_params.dca_reserve, @default_zero) == :gt and
@@ -423,45 +374,6 @@ defmodule DeltaCalc.DCAPlanner do
         black_swan_price: Calc.quantize(black_swan_price)
       })
     end)
-  end
-
-  @spec build_dca_params(
-          map(),
-          map(),
-          Decimal.t(),
-          Decimal.t(),
-          Decimal.t(),
-          :long | :short,
-          Decimal.t(),
-          Decimal.t(),
-          Decimal.t(),
-          Decimal.t()
-        ) :: dca_params()
-  # credo:disable-for-next-line Credo.Check.Refactor.FunctionArity
-  defp build_dca_params(
-         params,
-         position_with_tokens,
-         dca_reserve,
-         entry_price,
-         ui_leverage,
-         side,
-         mmr_rate,
-         mark_buffer,
-         aum,
-         black_swan_pct
-       ) do
-    %{
-      params: params,
-      position_with_tokens: position_with_tokens,
-      dca_reserve: dca_reserve,
-      entry_price: entry_price,
-      ui_leverage: ui_leverage,
-      side: side,
-      mmr_rate: mmr_rate,
-      mark_buffer: mark_buffer,
-      aum: aum,
-      black_swan_pct: black_swan_pct
-    }
   end
 
   @spec resolve_prices(list(), list()) :: list()

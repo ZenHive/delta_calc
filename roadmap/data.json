@@ -1800,7 +1800,7 @@
       "id": 40,
       "phase": 3,
       "bundle": "calc_primitives",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Manifest consistency test must cover unannotated public functions",
       "scores": {
         "d": 2,
@@ -1826,6 +1826,7 @@
       ],
       "body": "All three ManifestConsistencyTest invariants iterate mod.__api__() — the ADVERTISED surface — never mod.__info__(:functions). So a public function with no api() annotation is invisible to every check: it is not tested for uniqueness, registration, or :hints. DCAPlanner.calculate_dca_ladder/10 is exactly such an escaped public function.\n\nAdd an invariant that compares each registered module's actual public functions against its advertised api() set, so an unannotated public function fails CI. Then resolve calculate_dca_ladder/10 (annotate or privatize). This closes the whole-surface blind spot the manifest test exists to cover.\n",
       "created_at": "2026-06-19",
+      "started_at": "2026-06-20",
       "scored_at": "2026-06-19",
       "cross_repo": []
     },

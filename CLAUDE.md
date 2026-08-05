@@ -21,6 +21,33 @@ and spot hedging. Salvaged from the retired `TradingDashboard` app so a rebuild 
 library instead of reimplementing the math. **No Phoenix, no Ecto, no I/O** — pure value-in /
 value-out functions.
 
+### Scope Boundary — delta_calc Owns Reconcilable Money, zen_quant Owns Estimates
+
+`zen_quant` (`~/_DATA/code/zen_quant`, on Hex) is a sibling analytics library with no
+dependency relationship in either direction, and the two are split **by numeric regime, not
+by topic**:
+
+- **delta_calc owns anything that must reconcile against an exchange balance** — money,
+  margin, fees, hedge sizes, lot-quantized order quantities. `Decimal`, because a number
+  the operator compares against a venue statement may not carry float error.
+- **zen_quant owns anything that is an estimate** — option pricing, implied vol, greeks,
+  skew, vol estimators, risk ratios, orderflow, signals, sizing *fractions*. Float.
+
+**The split is forced, not stylistic.** `Decimal` has no `exp`, `ln`, or `erf` — so
+Black-Scholes, IV solving and the volatility estimators **cannot** be implemented here, and
+an attempt to add them means either a wrong answer or a float sneaking into a `Decimal`
+library. Send that work to zen_quant instead.
+
+**Before adding a function here, ask which side of that line it falls on.** The two overlap
+*conceptually* in about a dozen places (funding APR, basis, PnL, concentration, liquidation
+distance, stress tests, max loss, position sizing) — that overlap is intended, because each
+side answers it in its own regime. Three public names already exist in both by design:
+`max_loss`, `realized_pnl`, `unrealized_pnl`.
+
+One overlap resolves into a pipeline rather than a duplicate: `ZenQuant.Sizing.kelly`
+answers *which fraction*, `DeltaCalc.PositionCalculator.calculate_position` answers *which
+exact quantized size*. Prefer that shape over reimplementing either end.
+
 ## Architecture & Conventions
 
 - **Pure `Decimal` only** — never floats for money/price/leverage.
@@ -35,8 +62,9 @@ value-out functions.
 
 ## Roadmap
 
-`roadmap/tasks.toml` is canonical (`rmap` renders `ROADMAP.md` + `roadmap/data.json`). Phase 1
-"Extraction", milestone `v0_1`. `rmap ready` shows the dispatchable set; tasks 2/3/6 are layer-0.
+`roadmap/tasks.toml` is canonical (`rmap` renders `ROADMAP.md` + `roadmap/data.json`). Phases 1–2
+and milestones `v0_1`–`v0_2` are complete. Phase 3 and milestone `v0_3` are the active focus.
+Use `rmap ready` for the dispatchable set and its declared write-sets before parallel dispatch.
 
 ## Quality Gate
 
@@ -98,6 +126,11 @@ is the rationale.
 `@tag :domain_pending` and excluded from the default run so the harness bundle stays green; they are
 real red assertions, not `assert true`. Run them with `mix test --include domain_pending` to watch
 each go green as its task lands — the fixing task's acceptance criteria include removing its tag.
+Each carries a `TODO(Task N)` inside its `flunk/1` message, so a pending assertion names its owning
+roadmap task at the point it fails. The task ID is required — a bare `TODO` is not enough to place
+the work. Credo's `TagTODO` stays enabled and does not see these: it scans comments and docs, not
+string literals, so the tracked markers cost nothing while real untracked TODOs in comments still
+get flagged.
 
 ## AGENTS.md is generated — regenerate after editing CLAUDE.md
 

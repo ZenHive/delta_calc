@@ -2,22 +2,25 @@
   "schema_version": 2,
   "project": "delta_calc",
   "default_branch": "main",
-  "vision": "A standalone, headless Decimal calculation engine for leveraged crypto trading — salvaged from the retired TradingDashboard app so the rebuild depends on it instead of reimplementing leverage, DCA, and hedging math.",
+  "vision": "A standalone, headless Decimal engine for leveraged-crypto portfolio decisions — position sizing, liquidation, DCA, funding, hedging, fees, portfolio margin, stress, and options risk — consumed by TradingDashboard instead of reimplementing the math.",
+  "focus": {
+    "phase": 3
+  },
   "phases": {
     "1": {
       "name": "Extraction",
       "order": 1,
-      "status": "in_progress"
+      "status": "done"
     },
     "2": {
       "name": "Calc primitives",
       "order": 2,
-      "status": "pending"
+      "status": "done"
     },
     "3": {
       "name": "Consumer decision math",
       "order": 3,
-      "status": "pending"
+      "status": "in_progress"
     }
   },
   "bundles": {
@@ -34,7 +37,12 @@
     "consumer_math": {
       "phase": 3,
       "order": 3,
-      "description": "Pure-Decimal decision/aggregation primitives the dashboard touches on every screen — PnL/breakeven, net-delta hedging, portfolio-margin liquidation, stress scenarios, fees, funding carry. Value-in/value-out over inputs the consumer already holds (own state + exchange-supplied mark price, funding rate, option deltas). No option pricing — Greeks/IV come from the exchange (Deribit); a Black-Scholes lib is a separate later concern, explicitly out of scope here."
+      "description": "Pure-Decimal decision and aggregation primitives consumed at trading call sites: PnL/breakeven, net-delta hedging, portfolio-margin liquidation, stress scenarios, fees, funding carry, and explicit base-numeraire exposure/coverage. Inputs are caller-owned state plus provider facts; policy, I/O, and option pricing stay outside DeltaCalc."
+    },
+    "contract_hardening": {
+      "phase": 3,
+      "order": 4,
+      "description": "Cross-module correctness, input/output contracts, independent reference tests, and architecture work that makes the calculation surface trustworthy without adding I/O or portfolio policy."
     }
   },
   "milestones": {
@@ -42,22 +50,29 @@
       "name": "Standalone calc engine",
       "description": "Proves the salvaged calculators run standalone (no Phoenix/Ecto/I-O) with their original test suites green, so the TradingDashboard rebuild can depend on DeltaCalc instead of reimplementing the math.",
       "order": 1,
-      "status": "active",
+      "status": "done",
       "target_version": "0.1.0"
     },
     "v0_2": {
       "name": "Dashboard calc primitives",
-      "description": "Build the pure-Decimal calc primitives that TradingDashboard's future roadmap (hedging engine, risk monitoring, options strategy) specifies, so the dashboard consumes DeltaCalc.* rather than reimplementing the math. Source of truth: ~/_DATA/code/TradingDashboard/roadmap/phaseN.md specs.",
+      "description": "Proves TradingDashboard's planned funding, account-risk, options, and margin workflows can consume standalone DeltaCalc primitives instead of embedding formulas. Source of truth: ~/_DATA/code/TradingDashboard/roadmap/phaseN.md specs.",
       "order": 2,
-      "status": "pending",
+      "status": "done",
       "target_version": "0.2.0"
     },
     "v0_3": {
       "name": "Consumer decision primitives",
-      "description": "The math the dashboard reaches for at the call-site: position PnL/ROE/breakeven net of fees+funding, net-delta rebalancing from exchange-supplied option deltas, portfolio-margin liquidation across netted positions, price-shock stress scenarios, fee modeling, and funding carry/break-even. Consumer-driven (delta_calc IS the consumer's math layer). Option pricing stays out — exchange supplies Greeks/IV; BS is a future separate lib.",
+      "description": "Proves TradingDashboard can consume DeltaCalc as the unit-consistent, independently checked source for everyday leveraged-trading decisions without compensating for hidden venue constants or ambiguous contracts.",
       "order": 3,
-      "status": "pending",
+      "status": "active",
       "target_version": "0.3.0"
+    },
+    "v0_4": {
+      "name": "Base-numeraire covered-call math",
+      "description": "Proves an ETH-numeraire covered-call consumer can calculate inverse exposure and settlement capacity from explicit provider facts while keeping coverage, risk targets, and approval policy separate.",
+      "order": 4,
+      "status": "pending",
+      "target_version": "0.4.0"
     }
   },
   "task": [
@@ -1200,7 +1215,7 @@
     {
       "id": 26,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
       "milestone": "v0_3",
       "status": "done",
       "title": "Fix DeltaCalc.MarginBridge hardcoded funding cadence (3/day overstates Deribit ~8x)",
@@ -1245,7 +1260,7 @@
     {
       "id": 27,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
       "milestone": "v0_3",
       "status": "done",
       "title": "Manifest-consistency test: unique public names + full module registration across DeltaCalc.Manifest",
@@ -1290,7 +1305,7 @@
     {
       "id": 28,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
       "milestone": "v0_3",
       "status": "done",
       "title": "Fix Funding.compare_single_symbol hardcoded x3 cadence (same Deribit bug as task 26)",
@@ -1335,7 +1350,7 @@
     {
       "id": 29,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
       "milestone": "v0_3",
       "status": "done",
       "title": "Fix Carry.annualized_basis misnomer: returns raw basis, not annualized (+ basis_yield stock/flow mismatch)",
@@ -1380,7 +1395,7 @@
     {
       "id": 30,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
       "milestone": "v0_3",
       "status": "done",
       "title": "OptionsRisk: thread periods_per_day to MarginBridge (cadence locked to 3/day) + rename hardcoded total_90d field",
@@ -1424,7 +1439,7 @@
     {
       "id": 31,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
       "milestone": "v0_3",
       "status": "done",
       "title": "Fix Calc.compare_dca_safety side-blind PnL (multi_leg_position computes short as long)",
@@ -1468,7 +1483,7 @@
     {
       "id": 32,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
       "milestone": "v0_3",
       "status": "done",
       "title": "Fix StressScenario.cascade equity reset: realized losses of liquidated legs are discarded",
@@ -1512,7 +1527,7 @@
     {
       "id": 33,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
       "milestone": "v0_3",
       "status": "done",
       "title": "Add stream_data property-test layer encoding quant-audit invariants (anti-ratification guard)",
@@ -1565,7 +1580,7 @@
     {
       "id": 34,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
       "milestone": "v0_3",
       "status": "done",
       "title": "Differential test: delta_calc liquidation + funding-cost vs recorded ccxt venue spec (offline fixtures)",
@@ -1615,7 +1630,7 @@
     {
       "id": 35,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
       "status": "done",
       "title": "Fix Funding.compare_funding_rates cross-cadence ranking: max/min and arbitrage from raw rates, annualized at per-venue cadence",
       "scores": {
@@ -1653,7 +1668,7 @@
     {
       "id": 36,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
       "status": "done",
       "title": "Reconcile Funding :delta units across scalar vs venue-map cadence paths (find_arbitrage_opportunities min_delta scale)",
       "scores": {
@@ -1690,7 +1705,7 @@
     {
       "id": 37,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
       "status": "done",
       "title": "Fix inverted min_delta raw→daily scaling in Funding.find_arbitrage_opportunities (divide vs multiply)",
       "scores": {
@@ -1734,7 +1749,8 @@
     {
       "id": 38,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
+      "milestone": "v0_3",
       "status": "pending",
       "title": "Standardize funding-rate unit (fraction) across all DeltaCalc modules",
       "scores": {
@@ -1744,9 +1760,13 @@
       },
       "eff": 1.88,
       "dep_layer": 0,
-      "unlocks": 0,
-      "markers": [],
+      "unlocks": 4,
+      "markers": [
+        "bug"
+      ],
       "depends_on": [],
+      "assignee": "grok",
+      "model": "grok-4.5",
       "acceptance_criteria": [
         "Every funding-rate :value parameter across the library uses ONE documented unit (fraction, e.g. 0.0001 = 0.01%)",
         "MarginBridge and OptionsRisk no longer divide funding inputs by 100; their docs/examples updated to the fraction convention",
@@ -1759,47 +1779,98 @@
         "Changing funding cadence defaults",
         "Changing the arbitrage threshold constant"
       ],
-      "body": "The library uses two incompatible funding-rate units. Funding.*, Carry.funding_yield, and Hedging.calculate_funding_cost/3 treat the rate as a FRACTION (0.0001 = 0.01%, no /100). MarginBridge.stress_test_prolonged_negative / check_kill_switch and OptionsRisk (which delegates to MarginBridge) treat it as a PERCENT number and divide by 100 internally. A consumer who derives one funding rate and passes it to both a Hedging function and a MarginBridge function is off by 100x, silently.\n\nPick the fraction convention (it matches Funding, the canonical funding module) and make every funding-rate input across the surface use it: update MarginBridge's internal /100, its api() descriptions and examples, and OptionsRisk's pass-through. This is a cross-module domain invariant that no per-task reviewer caught because each module is internally consistent — encode the chosen unit in a consistency test so it can't drift again.\n",
+      "files_to_modify": [
+        "lib/delta_calc/margin_bridge.ex",
+        "lib/delta_calc/options_risk.ex",
+        "test/delta_calc/margin_bridge_test.exs",
+        "test/delta_calc/options_risk_test.exs",
+        "test/delta_calc/domain_invariants_test.exs"
+      ],
+      "touches": [
+        "lib/delta_calc/margin_bridge.ex",
+        "lib/delta_calc/options_risk.ex",
+        "test/delta_calc/margin_bridge_test.exs",
+        "test/delta_calc/options_risk_test.exs",
+        "test/delta_calc/domain_invariants_test.exs"
+      ],
+      "body": "The library uses two incompatible funding-rate units. Funding.*, Carry.funding_yield, and Hedging.calculate_funding_cost/3 treat the rate as a FRACTION (0.0001 = 0.01%, no /100). MarginBridge.stress_test_prolonged_negative / check_kill_switch and OptionsRisk (which delegates to MarginBridge) treat it as a PERCENT number and divide by 100 internally. A consumer who derives one funding rate and passes it to both a Hedging function and a MarginBridge function is off by 100x, silently.\n\nPick the fraction convention (it matches Funding, the canonical funding module) and make every funding-rate input across the surface use it: update MarginBridge's internal /100, its api() descriptions and examples, and OptionsRisk's pass-through. This is a cross-module domain invariant that no per-task reviewer caught because each module is internally consistent — encode the chosen unit in a consistency test so it can't drift again.\n\nDispatch trigger: critical money-math unit correction spanning multiple modules and a repo-wide domain invariant.\n",
       "created_at": "2026-06-19",
-      "scored_at": "2026-06-19",
+      "scored_at": "2026-07-25",
       "cross_repo": []
     },
     {
       "id": 39,
       "phase": 3,
-      "bundle": "calc_primitives",
+      "bundle": "contract_hardening",
+      "milestone": "v0_3",
       "status": "pending",
-      "title": "Unify Decimal coercion into one module with a single fail-loud error policy",
+      "title": "Centralize Decimal coercion and eliminate silent input fallbacks",
       "scores": {
-        "d": 4,
-        "b": 7,
-        "u": 7
+        "d": 7,
+        "b": 8,
+        "u": 8
       },
-      "eff": 1.75,
+      "eff": 1.14,
       "dep_layer": 0,
-      "unlocks": 0,
-      "markers": [],
+      "unlocks": 5,
+      "markers": [
+        "bug"
+      ],
       "depends_on": [],
+      "assignee": "codex",
+      "model": "gpt-5.6-sol",
       "acceptance_criteria": [
-        "A single coercion helper (e.g. DeltaCalc.Decimal.coerce/1) replaces the ~13 per-module to_decimal/ensure_decimal/cast_rate copies",
-        "Funding.ensure_decimal no longer silently returns 0 on unparseable input — invalid input fails loudly or returns a tagged error consistent with the rest of the module",
-        "One documented policy for invalid input (raise vs tagged error) applied uniformly; the ex_dna disable comments for the duplicated clauses are removed",
-        "A decision is recorded on whether public money/price/leverage APIs accept raw floats; if rejected, affected tests are updated",
-        "mix ci clean (ex_dna --max-clones 0 passes without the per-module disables)"
+        "One shared Decimal-input module replaces the 13 per-module to_decimal/ensure_decimal/cast_rate implementations",
+        "The accepted exact-input contract is Decimal, integer, or canonical decimal string; raw floats and malformed values are rejected rather than converted or fabricated",
+        "The shared module exposes a tagged cast path and a raising path with ArgumentError, both backed by the same accepted-type rules; callers preserve their existing success and tagged-error return shapes",
+        "Funding no longer converts invalid input to zero, and no conversion failure escapes as an incidental MatchError or FunctionClauseError",
+        "The ex_dna disable comments for duplicated coercion clauses are removed and tests pin every accepted and rejected input category",
+        "mix ci clean (ex_dna --max-clones 0 passes without per-module disables)"
       ],
       "out_of_scope": [
-        "Changing the public return shapes of calc functions",
-        "Reworking the funding-rate unit convention (separate task)"
+        "Changing successful public return shapes",
+        "Reworking the funding-rate unit convention (Task 38)",
+        "Accepting binary floats as exact money, price, rate, ratio, or leverage inputs"
       ],
-      "body": "Decimal coercion is reimplemented in ~13 modules with three divergent error policies: explicit clauses with no fallback (Calc -> FunctionClauseError on nil), Decimal.cast + {:ok,_}= match (PnL/Fees/etc -> MatchError), and silent-zero (Funding.ensure_decimal returns Decimal.new(0) on garbage, which then ranks as a venue's funding rate and corrupts comparison/arbitrage output). Two modules carry # ex_dna:disable-for-lines to suppress the clone detector.\n\nExtract one coercion module with a single, documented failure contract and delete the copies. Decide and document whether public money/price/leverage inputs should accept raw floats at all (current code admits binary-float artifacts via Decimal.from_float/cast, and tests lock that in) — if you tighten it, update those tests. The silent-zero path is the priority: a money library must not fabricate 0 from bad input.\n",
+      "files_to_modify": [
+        "lib/delta_calc/decimal.ex",
+        "lib/delta_calc/calc.ex",
+        "lib/delta_calc/carry.ex",
+        "lib/delta_calc/delta_neutral.ex",
+        "lib/delta_calc/fees.ex",
+        "lib/delta_calc/funding.ex",
+        "lib/delta_calc/funding_projection.ex",
+        "lib/delta_calc/margin_bridge.ex",
+        "lib/delta_calc/option_ladder.ex",
+        "lib/delta_calc/options_risk.ex",
+        "lib/delta_calc/pnl.ex",
+        "lib/delta_calc/portfolio_margin.ex",
+        "lib/delta_calc/stress_scenario.ex"
+      ],
+      "touches": [
+        "lib/delta_calc/decimal.ex",
+        "lib/delta_calc/calc.ex",
+        "lib/delta_calc/carry.ex",
+        "lib/delta_calc/delta_neutral.ex",
+        "lib/delta_calc/fees.ex",
+        "lib/delta_calc/funding.ex",
+        "lib/delta_calc/funding_projection.ex",
+        "lib/delta_calc/margin_bridge.ex",
+        "lib/delta_calc/option_ladder.ex",
+        "lib/delta_calc/options_risk.ex",
+        "lib/delta_calc/pnl.ex",
+        "lib/delta_calc/portfolio_margin.ex",
+        "lib/delta_calc/stress_scenario.ex"
+      ],
+      "body": "Decimal coercion is reimplemented in ~13 modules with three divergent error policies: explicit clauses with no fallback (Calc -> FunctionClauseError on nil), Decimal.cast + {:ok,_}= match (PnL/Fees/etc -> MatchError), and silent-zero (Funding.ensure_decimal returns Decimal.new(0) on garbage, which then ranks as a venue's funding rate and corrupts comparison/arbitrage output). Two modules carry # ex_dna:disable-for-lines to suppress the clone detector.\n\nCentralize the accepted-type rules and delete the copies. Exact financial inputs are Decimal, integer, or canonical decimal strings; raw floats are rejected because their binary approximation contradicts the library's exact-Decimal contract. Provide tagged and raising entry points over that one rule set so existing public success/error shapes remain stable while every invalid input fails deliberately. The silent-zero path is the priority: a money library must not fabricate 0 from bad input.\n\nDispatch trigger: repo-wide public input contract and critical money-math error semantics across twelve modules.\n",
       "created_at": "2026-06-19",
-      "scored_at": "2026-06-19",
+      "scored_at": "2026-07-25",
       "cross_repo": []
     },
     {
       "id": 40,
       "phase": 3,
-      "bundle": "calc_primitives",
+      "bundle": "contract_hardening",
       "status": "done",
       "title": "Manifest consistency test must cover unannotated public functions",
       "scores": {
@@ -1838,40 +1909,62 @@
     {
       "id": 41,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
+      "milestone": "v0_3",
       "status": "pending",
       "title": "Remove baked-in venue risk constants from generic margin/liquidation math",
       "scores": {
-        "d": 4,
-        "b": 6,
-        "u": 6
+        "d": 5,
+        "b": 8,
+        "u": 7
       },
       "eff": 1.5,
-      "dep_layer": 0,
-      "unlocks": 0,
-      "markers": [],
-      "depends_on": [],
+      "dep_layer": 1,
+      "unlocks": 3,
+      "markers": [
+        "bug"
+      ],
+      "depends_on": [
+        38
+      ],
+      "assignee": "grok",
+      "model": "grok-4.5",
       "acceptance_criteria": [
-        "Calc.dca_ladder MMR re-tiering no longer hardcodes notional thresholds (50k/250k/1M) and multipliers; the tier schedule is caller-supplied or the tiering is removed from the generic engine",
-        "MarginBridge kill-switch / cadence assumptions are caller-supplied :value params rather than implicit 8h defaults",
-        "Defaults, if any remain, are documented as conventions and overridable",
-        "Tests cover a non-default tier schedule and a non-8h cadence",
-        "mix ci clean",
-        "Replace the task-41 `flunk` placeholder and remove its `@tag :domain_pending` in test/delta_calc/domain_invariants_test.exs (caller-supplied tier schedule changes the liquidation result) so the invariant runs green under mix ci"
+        "Calc.dca_ladder MMR re-tiering uses a caller-supplied threshold-and-rate schedule; no notional threshold or multiplier is hardcoded in the generic engine",
+        "MarginBridge kill-switch accepts a per-period funding-rate fraction, periods_per_day, and a daily funding threshold, and compares daily_rate = per_period_rate × periods_per_day",
+        "Any convenience defaults are documented as conventions, remain overridable, and do not encode a named venue as generic truth",
+        "Regression tests prove a non-default MMR schedule changes liquidation and a non-8h cadence changes the daily kill-switch result",
+        "Replace the task-41 flunk placeholder and remove its @tag :domain_pending in test/delta_calc/domain_invariants_test.exs so the invariant runs under mix ci",
+        "mix ci clean; touched money-math modules stay >= 95% coverage"
       ],
       "out_of_scope": [
         "Funding-rate unit standardization (separate task)",
         "Adding venue presets"
       ],
-      "body": "Generic calc functions bake in venue/risk-engine constants. Calc.calculate_tiered_mmr hardcodes a tier ladder (0-50k base, 50k-250k x1.5, 250k-1M x2, 1M+ x2.5) inside the DCA liquidation path; MarginBridge's kill-switch thresholds assume an 8h/default cadence while sibling functions accept periods_per_day. These are the venue-constant anti-pattern this repo's CLAUDE.md explicitly warns about: internally consistent, fully tested, and wrong for any venue that differs.\n\nMake the tier schedule and cadence caller-supplied :value inputs (or drop tiering from the generic engine entirely). Any default left in place must be documented as a convention and be overridable, with a test proving a non-default value flows through.\n",
+      "files_to_modify": [
+        "lib/delta_calc/calc.ex",
+        "lib/delta_calc/margin_bridge.ex",
+        "test/delta_calc/calc_test.exs",
+        "test/delta_calc/margin_bridge_test.exs",
+        "test/delta_calc/domain_invariants_test.exs"
+      ],
+      "touches": [
+        "lib/delta_calc/calc.ex",
+        "lib/delta_calc/margin_bridge.ex",
+        "test/delta_calc/calc_test.exs",
+        "test/delta_calc/margin_bridge_test.exs",
+        "test/delta_calc/domain_invariants_test.exs"
+      ],
+      "body": "Generic calc functions bake in venue/risk-engine constants. Calc.calculate_tiered_mmr hardcodes a tier ladder (0-50k base, 50k-250k x1.5, 250k-1M x2, 1M+ x2.5) inside the DCA liquidation path; MarginBridge's kill-switch thresholds assume an 8h/default cadence while sibling functions accept periods_per_day. These are the venue-constant anti-pattern this repo's CLAUDE.md explicitly warns about: internally consistent, fully tested, and wrong for any venue that differs.\n\nMake the MMR tier schedule caller-supplied. Normalize kill-switch funding to a daily fraction by multiplying the caller's per-period rate by periods_per_day before comparing it with a caller-supplied daily threshold. Any convenience default must be documented as an overridable convention, with tests proving non-default values flow through.\n\nDispatch trigger: critical liquidation and funding-risk math spanning multiple modules and a repo-wide domain invariant.\n",
       "created_at": "2026-06-19",
-      "scored_at": "2026-06-19",
+      "scored_at": "2026-07-25",
       "cross_repo": []
     },
     {
       "id": 42,
       "phase": 3,
       "bundle": "consumer_math",
+      "milestone": "v0_3",
       "status": "pending",
       "title": "Expose side-aware public multi_leg_position (shorts)",
       "scores": {
@@ -1880,10 +1973,16 @@
         "u": 6
       },
       "eff": 2.0,
-      "dep_layer": 0,
-      "unlocks": 0,
+      "dep_layer": 3,
+      "unlocks": 1,
       "markers": [],
-      "depends_on": [],
+      "depends_on": [
+        39,
+        44,
+        46
+      ],
+      "assignee": "codex",
+      "model": "gpt-5.6-sol",
       "acceptance_criteria": [
         "A public Calc.multi_leg_position path accepts side (:long/:short) and computes correct side-aware PnL, avg entry, and effective leverage for shorts",
         "The api()/Descripex metadata documents the side parameter",
@@ -1894,15 +1993,25 @@
       "out_of_scope": [
         "Changing long-side results"
       ],
-      "body": "Calc.multi_leg_position/4 (private) supports :long and :short, but the only public entry point, multi_leg_position/3, hardcodes :long. The api() advertises just /3. Short DCA callers therefore cannot get correct side-aware averages or liquidation through the public surface. Expose a side-aware public arity (or require side in the public params) and document it. compare_dca_safety already passes side to the private /4, so the math exists — it just needs a public door.\n",
+      "files_to_modify": [
+        "lib/delta_calc/calc.ex",
+        "test/delta_calc/calc_test.exs",
+        "test/delta_calc/manifest_consistency_test.exs"
+      ],
+      "touches": [
+        "lib/delta_calc/calc.ex",
+        "test/delta_calc/calc_test.exs",
+        "test/delta_calc/manifest_consistency_test.exs"
+      ],
+      "body": "Calc.multi_leg_position/4 (private) supports :long and :short, but the only public entry point, multi_leg_position/3, hardcodes :long. The api() advertises just /3. Short DCA callers therefore cannot get correct side-aware average entry, PnL, and effective leverage through the public surface. Expose a side-aware public arity (or require side in the public params) and document it. compare_dca_safety already passes side to the private /4, so the math exists — it just needs a public door.\n\nDispatch trigger: public API change on critical position math.\n",
       "created_at": "2026-06-19",
-      "scored_at": "2026-06-19",
+      "scored_at": "2026-07-25",
       "cross_repo": []
     },
     {
       "id": 43,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
       "status": "done",
       "title": "Fix PortfolioMargin netted mark price for offsetting legs",
       "scores": {
@@ -1941,101 +2050,204 @@
     {
       "id": 44,
       "phase": 3,
-      "bundle": "calc_primitives",
+      "bundle": "contract_hardening",
+      "milestone": "v0_3",
       "status": "pending",
-      "title": "Resolve ignored/dead public parameters and add entry-price guards",
+      "title": "Make DCA and position-sizing inputs behaviorally truthful",
       "scores": {
-        "d": 3,
-        "b": 5,
+        "d": 5,
+        "b": 6,
         "u": 6
       },
-      "eff": 1.83,
-      "dep_layer": 0,
-      "unlocks": 0,
-      "markers": [],
-      "depends_on": [],
+      "eff": 1.2,
+      "dep_layer": 2,
+      "unlocks": 2,
+      "markers": [
+        "bug"
+      ],
+      "depends_on": [
+        41
+      ],
+      "assignee": "codex",
+      "model": "gpt-5.6-sol",
       "acceptance_criteria": [
-        "Each currently-ignored public parameter is either wired into the calculation or removed from the public signature AND its Descripex metadata: Calc.dca_ladder mark_buffer, Calc.calculate_dca_price side, PositionCalculator fee_rate and mode_config",
-        "PositionCalculator position sizing guards against zero/negative entry_price (tagged error or documented sentinel) with a test",
-        "No public function advertises a parameter it ignores",
-        "mix ci clean"
+        "Calc.dca_ladder applies caller-supplied mark_buffer to the MMR used by every intermediate and final liquidation calculation; zero preserves current results and a non-zero buffer changes liquidation in the expected direction",
+        "The private DCA-price helper no longer accepts an unused side argument; the public contract states that ladder multipliers are already side-specific while side still drives PnL/liquidation math",
+        "PositionCalculator no longer requires or advertises fee_rate because fee modeling belongs to DeltaCalc.Fees",
+        "The primary PositionCalculator API operates on the caller-selected subaccount allocation without requiring risk-mode config that only gets echoed; any compatibility wrapper is explicitly documented and does not advertise metadata as a calculation input",
+        "No public parameter is described as affecting a calculation unless a regression test proves that changing it changes the relevant result",
+        "mix ci clean; touched money-math modules stay >= 95% coverage"
       ],
       "out_of_scope": [
-        "Adding new parameters",
-        "Funding-unit or coercion changes (separate tasks)"
+        "Changing fee formulas in DeltaCalc.Fees",
+        "Funding-unit or Decimal-coercion changes",
+        "Changing the already-shipped non-positive entry-price error contract"
       ],
-      "body": "Several public functions accept parameters they silently ignore, making the advertised contract lie. Calc.dca_ladder documents mark_buffer but binds it as _mark_buffer and never applies it. Calc.calculate_dca_price takes _side but multiplies regardless, so short ladders depend entirely on caller-signed multipliers with no guard. PositionCalculator.calculate_position accepts fee_rate (never folded into mmr_total) and mode_config (fetched but unused in sizing — only echoed in output). PositionCalculator also divides by entry_price with no zero/negative guard.\n\nFor each ignored parameter: either wire it into the math (e.g. fold fee_rate into the liquidation MMR buffer; let side drive dca price direction; apply mark_buffer to the MMR/liquidation calc) or remove it from the public signature and Descripex metadata. Add a zero/negative entry_price guard with a test.\n",
+      "files_to_modify": [
+        "lib/delta_calc/calc.ex",
+        "lib/delta_calc/position_calculator.ex",
+        "lib/delta_calc/dca_planner.ex",
+        "test/delta_calc/calc_test.exs",
+        "test/delta_calc/position_calculator_test.exs",
+        "test/delta_calc/dca_planner_test.exs",
+        "test/delta_calc/dca_property_test.exs",
+        "test/delta_calc/manifest_consistency_test.exs"
+      ],
+      "touches": [
+        "lib/delta_calc/calc.ex",
+        "lib/delta_calc/position_calculator.ex",
+        "lib/delta_calc/dca_planner.ex",
+        "test/delta_calc/calc_test.exs",
+        "test/delta_calc/position_calculator_test.exs",
+        "test/delta_calc/dca_planner_test.exs",
+        "test/delta_calc/dca_property_test.exs",
+        "test/delta_calc/manifest_consistency_test.exs"
+      ],
+      "body": "Current-code audit on 2026-07-25 found three distinct contract lies. Calc.dca_ladder advertises mark_buffer but drops it before liquidation; its private calculate_dca_price helper accepts side even though callers already supply side-specific multipliers; PositionCalculator requires fee_rate and risk-mode config although fee_rate is unused and mode_config is only echoed.\n\nApply mark_buffer to the DCA liquidation MMR, remove the unused private side argument, and make the primary PositionCalculator API depend only on the caller-selected subaccount allocation and values that drive sizing. A compatibility wrapper may remain only when clearly documented; fee calculations stay in DeltaCalc.Fees. The non-positive entry-price guard already shipped in Task 49 and is not part of this task.\n\nDispatch trigger: public contract correction across critical DCA and position-sizing math.\n",
       "created_at": "2026-06-19",
-      "scored_at": "2026-06-19",
+      "scored_at": "2026-07-25",
       "cross_repo": []
     },
     {
       "id": 45,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
+      "milestone": "v0_3",
       "status": "pending",
       "title": "Replace formula-derived golden values with independent fixtures",
       "scores": {
-        "d": 3,
-        "b": 6,
-        "u": 6
+        "d": 7,
+        "b": 9,
+        "u": 8
       },
-      "eff": 2.0,
+      "eff": 1.21,
       "dep_layer": 0,
-      "unlocks": 0,
+      "unlocks": 2,
       "markers": [],
       "depends_on": [],
+      "assignee": "grok",
+      "model": "grok-4.5",
       "acceptance_criteria": [
-        "Golden tests for liquidation, position sizing, DCA, fees, and funding assert against independently-sourced expected values, not values computed from the same formula under test",
-        "At least the highest-risk domain formulas have a fixture whose provenance is documented (hand-computed, spec, or external reference)",
-        "Decimal results are compared as Decimals with explicit tolerances rather than converted to floats",
-        "mix ci clean",
-        "Replace the task-45 `flunk` placeholder and remove its `@tag :domain_pending` in test/delta_calc/domain_invariants_test.exs (independently-sourced liquidation fixture) so the invariant runs green under mix ci"
+        "Liquidation, position sizing, DCA, fees, and funding each have at least one golden fixture whose expected value is derived independently of the implementation under test",
+        "Every fixture names its provenance and derivation; claims about a venue use that provider's official contract, while generic formulas may use a documented hand calculation from the public domain contract",
+        "No expected value imports, calls, or algebraically reuses the implementation formula or its internal constants",
+        "Decimal results are compared directly with explicit Decimal tolerances rather than converted to floats",
+        "Replace the task-45 flunk placeholder and remove its @tag :domain_pending in test/delta_calc/domain_invariants_test.exs so the liquidation invariant runs under mix ci",
+        "mix ci clean; affected money-math modules stay >= 95% coverage"
       ],
       "out_of_scope": [
         "Rewriting the property tests",
         "Adding integration/live-venue tests"
       ],
-      "body": "Several golden tests compute their expected values from the same formula they exercise, so they verify implementation consistency, not domain correctness — any constant error baked into the formula is ratified by its own golden (the exact failure CLAUDE.md warns about, and how tasks 24-26 shipped wrong constants clean). Some assertions also convert Decimals to floats, hiding precision/rounding regressions.\n\nReplace formula-derived goldens with independently-sourced fixtures (hand-computed, documented spec values, or external reference) for the high-risk formulas: liquidation, sizing, DCA, fees, funding. Compare Decimals directly with Decimal tolerances. Document each fixture's provenance so a future reader can see the value did not come from the code under test.\n",
+      "files_to_modify": [
+        "test/delta_calc/calc_test.exs",
+        "test/delta_calc/golden_calc_test.exs",
+        "test/delta_calc/position_calculator_test.exs",
+        "test/delta_calc/dca_planner_test.exs",
+        "test/delta_calc/fees_test.exs",
+        "test/delta_calc/funding_test.exs",
+        "test/delta_calc/domain_invariants_test.exs"
+      ],
+      "touches": [
+        "test/delta_calc/calc_test.exs",
+        "test/delta_calc/golden_calc_test.exs",
+        "test/delta_calc/position_calculator_test.exs",
+        "test/delta_calc/dca_planner_test.exs",
+        "test/delta_calc/fees_test.exs",
+        "test/delta_calc/funding_test.exs",
+        "test/delta_calc/domain_invariants_test.exs"
+      ],
+      "body": "Several golden tests compute their expected values from the same formula they exercise, so they verify implementation consistency, not domain correctness — any constant error baked into the formula is ratified by its own golden (the exact failure CLAUDE.md warns about, and how tasks 24-26 shipped wrong constants clean). Some assertions also convert Decimals to floats, hiding precision/rounding regressions.\n\nReplace formula-derived goldens with one independently derived fixture for each high-risk family: liquidation, sizing, DCA, fees, and funding. Name the source and derivation beside every fixture. Provider-specific claims require the provider's official contract; generic math may use a documented hand calculation from the public input contract. Compare Decimals directly with explicit tolerances.\n\nDispatch trigger: independent verification of critical money formulas across five calculation families.\n",
       "created_at": "2026-06-19",
-      "scored_at": "2026-06-19",
+      "scored_at": "2026-07-25",
       "cross_repo": []
     },
     {
       "id": 46,
       "phase": 3,
-      "bundle": "calc_primitives",
+      "bundle": "contract_hardening",
+      "milestone": "v0_3",
       "status": "pending",
-      "title": "Use Decimal-shaped Descripex schemas for money params and make schema coverage consistent",
+      "title": "Advertise exact Decimal inputs as canonical JSON strings in Descripex",
       "scores": {
-        "d": 2,
-        "b": 5,
-        "u": 5
+        "d": 6,
+        "b": 7,
+        "u": 7
       },
-      "eff": 2.5,
-      "dep_layer": 0,
-      "unlocks": 0,
+      "eff": 1.17,
+      "dep_layer": 1,
+      "unlocks": 3,
       "markers": [],
-      "depends_on": [],
+      "depends_on": [
+        39
+      ],
+      "assignee": "codex",
+      "model": "gpt-5.6-sol",
       "acceptance_criteria": [
-        "Money/price/leverage :value params advertise a Decimal-appropriate schema rather than float() in api() metadata",
-        "Schema annotation coverage is consistent across modules (Calc params no longer omit schema while Funding/Hedging supply it, or a documented rationale for the difference)",
-        "The agent-facing manifest reflects Decimal semantics for money inputs",
+        "Every exact money, price, rate, percentage, ratio, and leverage :value input emits a JSON Schema string contract and describes the canonical decimal-string form accepted by Task 39; non-monetary integer, boolean, and enum inputs retain their natural schemas",
+        "No exact Decimal field remains advertised as schema: float(), and agent-facing examples contain no binary-float exact-value inputs",
+        "Manifest and MCP-tool tests prove canonical decimal strings survive agent transport without precision loss and reject malformed numeric strings",
+        "The advertised contract matches runtime behavior: Decimal, integer, and canonical decimal string are accepted exact inputs; raw floats are not advertised or accepted",
         "mix ci clean"
       ],
       "out_of_scope": [
-        "Changing runtime coercion behavior",
-        "Bumping the descripex dependency (0.11 already supports this)"
+        "Implementing runtime coercion behavior owned by Task 39",
+        "Adding Decimal.t() or mixed number|string support to Descripex/JSONSpec",
+        "Bumping the descripex dependency"
       ],
-      "body": "The library is Decimal-only, but many api() declarations annotate money/price/leverage :value params as schema: float() (e.g. Hedging total_spot), while others (e.g. Calc) omit schema entirely. The advertised agent contract therefore implies float precision for values the engine treats as exact Decimals, and schema coverage is uneven across the surface. Switch money params to a Decimal-appropriate schema and make schema presence consistent across modules. descripex 0.11 (current pin) already supports this — no dependency bump required.\n",
+      "files_to_modify": [
+        "lib/delta_calc/account_metrics.ex",
+        "lib/delta_calc/calc.ex",
+        "lib/delta_calc/carry.ex",
+        "lib/delta_calc/concentration.ex",
+        "lib/delta_calc/dca_planner.ex",
+        "lib/delta_calc/delta_neutral.ex",
+        "lib/delta_calc/fees.ex",
+        "lib/delta_calc/funding.ex",
+        "lib/delta_calc/funding_projection.ex",
+        "lib/delta_calc/hedging.ex",
+        "lib/delta_calc/margin_bridge.ex",
+        "lib/delta_calc/option_ladder.ex",
+        "lib/delta_calc/options_risk.ex",
+        "lib/delta_calc/pnl.ex",
+        "lib/delta_calc/portfolio_margin.ex",
+        "lib/delta_calc/position_calculator.ex",
+        "lib/delta_calc/presets.ex",
+        "lib/delta_calc/stress_scenario.ex",
+        "test/delta_calc/manifest_test.exs",
+        "test/delta_calc/manifest_consistency_test.exs"
+      ],
+      "touches": [
+        "lib/delta_calc/account_metrics.ex",
+        "lib/delta_calc/calc.ex",
+        "lib/delta_calc/carry.ex",
+        "lib/delta_calc/concentration.ex",
+        "lib/delta_calc/dca_planner.ex",
+        "lib/delta_calc/delta_neutral.ex",
+        "lib/delta_calc/fees.ex",
+        "lib/delta_calc/funding.ex",
+        "lib/delta_calc/funding_projection.ex",
+        "lib/delta_calc/hedging.ex",
+        "lib/delta_calc/margin_bridge.ex",
+        "lib/delta_calc/option_ladder.ex",
+        "lib/delta_calc/options_risk.ex",
+        "lib/delta_calc/pnl.ex",
+        "lib/delta_calc/portfolio_margin.ex",
+        "lib/delta_calc/position_calculator.ex",
+        "lib/delta_calc/presets.ex",
+        "lib/delta_calc/stress_scenario.ex",
+        "test/delta_calc/manifest_test.exs",
+        "test/delta_calc/manifest_consistency_test.exs"
+      ],
+      "body": "The library computes exact values with Decimal, but its agent contract alternates between schema: float() and no schema. Verified on 2026-07-25 against the pinned descripex 0.11.0 and json_spec 1.1.1: Descripex compiles schema annotations through JSONSpec; String.t() maps to JSON Schema string, while Decimal.t() and mixed number|string unions are not supported. Therefore use canonical decimal strings for agent transport rather than claiming that a Decimal struct itself is JSON-serializable.\n\nTask 39 defines the runtime policy: Decimal, integers, and canonical decimal strings are exact inputs; raw floats and malformed strings are rejected. Make the manifest, MCP tools, and examples express that same contract without claiming Decimal structs are JSON-serializable.\n\nDispatch trigger: repo-wide public agent contract change across every calculation module.\n",
       "created_at": "2026-06-19",
-      "scored_at": "2026-06-19",
+      "scored_at": "2026-07-25",
       "cross_repo": []
     },
     {
       "id": 47,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
       "status": "done",
       "title": "Move presentation strings out of pure-calc results",
       "scores": {
@@ -2073,38 +2285,84 @@
     {
       "id": 48,
       "phase": 3,
-      "bundle": "calc_primitives",
+      "bundle": "contract_hardening",
+      "milestone": "v0_3",
       "status": "pending",
-      "title": "Unify output-precision and rounding policy across modules",
+      "title": "Move rounding to explicit caller-controlled output boundaries",
       "scores": {
-        "d": 3,
-        "b": 4,
+        "d": 7,
+        "b": 6,
         "u": 4
       },
-      "eff": 1.33,
-      "dep_layer": 0,
-      "unlocks": 0,
+      "eff": 0.71,
+      "dep_layer": 1,
+      "unlocks": 1,
       "markers": [],
-      "depends_on": [],
+      "depends_on": [
+        39,
+        45
+      ],
+      "assignee": "grok",
+      "model": "grok-4.5",
       "acceptance_criteria": [
-        "A documented rounding policy states the output precision per value domain (price, rate, percentage, ratio)",
-        "Module rounding (Calc.quantize 8 places; Funding 6/4/2; Hedging 2/4/8) either follows the documented policy or each deviation has a stated rationale",
-        "The decimal 3.x precision-34 implications (per CLAUDE.md) are accounted for at output boundaries",
-        "mix ci clean"
+        "Pure calculations preserve Decimal precision until an explicitly documented output boundary",
+        "Generic price, rate, percentage, and ratio functions do not impose one library-wide decimal-place count; a boundary that quantizes accepts caller-supplied scale or step and rounding mode, or documents why its fixed contract is intrinsic",
+        "Calc.quantize remains only where its eight-place compatibility contract is intentional and is not reused merely as a convenience by unrelated domains",
+        "Tests exercise at least two caller-selected precisions and pin behavior under Decimal 3.x precision 34",
+        "mix ci clean; affected money-math modules stay >= 95% coverage"
       ],
       "out_of_scope": [
-        "Changing computed values beyond rounding",
-        "Reworking module APIs"
+        "Presentation formatting",
+        "Fetching venue tick sizes or precision metadata",
+        "Changing unrelated calculation APIs"
       ],
-      "body": "There is no single output-precision policy. Calc.quantize rounds to 8 places, Funding rounds to 6/4/2 depending on field, Hedging rounds 2/4/8 ad hoc, PortfolioMargin reuses Calc.quantize. Given the documented decimal 3.x default-precision change (28 -> 34), inconsistent boundary rounding across modules is a real correctness surface, not just style. Define a per-domain rounding policy (price vs rate vs percentage vs ratio), apply it consistently, and document any intentional per-field deviation.\n",
+      "files_to_modify": [
+        "lib/delta_calc/account_metrics.ex",
+        "lib/delta_calc/calc.ex",
+        "lib/delta_calc/carry.ex",
+        "lib/delta_calc/concentration.ex",
+        "lib/delta_calc/dca_planner.ex",
+        "lib/delta_calc/delta_neutral.ex",
+        "lib/delta_calc/fees.ex",
+        "lib/delta_calc/funding.ex",
+        "lib/delta_calc/funding_projection.ex",
+        "lib/delta_calc/hedging.ex",
+        "lib/delta_calc/margin_bridge.ex",
+        "lib/delta_calc/option_ladder.ex",
+        "lib/delta_calc/options_risk.ex",
+        "lib/delta_calc/pnl.ex",
+        "lib/delta_calc/portfolio_margin.ex",
+        "lib/delta_calc/position_calculator.ex",
+        "lib/delta_calc/stress_scenario.ex"
+      ],
+      "touches": [
+        "lib/delta_calc/account_metrics.ex",
+        "lib/delta_calc/calc.ex",
+        "lib/delta_calc/carry.ex",
+        "lib/delta_calc/concentration.ex",
+        "lib/delta_calc/dca_planner.ex",
+        "lib/delta_calc/delta_neutral.ex",
+        "lib/delta_calc/fees.ex",
+        "lib/delta_calc/funding.ex",
+        "lib/delta_calc/funding_projection.ex",
+        "lib/delta_calc/hedging.ex",
+        "lib/delta_calc/margin_bridge.ex",
+        "lib/delta_calc/option_ladder.ex",
+        "lib/delta_calc/options_risk.ex",
+        "lib/delta_calc/pnl.ex",
+        "lib/delta_calc/portfolio_margin.ex",
+        "lib/delta_calc/position_calculator.ex",
+        "lib/delta_calc/stress_scenario.ex"
+      ],
+      "body": "Calc.quantize rounds to eight places, Funding rounds to 6/4/2 depending on the field, Hedging rounds to 2/4/8, and PortfolioMargin reuses Calc.quantize. A fixed library-wide precision by value category would still be wrong for an instrument-agnostic engine because callers own tick sizes, quantity steps, and reporting precision.\n\nPreserve Decimal precision through generic math. At real output boundaries, accept caller-controlled quantization or document an intrinsic compatibility contract. Account explicitly for Decimal 3.x precision 34 and prove that two callers can choose different output precision without changing the underlying calculation.\n\nDispatch trigger: repo-wide money-math contract change spanning nearly every calculation module.\n",
       "created_at": "2026-06-19",
-      "scored_at": "2026-06-19",
+      "scored_at": "2026-07-25",
       "cross_repo": []
     },
     {
       "id": 49,
       "phase": 3,
-      "bundle": "calc_primitives",
+      "bundle": "contract_hardening",
       "status": "done",
       "title": "Disambiguate zero-as-sentinel vs legitimate zero in Calc returns",
       "scores": {
@@ -2142,7 +2400,7 @@
     {
       "id": 50,
       "phase": 3,
-      "bundle": "consumer_math",
+      "bundle": "contract_hardening",
       "status": "done",
       "title": "Fix per-position liquidated? semantics in StressScenario.apply_shock",
       "scores": {
@@ -2181,34 +2439,125 @@
     {
       "id": 51,
       "phase": 3,
-      "bundle": "calc_primitives",
+      "bundle": "contract_hardening",
+      "milestone": "v0_3",
       "status": "pending",
       "title": "Split Calc god-module along cohesion seams",
       "scores": {
-        "d": 5,
-        "b": 4,
+        "d": 7,
+        "b": 5,
         "u": 4
       },
-      "eff": 0.8,
-      "dep_layer": 0,
+      "eff": 0.64,
+      "dep_layer": 4,
       "unlocks": 0,
       "markers": [],
-      "depends_on": [],
+      "depends_on": [
+        42,
+        44,
+        48
+      ],
+      "assignee": "codex",
+      "model": "gpt-5.6-sol",
       "acceptance_criteria": [
-        "Calc (1158 LOC) is split into cohesive modules (e.g. leverage, liquidation, safety scoring, DCA ladder, preset conversion) with the public API preserved or re-exported",
-        "DCA-ladder logic and convert_ladder_for_short move toward DCAPlanner or a dedicated module",
-        "Manifest registration and api() metadata updated; no name+arity collisions",
-        "Internal DCA step maps no longer leak underscore-prefixed internal fields (_cumulative_tokens, _new_wallet_equity) to consumers",
+        "Calc is split into cohesive modules for leverage, liquidation, safety scoring, DCA ladders, and preset conversion while its public API remains available or is explicitly re-exported",
+        "DCA-ladder logic and convert_ladder_for_short move to DCAPlanner or a dedicated cohesive module",
+        "Manifest registration and api() metadata are updated with no name+arity collisions",
+        "Internal DCA step maps no longer expose underscore-prefixed implementation fields such as _cumulative_tokens and _new_wallet_equity",
         "mix ci clean; coverage maintained"
       ],
       "out_of_scope": [
         "Changing computed results",
         "Renaming public functions without re-export"
       ],
-      "body": "Calc is a 1158-LOC hub that mixes leverage, liquidation, allocation, safety scoring, a full DCA-ladder engine, short-ladder preset conversion, and the quantize util — and nearly every other module aliases it, so cohesion is low and blast radius is high. Split it along natural seams (leverage / liquidation / safety / DCA / presets), moving the DCA-ladder block and convert_ladder_for_short toward DCAPlanner or a dedicated module, while preserving the public API (re-export if needed) and the manifest invariants. Also stop leaking the underscore-prefixed internal fields in dca_ladder step maps. This should land AFTER the Calc-touching correctness tasks (venue-constants, dead-params, zero-sentinel) to avoid write-set churn.\n",
+      "files_to_modify": [
+        "lib/delta_calc/calc.ex",
+        "lib/delta_calc/dca_planner.ex",
+        "lib/delta_calc/manifest.ex",
+        "test/delta_calc/calc_test.exs",
+        "test/delta_calc/dca_planner_test.exs",
+        "test/delta_calc/dca_property_test.exs",
+        "test/delta_calc/manifest_consistency_test.exs"
+      ],
+      "touches": [
+        "lib/delta_calc/calc.ex",
+        "lib/delta_calc/dca_planner.ex",
+        "lib/delta_calc/manifest.ex",
+        "test/delta_calc/calc_test.exs",
+        "test/delta_calc/dca_planner_test.exs",
+        "test/delta_calc/dca_property_test.exs",
+        "test/delta_calc/manifest_consistency_test.exs"
+      ],
+      "body": "Current audit: Calc exceeds 1,100 lines and mixes leverage, liquidation, allocation, safety scoring, a full DCA-ladder engine, short-ladder preset conversion, and quantization. Nearly every other module aliases it, so cohesion is low and blast radius is high. Split it along natural seams, move the DCA-ladder block and convert_ladder_for_short to DCAPlanner or a dedicated module, preserve the public API through explicit re-exports where needed, maintain manifest invariants, and stop exposing underscore-prefixed internal fields in DCA step maps.\n\nDispatch trigger: multi-module public API-preserving refactor of a central money-math surface.\n",
       "created_at": "2026-06-19",
-      "scored_at": "2026-06-19",
+      "scored_at": "2026-07-25",
       "cross_repo": []
+    },
+    {
+      "id": 53,
+      "phase": 3,
+      "bundle": "consumer_math",
+      "milestone": "v0_4",
+      "status": "pending",
+      "title": "Add base-numeraire inverse exposure and covered-call coverage math",
+      "scores": {
+        "d": 6,
+        "b": 8,
+        "u": 7
+      },
+      "eff": 1.25,
+      "dep_layer": 2,
+      "unlocks": 0,
+      "markers": [],
+      "depends_on": [
+        39,
+        46
+      ],
+      "assignee": "codex",
+      "model": "gpt-5.6-sol",
+      "acceptance_criteria": [
+        "Pure Decimal APIs return separately named base-numeraire exposure, settlement coverage, and risk-target results; coverage never implies delta neutrality or approval, and a fully covered position with non-zero residual delta remains outside an explicit neutral target",
+        "Option exposure requires a semantic tag distinguishing Black-Scholes delta from provider-supplied Net Transaction Delta: Black-Scholes delta subtracts the option mark exactly once, while Net Transaction Delta is never adjusted a second time",
+        "Option quantity requires a unit tag distinguishing base-currency amount from contract count; contract count is multiplied exactly once by a caller-supplied base-currency contract size",
+        "Golden tests pin the Black-Scholes case delta = 0.40 base and option mark = 0.05 base: signed base amount +1 returns +0.35 base and -1 returns -0.35 base; a base-denominated mark is not divided by spot and a quote-denominated mark is converted once",
+        "Inverse-perpetual inputs distinguish signed USD notional from signed contract count: USD notional divides by mark once, while contract count multiplies by caller-supplied USD contract size before dividing by mark; independent long and short fixtures pin both shapes",
+        "Settlement-period input is either tagged provider-adjusted Net Transaction Delta or explicitly tagged decayed delta and mark components; ambiguous settlement input is rejected rather than passed through the ordinary formula",
+        "Covered-call coverage reports eligible base, disjoint existing reservations, proposed obligation, remaining capacity, and uncovered amount without inferring portfolio identity",
+        "Unsupported, untagged, or mixed unit shapes return a named error; every public function is Descripex-advertised and Decimal-valued",
+        "mix ci is green and touched money-math modules have at least 95% coverage"
+      ],
+      "out_of_scope": [
+        "Fetching exchange balances, marks, Greeks, contract multipliers, order state, or settlement state",
+        "Computing Black-Scholes Greeks or deriving settlement decay from a clock",
+        "Portfolio persistence, reservation ownership/deduplication, approval policy, UI, alerts, strategy selection, or roll scheduling",
+        "Order submission, reconciliation, and venue margin preflight",
+        "Base-numeraire gamma, vega, or theta transformation"
+      ],
+      "files_to_modify": [
+        "lib/delta_calc/delta_neutral.ex",
+        "test/delta_calc/delta_neutral_test.exs"
+      ],
+      "touches": [
+        "lib/delta_calc/delta_neutral.ex",
+        "test/delta_calc/delta_neutral_test.exs"
+      ],
+      "body": "Add the pure calculation boundary needed by an ETH-numeraire covered-call portfolio. Keep two\nquestions orthogonal: (1) settlement coverage — whether eligible base inventory covers the maximum\nbase obligation of existing and proposed short calls; and (2) numeraire risk — the signed local\nexposure and whether it satisfies a caller-supplied target. A covered call can still carry material\ndelta, so coverage must never waive a hedge/risk target or produce an approval decision.\n\nDeribit's provider-owned contract defines Net Transaction Delta as Black-Scholes delta minus option\nmark price. Therefore tag which semantic the caller supplies: apply the subtraction once to a\nBlack-Scholes delta, and never subtract the mark from an already adjusted Net Transaction Delta.\nAlso tag option quantity as base-currency amount or contract count. Deribit documents option amount\nand option contract size in base currency, so a contract count must multiply by the supplied base\ncontract size exactly once. A base-denominated mark is not divided by spot; a quote-denominated mark\nis converted once.\n\nFor inverse perpetuals, distinguish a signed USD-notional input from a signed contract-count input.\nUSD notional converts to base once by dividing by mark; contract count first multiplies by the\ncaller-supplied USD contract size and then divides by mark. Untagged or mixed shapes fail rather than\nguessing whether an exchange `amount` means contracts or USD. Prove both directions with independent\nhand-calculated fixtures and no venue constants.\n\nDuring Deribit settlement, option delta and mark decay toward intrinsic settlement values. Accept\neither provider-adjusted Net Transaction Delta or explicitly tagged decayed components; do not apply\nthe ordinary formula to an ambiguous settlement-period value.\n\nCoverage consumes already-classified, mutually exclusive quantities: eligible base inventory,\nexisting short-call obligations, pending/open sell reservations, other reservations, and the\nproposed short-call amount. DeltaCalc performs Decimal arithmetic and reports capacity/uncovered\namount; the consumer owns identities, persistence, double-spend prevention, policy, and approval.\n\nCross-repo boundary: ccxt_client Task 512 is superseded by this task plus trading_dashboard Task 15.\nccxt_client supplies normalized provider facts and safe execution; trading_dashboard owns portfolio\nstate and policy.\n\nProvider contracts:\n- https://docs.deribit.com/api-reference/account-management/private-get_account_summaries\n- https://docs.deribit.com/api-reference/market-data/public-get_contract_size\n- https://docs.deribit.com/api-reference/trading/private-sell\n- https://support.deribit.com/hc/en-us/articles/25944751433757-Delta-decay-during-settlement\n\nDispatch trigger: critical money/risk math and a public calculation contract requiring independent\nworked examples.\n",
+      "created_at": "2026-07-24",
+      "scored_at": "2026-07-25",
+      "cross_repo": [
+        {
+          "repo": "trading_dashboard",
+          "task_id": 15,
+          "linear_id": null,
+          "relation": "related"
+        },
+        {
+          "repo": "ccxt_client",
+          "task_id": 512,
+          "linear_id": null,
+          "relation": "related"
+        }
+      ]
     }
   ]
 }

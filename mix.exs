@@ -2,6 +2,7 @@ defmodule DeltaCalc.MixProject do
   use Mix.Project
 
   @version "0.1.0"
+  @source_url "https://github.com/ZenHive/delta_calc"
 
   def project do
     [
@@ -22,6 +23,8 @@ defmodule DeltaCalc.MixProject do
       description:
         "Pure-Decimal calculation engine for leveraged crypto trading: position sizing, " <>
           "effective leverage, liquidation, DCA ladders, safety scoring, and spot hedging.",
+      source_url: @source_url,
+      package: package(),
       docs: docs()
     ]
   end
@@ -96,10 +99,20 @@ defmodule DeltaCalc.MixProject do
     ]
   end
 
+  defp package do
+    [
+      licenses: ["MIT"],
+      links: %{"GitHub" => @source_url, "Changelog" => "#{@source_url}/blob/main/CHANGELOG.md"},
+      # Explicit list: the default set would sweep in priv/plts (dialyzer PLTs, tens of MB).
+      files: ~w(lib .formatter.exs mix.exs README.md CHANGELOG.md LICENSE)
+    ]
+  end
+
   defp docs do
     [
       main: "DeltaCalc",
-      extras: ["README.md"],
+      extras: ["README.md", "CHANGELOG.md", "LICENSE"],
+      source_url: @source_url,
       source_ref: "v#{@version}"
     ]
   end

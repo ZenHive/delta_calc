@@ -1,4 +1,4 @@
-defmodule DeltaCalc.PnL do
+defmodule DeltaCalc.Pnl do
   @moduledoc """
   Position PnL, return-on-equity, and fee/funding-adjusted breakeven math.
 

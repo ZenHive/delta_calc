@@ -26,7 +26,7 @@ defmodule DeltaCalc.Manifest do
     DeltaCalc.FundingProjection,
     DeltaCalc.OptionLadder,
     DeltaCalc.OptionsRisk,
-    DeltaCalc.PnL,
+    DeltaCalc.Pnl,
     DeltaCalc.DeltaNeutral,
     DeltaCalc.PortfolioMargin,
     DeltaCalc.StressScenario,

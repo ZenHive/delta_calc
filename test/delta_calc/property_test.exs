@@ -12,7 +12,7 @@ defmodule DeltaCalc.PropertyTest do
     Funding,
     MarginBridge,
     OptionsRisk,
-    PnL,
+    Pnl,
     PortfolioMargin,
     StressScenario
   }
@@ -183,10 +183,10 @@ defmodule DeltaCalc.PropertyTest do
               max_runs: @max_runs
             ) do
         long =
-          PnL.unrealized_pnl(%{entry_price: entry, mark_price: price, size: size, side: :long})
+          Pnl.unrealized_pnl(%{entry_price: entry, mark_price: price, size: size, side: :long})
 
         short =
-          PnL.unrealized_pnl(%{entry_price: entry, mark_price: price, size: size, side: :short})
+          Pnl.unrealized_pnl(%{entry_price: entry, mark_price: price, size: size, side: :short})
 
         assert D.equal?(long, gross_pnl_formula(entry, price, size, :long))
         assert D.equal?(short, gross_pnl_formula(entry, price, size, :short))

@@ -35,7 +35,7 @@ alias DeltaCalc.{
   FundingProjection,
   OptionLadder,
   OptionsRisk,
-  PnL,
+  Pnl,
   DeltaNeutral,
   PortfolioMargin,
   StressScenario,
@@ -371,13 +371,13 @@ OptionsRisk.monitor_margin_bridge_health(%{
 #=> %{margin_ratio: #Decimal<0.145>, runway_days: #Decimal<45>, health_status: :healthy}
 ```
 
-## `DeltaCalc.PnL`
+## `DeltaCalc.Pnl`
 
 Position PnL, return-on-equity, and fee/funding-adjusted breakeven math.
 
 ```elixir
 # unrealized_pnl(params) -> Decimal
-PnL.unrealized_pnl(%{
+Pnl.unrealized_pnl(%{
   entry_price: Decimal.new("50000"),
   mark_price: Decimal.new("51000"),
   size: Decimal.new("2"),
@@ -386,7 +386,7 @@ PnL.unrealized_pnl(%{
 #=> #Decimal<2000.00000000>
 
 # realized_pnl(params) -> Decimal (fees + accrued funding netted)
-PnL.realized_pnl(%{
+Pnl.realized_pnl(%{
   entry_price: Decimal.new("50000"),
   exit_price: Decimal.new("52000"),
   size: Decimal.new("2"),
@@ -398,11 +398,11 @@ PnL.realized_pnl(%{
 #=> #Decimal<...>
 
 # roe(params) -> Decimal
-PnL.roe(%{pnl: Decimal.new("400"), margin: Decimal.new("1000")})
+Pnl.roe(%{pnl: Decimal.new("400"), margin: Decimal.new("1000")})
 #=> #Decimal<40.00000000>
 
 # breakeven(params) -> Decimal
-PnL.breakeven(%{
+Pnl.breakeven(%{
   entry_price: Decimal.new("50000"),
   size: Decimal.new("2"),
   open_fee_rate: Decimal.new("0.0004"),

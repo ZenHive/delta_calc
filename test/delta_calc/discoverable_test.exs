@@ -28,6 +28,9 @@ defmodule DeltaCalc.DiscoverableTest do
       assert "hedging" in short_names
       # Acronym segments underscore per `Macro.underscore/1`: DCAPlanner -> dca_planner.
       assert "dca_planner" in short_names
+      # Internal caps would split the same way (a `PnL` module would read "pn_l"),
+      # so module names stay single-cap-per-word for a legible agent-facing name.
+      assert "pnl" in short_names
     end
 
     test "the discovery surface reads from the manifest registry" do

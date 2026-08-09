@@ -1435,7 +1435,7 @@ id = 53
 phase = 3
 bundle = "consumer_math"
 milestone = "v0_4"
-status = "in_progress"
+status = "done"
 title = "Add base-numeraire inverse exposure and covered-call coverage math"
 scores = { d = 6, b = 8, u = 7 }
 depends_on = [39, 46]
@@ -1489,6 +1489,13 @@ Provider contracts:
 Dispatch trigger: critical money/risk math and a public calculation contract requiring independent
 worked examples.
 """
+implemented = "Landed by codex via merge-train; reviewer-approved (run run-1786278466092-3c43ed5e, 89824123b0df327717060af5da1fd0678bb92b14)."
+delivered_by = "codex"
+verified = true
+verified_by = "claude"
+verification_ref = "harness-run:run-1786278466092-3c43ed5e"
 created_at = "2026-07-24"
 started_at = "2026-08-09"
 scored_at = "2026-07-25"
+done_at = "2026-08-09"
+shipped_in = "89824123b0df327717060af5da1fd0678bb92b14"

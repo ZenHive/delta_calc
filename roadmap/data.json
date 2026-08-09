@@ -2547,7 +2547,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_4",
-      "status": "in_progress",
+      "status": "done",
       "title": "Add base-numeraire inverse exposure and covered-call coverage math",
       "scores": {
         "d": 6,
@@ -2590,10 +2590,17 @@
         "lib/delta_calc/delta_neutral.ex",
         "test/delta_calc/delta_neutral_test.exs"
       ],
+      "shipped_in": "89824123b0df327717060af5da1fd0678bb92b14",
       "body": "Add the pure calculation boundary needed by an ETH-numeraire covered-call portfolio. Keep two\nquestions orthogonal: (1) settlement coverage — whether eligible base inventory covers the maximum\nbase obligation of existing and proposed short calls; and (2) numeraire risk — the signed local\nexposure and whether it satisfies a caller-supplied target. A covered call can still carry material\ndelta, so coverage must never waive a hedge/risk target or produce an approval decision.\n\nDeribit's provider-owned contract defines Net Transaction Delta as Black-Scholes delta minus option\nmark price. Therefore tag which semantic the caller supplies: apply the subtraction once to a\nBlack-Scholes delta, and never subtract the mark from an already adjusted Net Transaction Delta.\nAlso tag option quantity as base-currency amount or contract count. Deribit documents option amount\nand option contract size in base currency, so a contract count must multiply by the supplied base\ncontract size exactly once. A base-denominated mark is not divided by spot; a quote-denominated mark\nis converted once.\n\nFor inverse perpetuals, distinguish a signed USD-notional input from a signed contract-count input.\nUSD notional converts to base once by dividing by mark; contract count first multiplies by the\ncaller-supplied USD contract size and then divides by mark. Untagged or mixed shapes fail rather than\nguessing whether an exchange `amount` means contracts or USD. Prove both directions with independent\nhand-calculated fixtures and no venue constants.\n\nDuring Deribit settlement, option delta and mark decay toward intrinsic settlement values. Accept\neither provider-adjusted Net Transaction Delta or explicitly tagged decayed components; do not apply\nthe ordinary formula to an ambiguous settlement-period value.\n\nCoverage consumes already-classified, mutually exclusive quantities: eligible base inventory,\nexisting short-call obligations, pending/open sell reservations, other reservations, and the\nproposed short-call amount. DeltaCalc performs Decimal arithmetic and reports capacity/uncovered\namount; the consumer owns identities, persistence, double-spend prevention, policy, and approval.\n\nCross-repo boundary: ccxt_client Task 512 is superseded by this task plus trading_dashboard Task 15.\nccxt_client supplies normalized provider facts and safe execution; trading_dashboard owns portfolio\nstate and policy.\n\nProvider contracts:\n- https://docs.deribit.com/api-reference/account-management/private-get_account_summaries\n- https://docs.deribit.com/api-reference/market-data/public-get_contract_size\n- https://docs.deribit.com/api-reference/trading/private-sell\n- https://support.deribit.com/hc/en-us/articles/25944751433757-Delta-decay-during-settlement\n\nDispatch trigger: critical money/risk math and a public calculation contract requiring independent\nworked examples.\n",
       "created_at": "2026-07-24",
       "started_at": "2026-08-09",
+      "done_at": "2026-08-09",
       "scored_at": "2026-07-25",
+      "implemented": "Landed by codex via merge-train; reviewer-approved (run run-1786278466092-3c43ed5e, 89824123b0df327717060af5da1fd0678bb92b14).",
+      "delivered_by": "codex",
+      "verified": true,
+      "verified_by": "claude",
+      "verification_ref": "harness-run:run-1786278466092-3c43ed5e",
       "cross_repo": [
         {
           "repo": "trading_dashboard",

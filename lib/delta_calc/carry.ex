@@ -123,7 +123,8 @@ defmodule DeltaCalc.Carry do
       params: [
         kind: :value,
         description:
-          "Map with :spot_price, :perp_price, :funding_rate, optional :holding_days, and optional :periods_per_day.",
+          "Map with :spot_price, :perp_price, :funding_rate as a per-period decimal fraction " <>
+            "(e.g. 0.0001 for 0.01%), optional :holding_days, and optional :periods_per_day.",
         schema: map()
       ]
     ],

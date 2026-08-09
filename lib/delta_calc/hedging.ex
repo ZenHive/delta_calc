@@ -290,7 +290,7 @@ defmodule DeltaCalc.Hedging do
       ],
       funding_rate: [
         kind: :value,
-        description: "Per-period funding rate as a decimal (e.g. 0.0001 for 0.01%).",
+        description: "Per-period funding rate as a decimal fraction (e.g. 0.0001 for 0.01%).",
         schema: float()
       ],
       periods_per_day: [

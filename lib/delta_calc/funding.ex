@@ -110,7 +110,8 @@ defmodule DeltaCalc.Funding do
       rates: [
         kind: :value,
         description:
-          "Single symbol: %{venue => rate}. Multiple symbols: %{\"SYMBOL\" => %{venue => rate}}.",
+          "Rates are per-period decimal fractions (e.g. 0.0001 for 0.01%). " <>
+            "Single symbol: %{venue => rate}. Multiple symbols: %{\"SYMBOL\" => %{venue => rate}}.",
         schema: map()
       ],
       periods_per_day: [
@@ -168,7 +169,8 @@ defmodule DeltaCalc.Funding do
         kind: :value,
         default: 0.001,
         description:
-          "Minimum absolute raw-period spread to include. Daily-normalized comparison entries are scaled before filtering.",
+          "Minimum absolute raw-period spread in decimal-fraction units. " <>
+            "Daily-normalized comparison entries are scaled before filtering.",
         schema: float()
       ]
     ],
@@ -211,7 +213,8 @@ defmodule DeltaCalc.Funding do
     params: [
       series: [
         kind: :value,
-        description: "List of rates (Decimal/number) or maps with a :rate key."
+        description:
+          "List of per-period decimal-fraction rates (Decimal/number) or maps with a :rate key."
       ]
     ],
     returns: %{

@@ -272,6 +272,8 @@ defmodule DeltaCalc.MarginBridge do
 
   @doc """
   Return kill-switch status when `avg_funding_24h` is below threshold and margin exceeds 25%.
+
+  The funding rate and optional `:funding_threshold` are per-period decimal fractions.
   """
   @spec check_kill_switch(Decimal.t(), Decimal.t(), keyword()) :: kill_switch_result()
   def check_kill_switch(avg_funding_24h, margin_ratio, opts \\ []) do

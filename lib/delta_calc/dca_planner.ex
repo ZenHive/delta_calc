@@ -42,7 +42,25 @@ defmodule DeltaCalc.DCAPlanner do
       dca_params: [
         kind: :value,
         description:
-          "Map with params, position_with_tokens, dca_reserve, entry_price, ui_leverage, side, mmr_rate, mark_buffer, aum, black_swan_pct"
+          "Map with params, position_with_tokens, dca_reserve, entry_price, ui_leverage, side, mmr_rate, mark_buffer, aum, and black_swan_pct. Exact fields use canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{
+          params: %{
+            optional(:dca_enabled) => boolean(),
+            optional(:defensive_prices) => [String.t()],
+            optional(:aggressive_prices) => [String.t()],
+            optional(:dca_prices) => [String.t()],
+            optional(:dca_allocations) => [String.t()]
+          },
+          position_with_tokens: %{notional: String.t(), eff_lev: String.t()},
+          dca_reserve: String.t(),
+          entry_price: String.t(),
+          ui_leverage: String.t(),
+          side: :long | :short,
+          mmr_rate: String.t(),
+          mark_buffer: String.t(),
+          aum: String.t(),
+          black_swan_pct: String.t()
+        }
       ]
     ],
     returns: %{
@@ -199,9 +217,27 @@ defmodule DeltaCalc.DCAPlanner do
 
   api(:build_defensive_preset, "Build defensive DCA preset from user configuration or defaults.",
     params: [
-      params: [kind: :value, description: "DCA price and allocation configuration map"],
-      entry_price: [kind: :value, description: "Entry price for price multiplier calculation"],
-      side: [kind: :value, description: "Position side (:long or :short)"]
+      params: [
+        kind: :value,
+        description:
+          "DCA prices and allocations use canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{
+          optional(:defensive_prices) => [String.t()],
+          optional(:dca_prices) => [String.t()],
+          optional(:dca_allocations) => [String.t()]
+        }
+      ],
+      entry_price: [
+        kind: :value,
+        description:
+          "Entry price for price multiplier calculation as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      side: [
+        kind: :value,
+        description: "Position side (:long or :short)",
+        schema: :long | :short
+      ]
     ],
     returns: %{
       type: :list,
@@ -255,9 +291,27 @@ defmodule DeltaCalc.DCAPlanner do
     :build_aggressive_preset,
     "Build aggressive DCA preset from user configuration or defaults.",
     params: [
-      params: [kind: :value, description: "DCA price and allocation configuration map"],
-      entry_price: [kind: :value, description: "Entry price for price multiplier calculation"],
-      side: [kind: :value, description: "Position side (:long or :short)"]
+      params: [
+        kind: :value,
+        description:
+          "DCA prices and allocations use canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{
+          optional(:aggressive_prices) => [String.t()],
+          optional(:dca_prices) => [String.t()],
+          optional(:dca_allocations) => [String.t()]
+        }
+      ],
+      entry_price: [
+        kind: :value,
+        description:
+          "Entry price for price multiplier calculation as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      side: [
+        kind: :value,
+        description: "Position side (:long or :short)",
+        schema: :long | :short
+      ]
     ],
     returns: %{
       type: :list,
@@ -309,11 +363,34 @@ defmodule DeltaCalc.DCAPlanner do
 
   api(:enhance_dca_steps, "Enhance DCA steps with leverage-to-AUM and black swan safety metrics.",
     params: [
-      steps: [kind: :value, description: "List of DCA steps from Calc.dca_ladder/8"],
-      aum: [kind: :value, description: "Total assets under management"],
-      black_swan_pct: [kind: :value, description: "Black swan threshold as decimal (0-1)"],
-      entry_price: [kind: :value, description: "Entry price"],
-      side: [kind: :value, description: "Position side (:long or :short)"]
+      steps: [
+        kind: :value,
+        description:
+          "List of DCA steps from Calc.dca_ladder/8; exact step fields use canonical decimal strings for agent transport."
+      ],
+      aum: [
+        kind: :value,
+        description:
+          "Total assets under management as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      black_swan_pct: [
+        kind: :value,
+        description:
+          "Black swan threshold (0-1) as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      entry_price: [
+        kind: :value,
+        description:
+          "Entry price as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      side: [
+        kind: :value,
+        description: "Position side (:long or :short)",
+        schema: :long | :short
+      ]
     ],
     returns: %{
       type: :list,

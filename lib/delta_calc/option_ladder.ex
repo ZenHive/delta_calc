@@ -106,14 +106,21 @@ defmodule DeltaCalc.OptionLadder do
       expiries: [
         kind: :value,
         description:
-          "List of expiry maps with :expiry, :days_to_expiry, :liquidity, and :bid_ask_spread.",
-        schema: [map()]
+          "List of expiry maps with :expiry, positive-integer :days_to_expiry, and :liquidity and :bid_ask_spread as canonical decimal strings; native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: [
+          %{
+            expiry: String.t(),
+            days_to_expiry: pos_integer(),
+            liquidity: String.t(),
+            bid_ask_spread: String.t()
+          }
+        ]
       ],
       opts: [
         kind: :value,
         default: [],
         description:
-          "Optional :liquidity_minimum and :max_spread_percent. Spread accepts ratio or percent."
+          "Optional :liquidity_minimum and :max_spread_percent as canonical decimal strings; native Elixir callers may also pass Decimal or integer. Spread accepts ratio or percent."
       ]
     ],
     returns: %{type: :map, description: "Map with selected buckets and total allocation."}
@@ -142,13 +149,18 @@ defmodule DeltaCalc.OptionLadder do
     params: [
       position: [
         kind: :value,
-        description: "Position map with :days_to_expiry, :pnl_percent, and :bid_ask_spread.",
-        schema: map()
+        description:
+          "Position map with positive-integer :days_to_expiry plus :pnl_percent and :bid_ask_spread as canonical decimal strings; native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          days_to_expiry: pos_integer(),
+          pnl_percent: String.t(),
+          bid_ask_spread: String.t()
+        }
       ],
       market: [
         kind: :value,
         description: "Market map with :momentum, e.g. :strong_up.",
-        schema: map()
+        schema: %{momentum: atom()}
       ]
     ],
     returns: %{type: :map, description: "Decision map with :action and optional roll details."}
@@ -174,13 +186,19 @@ defmodule DeltaCalc.OptionLadder do
     params: [
       params: [
         kind: :value,
-        description: "Map with :spot_price, :iv_percentile, and :risk_profile.",
-        schema: map()
+        description:
+          "Map with :spot_price as a canonical decimal string, integer :iv_percentile, and :risk_profile; native Elixir callers may also pass Decimal or integer for the exact price.",
+        schema: %{
+          spot_price: String.t(),
+          iv_percentile: integer(),
+          risk_profile: :conservative | :balanced | :aggressive | :lottery
+        }
       ],
       opts: [
         kind: :value,
         default: [],
-        description: "Optional :option_type (:call or :put) and :strike_increment."
+        description:
+          "Optional :option_type (:call or :put) and :strike_increment as a canonical decimal string; native Elixir callers may also pass Decimal or integer for the exact increment."
       ]
     ],
     returns: %{type: :map, description: "Map with selected strikes and IV size adjustment."}
@@ -221,8 +239,13 @@ defmodule DeltaCalc.OptionLadder do
       roll: [
         kind: :value,
         description:
-          "Map with :funding_received, :positions_to_roll, :roll_cost, and :spread_cost.",
-        schema: map()
+          "Map with :funding_received, :roll_cost, and :spread_cost as canonical decimal strings plus non-negative-integer :positions_to_roll; native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          funding_received: String.t(),
+          positions_to_roll: non_neg_integer(),
+          roll_cost: String.t(),
+          spread_cost: String.t()
+        }
       ],
       opts: [
         kind: :value,
@@ -259,8 +282,9 @@ defmodule DeltaCalc.OptionLadder do
     params: [
       base_size: [
         kind: :value,
-        description: "Base option budget or notional size.",
-        schema: float()
+        description:
+          "Base option budget or notional size as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       opts: [
         kind: :value,

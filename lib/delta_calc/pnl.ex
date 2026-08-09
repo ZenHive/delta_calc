@@ -61,7 +61,14 @@ defmodule DeltaCalc.Pnl do
     params: [
       params: [
         kind: :value,
-        description: "Map with :entry_price, :mark_price, :size, and :side (:long or :short)."
+        description:
+          "Map with :entry_price, :mark_price, and :size as canonical decimal strings plus :side (:long or :short); native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          entry_price: String.t(),
+          mark_price: String.t(),
+          size: String.t(),
+          side: :long | :short
+        }
       ]
     ],
     returns: %{
@@ -96,8 +103,18 @@ defmodule DeltaCalc.Pnl do
       params: [
         kind: :value,
         description:
-          "Map with :entry_price, :exit_price, :size, :side, :open_fee_rate, " <>
-            ":close_fee_rate; optional :accrued_funding (default 0)."
+          "Map with :entry_price, :exit_price, :size, :open_fee_rate, and :close_fee_rate as canonical decimal strings; " <>
+            ":side is :long or :short and optional :accrued_funding uses the same exact string form. " <>
+            "Native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          optional(:accrued_funding) => String.t(),
+          entry_price: String.t(),
+          exit_price: String.t(),
+          size: String.t(),
+          side: :long | :short,
+          open_fee_rate: String.t(),
+          close_fee_rate: String.t()
+        }
       ]
     ],
     returns: %{
@@ -146,7 +163,9 @@ defmodule DeltaCalc.Pnl do
     params: [
       params: [
         kind: :value,
-        description: "Map with :pnl and :margin in quote currency."
+        description:
+          "Map with :pnl and :margin in quote currency as canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{pnl: String.t(), margin: String.t()}
       ]
     ],
     returns: %{
@@ -181,8 +200,17 @@ defmodule DeltaCalc.Pnl do
       params: [
         kind: :value,
         description:
-          "Map with :entry_price, :size, :open_fee_rate, :close_fee_rate; " <>
-            "optional :side (:long default) and :accrued_funding (default 0)."
+          "Map with :entry_price, :size, :open_fee_rate, and :close_fee_rate as canonical decimal strings; " <>
+            "optional :side defaults to :long and :accrued_funding uses the same exact string form. " <>
+            "Native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          optional(:side) => :long | :short,
+          optional(:accrued_funding) => String.t(),
+          entry_price: String.t(),
+          size: String.t(),
+          open_fee_rate: String.t(),
+          close_fee_rate: String.t()
+        }
       ]
     ],
     returns: %{

@@ -46,7 +46,18 @@ defmodule DeltaCalc.PortfolioMargin do
     params: [
       account: [
         kind: :value,
-        description: "Map with :positions, each carrying :side, :quantity, :mark_price, and :mmr."
+        description:
+          "Map with :positions, each carrying :side plus :quantity, :mark_price, and :mmr as canonical decimal strings; native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          positions: [
+            %{
+              side: :long | :short,
+              quantity: String.t(),
+              mark_price: String.t(),
+              mmr: String.t()
+            }
+          ]
+        }
       ]
     ],
     returns: %{
@@ -74,7 +85,18 @@ defmodule DeltaCalc.PortfolioMargin do
       account: [
         kind: :value,
         description:
-          "Map with :equity and :positions carrying :side, :quantity, :mark_price, and :mmr."
+          "Map with :equity and position :quantity, :mark_price, and :mmr as canonical decimal strings plus each position :side; native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          equity: String.t(),
+          positions: [
+            %{
+              side: :long | :short,
+              quantity: String.t(),
+              mark_price: String.t(),
+              mmr: String.t()
+            }
+          ]
+        }
       ]
     ],
     returns: %{
@@ -103,7 +125,18 @@ defmodule DeltaCalc.PortfolioMargin do
       account: [
         kind: :value,
         description:
-          "Map with :equity and :positions carrying :side, :quantity, :mark_price, and :mmr."
+          "Map with :equity and position :quantity, :mark_price, and :mmr as canonical decimal strings plus each position :side; native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          equity: String.t(),
+          positions: [
+            %{
+              side: :long | :short,
+              quantity: String.t(),
+              mark_price: String.t(),
+              mmr: String.t()
+            }
+          ]
+        }
       ]
     ],
     returns: %{

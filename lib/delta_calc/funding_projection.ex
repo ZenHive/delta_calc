@@ -35,7 +35,12 @@ defmodule DeltaCalc.FundingProjection do
       params: [
         kind: :value,
         description:
-          "Map with :remaining_debt, :daily_funding, and :funding_volatility (0-1 fraction)."
+          "Map with :remaining_debt, :daily_funding, and :funding_volatility (0-1 fraction) as canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{
+          remaining_debt: String.t(),
+          daily_funding: String.t(),
+          funding_volatility: String.t()
+        }
       ]
     ],
     returns: %{

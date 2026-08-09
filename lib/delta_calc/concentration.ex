@@ -18,7 +18,9 @@ defmodule DeltaCalc.Concentration do
     params: [
       weights: [
         kind: :value,
-        description: "Per-asset weights as a map or list. Values are normalized before squaring."
+        description:
+          "Per-asset weights as canonical decimal strings; agent transport uses a list, while native Elixir callers may also pass a map and may use Decimal or integer values. Values are normalized before squaring.",
+        schema: [String.t()]
       ]
     ],
     returns: %{type: :decimal, description: "HHI on the normalized 0-1 scale."}

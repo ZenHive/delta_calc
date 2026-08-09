@@ -74,16 +74,18 @@ defmodule DeltaCalc.Hedging do
     params: [
       total_spot: [
         kind: :value,
-        description: "Total spot portfolio value in USD.",
-        schema: float()
+        description:
+          "Total spot portfolio value in USD as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       hedge_percent: [
         kind: :value,
-        description: "Target hedge percentage (e.g. 60 for 60%).",
-        schema: float()
+        description:
+          "Target hedge percentage as a canonical decimal string (e.g. \"60\" for 60%); native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ]
     ],
-    returns: %{type: :float, description: "Required CEX balance in USD as a Decimal."}
+    returns: %{type: :decimal, description: "Required CEX balance in USD as a Decimal."}
   )
 
   @doc "Return the CEX balance needed to cover `hedge_percent` of `total_spot`."
@@ -98,18 +100,21 @@ defmodule DeltaCalc.Hedging do
     params: [
       cex_value: [
         kind: :value,
-        description: "Current CEX spot value in USD.",
-        schema: float()
+        description:
+          "Current CEX spot value in USD as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       total_spot: [
         kind: :value,
-        description: "Total spot portfolio value in USD.",
-        schema: float()
+        description:
+          "Total spot portfolio value in USD as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       target_hedge_percent: [
         kind: :value,
-        description: "Target hedge percentage (e.g. 60 for 60%).",
-        schema: float()
+        description:
+          "Target hedge percentage as a canonical decimal string (e.g. \"60\" for 60%); native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ]
     ],
     returns: %{
@@ -147,13 +152,15 @@ defmodule DeltaCalc.Hedging do
     params: [
       hedge_coverage_pct: [
         kind: :value,
-        description: "Current hedge coverage percentage (0–100).",
-        schema: float()
+        description:
+          "Current hedge coverage percentage (0-100) as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       target_hedge_percent: [
         kind: :value,
-        description: "Target hedge percentage; defaults to 60.",
-        schema: float()
+        description:
+          "Target hedge percentage as a canonical decimal string; defaults to \"60\" and native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ]
     ],
     returns: %{type: :boolean, description: "true if coverage is below the target."}
@@ -172,12 +179,13 @@ defmodule DeltaCalc.Hedging do
       prior: [
         kind: :value,
         description:
-          "Prior snapshot map with keys: total_spot, cex_spot, cold_wallet, hedge_coverage_pct, captured_at.",
+          "Prior snapshot map with total_spot, cex_spot, cold_wallet, and hedge_coverage_pct as canonical decimal strings plus captured_at; native Elixir callers may also pass Decimal or integer for exact fields.",
         schema: map()
       ],
       current: [
         kind: :value,
-        description: "Current snapshot map with the same keys.",
+        description:
+          "Current snapshot map with the same canonical decimal-string exact fields and captured_at.",
         schema: map()
       ]
     ],
@@ -206,12 +214,14 @@ defmodule DeltaCalc.Hedging do
     params: [
       prior: [
         kind: :value,
-        description: "Prior snapshot map (same shape as calculate_change/2).",
+        description:
+          "Prior snapshot map (same shape and canonical decimal-string exact fields as calculate_change/2).",
         schema: map()
       ],
       current: [
         kind: :value,
-        description: "Current snapshot map (same shape as calculate_change/2).",
+        description:
+          "Current snapshot map (same shape and canonical decimal-string exact fields as calculate_change/2).",
         schema: map()
       ]
     ],
@@ -241,13 +251,15 @@ defmodule DeltaCalc.Hedging do
     params: [
       total_spot: [
         kind: :value,
-        description: "Total spot portfolio value in USD (CEX + cold wallet).",
-        schema: float()
+        description:
+          "Total spot portfolio value in USD (CEX + cold wallet) as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       inputs: [
         kind: :value,
-        description: "Map with :cex_spot and :target_hedge_percent keys.",
-        schema: map()
+        description:
+          "Map with :cex_spot and :target_hedge_percent as canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{cex_spot: String.t(), target_hedge_percent: String.t()}
       ]
     ],
     returns: %{
@@ -285,13 +297,15 @@ defmodule DeltaCalc.Hedging do
     params: [
       position_size: [
         kind: :value,
-        description: "Absolute position notional in USD.",
-        schema: float()
+        description:
+          "Absolute position notional in USD as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       funding_rate: [
         kind: :value,
-        description: "Per-period funding rate as a decimal fraction (e.g. 0.0001 for 0.01%).",
-        schema: float()
+        description:
+          "Per-period funding rate as a canonical decimal string (e.g. \"0.0001\" for 0.01%); native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       periods_per_day: [
         kind: :value,
@@ -299,7 +313,7 @@ defmodule DeltaCalc.Hedging do
         schema: integer()
       ]
     ],
-    returns: %{type: :float, description: "Estimated daily funding cost as a Decimal."}
+    returns: %{type: :decimal, description: "Estimated daily funding cost as a Decimal."}
   )
 
   @doc "Return estimated daily funding cost from per-period rate and settlement frequency."
@@ -318,13 +332,15 @@ defmodule DeltaCalc.Hedging do
     params: [
       cex_spot: [
         kind: :value,
-        description: "Current CEX spot value in USD.",
-        schema: float()
+        description:
+          "Current CEX spot value in USD as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       required_cex_balance: [
         kind: :value,
-        description: "Required CEX balance to support the target hedge.",
-        schema: float()
+        description:
+          "Required CEX balance to support the target hedge as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ]
     ],
     returns: %{type: :boolean, description: "true when CEX balance is below the requirement."}
@@ -342,13 +358,15 @@ defmodule DeltaCalc.Hedging do
     params: [
       spot_price: [
         kind: :value,
-        description: "Spot market price.",
-        schema: float()
+        description:
+          "Spot market price as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       perp_price: [
         kind: :value,
-        description: "Perpetual futures price.",
-        schema: float()
+        description:
+          "Perpetual futures price as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ]
     ],
     returns: %{
@@ -389,17 +407,19 @@ defmodule DeltaCalc.Hedging do
     params: [
       spot_value: [
         kind: :value,
-        description: "Spot holdings value in USD.",
-        schema: float()
+        description:
+          "Spot holdings value in USD as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       requested_hedge: [
         kind: :value,
-        description: "Requested hedge notional in USD.",
-        schema: float()
+        description:
+          "Requested hedge notional in USD as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ]
     ],
     returns: %{
-      type: :float,
+      type: :decimal,
       description: "Hedge notional capped at spot value (never over-hedge)."
     }
   )
@@ -420,12 +440,13 @@ defmodule DeltaCalc.Hedging do
     params: [
       spot_value: [
         kind: :value,
-        description: "Spot holdings value in USD.",
-        schema: float()
+        description:
+          "Spot holdings value in USD as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ]
     ],
     returns: %{
-      type: :float,
+      type: :decimal,
       description: "Hedge notional sized to 110% of spot (portfolio margin buffer)."
     }
   )
@@ -442,13 +463,15 @@ defmodule DeltaCalc.Hedging do
     params: [
       cex_spot: [
         kind: :value,
-        description: "Current CEX spot value in USD.",
-        schema: float()
+        description:
+          "Current CEX spot value in USD as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       required_cex_balance: [
         kind: :value,
-        description: "Required CEX balance to support the target hedge.",
-        schema: float()
+        description:
+          "Required CEX balance to support the target hedge as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ]
     ],
     returns: %{type: :boolean, description: "true when CEX balance meets or exceeds requirement."}
@@ -468,7 +491,8 @@ defmodule DeltaCalc.Hedging do
         kind: :value,
         description:
           "Map with :total_hedge_target, :available_exchanges, and optional :preferences " <>
-            "(:deribit_priority, :max_per_exchange).",
+            "(:deribit_priority, :max_per_exchange). Exact hedge target and maximum-per-exchange ratio use " <>
+            "canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
         schema: map()
       ]
     ],

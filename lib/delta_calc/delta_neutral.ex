@@ -50,7 +50,17 @@ defmodule DeltaCalc.DeltaNeutral do
         description:
           "List of position maps with :kind (:spot, :perp, or :option). " <>
             "Options must include exchange-supplied :delta; spot/perp use :delta when " <>
-            "present, otherwise signed :size or :notional with optional :side."
+            "present, otherwise signed :size or :notional with optional :side. " <>
+            "Exact fields use canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: [
+          %{
+            optional(:size) => String.t(),
+            optional(:notional) => String.t(),
+            optional(:side) => :long | :short,
+            optional(:delta) => String.t(),
+            kind: :spot | :perp | :option
+          }
+        ]
       ]
     ],
     returns: %{
@@ -82,8 +92,22 @@ defmodule DeltaCalc.DeltaNeutral do
       params: [
         kind: :value,
         description:
-          "Map with :positions and optional :tolerance (default 0.0001) and " <>
-            ":instrument (:perp default, or :spot). Also accepts a bare position list."
+          "Map with :positions and optional :tolerance (default \"0.0001\") as a canonical decimal string, " <>
+            "plus :instrument (:perp default, or :spot). Native Elixir callers may also pass Decimal or integer " <>
+            "for exact fields and may pass a bare position list.",
+        schema: %{
+          optional(:tolerance) => String.t(),
+          optional(:instrument) => :perp | :spot,
+          positions: [
+            %{
+              optional(:size) => String.t(),
+              optional(:notional) => String.t(),
+              optional(:side) => :long | :short,
+              optional(:delta) => String.t(),
+              kind: :spot | :perp | :option
+            }
+          ]
+        }
       ]
     ],
     returns: %{

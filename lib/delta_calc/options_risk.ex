@@ -99,8 +99,9 @@ defmodule DeltaCalc.OptionsRisk do
     params: [
       option_premiums: [
         kind: :value,
-        description: "Single premium or list of long-option premiums paid.",
-        schema: float()
+        description:
+          "Long-option premiums as canonical decimal strings; agent transport uses a list, while native Elixir callers may also pass one value and may use Decimal or integer.",
+        schema: [String.t()]
       ]
     ],
     returns: %{
@@ -141,7 +142,13 @@ defmodule DeltaCalc.OptionsRisk do
       legs: [
         kind: :value,
         description:
-          "Map with :spot_notional, :perp_notional, :options_notional, and :margin_debt."
+          "Map with :spot_notional, :perp_notional, :options_notional, and :margin_debt as canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{
+          spot_notional: String.t(),
+          perp_notional: String.t(),
+          options_notional: String.t(),
+          margin_debt: String.t()
+        }
       ]
     ],
     returns: %{
@@ -178,9 +185,17 @@ defmodule DeltaCalc.OptionsRisk do
       params: [
         kind: :value,
         description:
-          "Map with :negative_rate (decimal fraction, e.g. -0.0003 for -0.03%), :position_size, " <>
+          "Map with :negative_rate (canonical decimal string, e.g. \"-0.0003\" for -0.03%) and :position_size " <>
+            "as a canonical decimal string, " <>
             "optional :market_context, :capital_protected, and :periods_per_day " <>
-            "(default 3 for 8h funding; use 24 for Deribit hourly)."
+            "(default 3 for 8h funding; use 24 for Deribit hourly). Native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          optional(:market_context) => atom(),
+          optional(:capital_protected) => boolean(),
+          optional(:periods_per_day) => pos_integer(),
+          negative_rate: String.t(),
+          position_size: String.t()
+        }
       ]
     ],
     returns: %{
@@ -232,15 +247,21 @@ defmodule DeltaCalc.OptionsRisk do
       params: [
         kind: :value,
         description:
-          "Map with :funding_rates (decimal fractions, e.g. -0.0002 for -0.02%), " <>
-            ":position_size, optional :scenario atom."
+          "Map with :funding_rates as canonical decimal strings (e.g. \"-0.0002\" for -0.02%), " <>
+            ":position_size as a canonical decimal string, and optional :scenario atom. Native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          optional(:scenario) => atom(),
+          funding_rates: [String.t()],
+          position_size: String.t()
+        }
       ],
       opts: [
         kind: :value,
         default: [],
         description:
-          "Optional :capital, :initial_margin_ratio, :duration_days (default 90), " <>
-            ":periods_per_day (default 3 for 8h funding; use 24 for Deribit hourly), :margin_threshold."
+          "Optional :capital, :initial_margin_ratio, and :margin_threshold as canonical decimal strings; " <>
+            ":duration_days (default 90) and :periods_per_day (default 3 for 8h funding; use 24 for Deribit hourly) " <>
+            "are positive integers. Native Elixir callers may also pass Decimal or integer for exact fields."
       ]
     ],
     returns: %{
@@ -324,13 +345,20 @@ defmodule DeltaCalc.OptionsRisk do
       params: [
         kind: :value,
         description:
-          "Map with :initial_margin, :option_premium, :capital, :available_margin, :daily_burn."
+          "Map with :initial_margin, :option_premium, :capital, :available_margin, and :daily_burn as canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{
+          initial_margin: String.t(),
+          option_premium: String.t(),
+          capital: String.t(),
+          available_margin: String.t(),
+          daily_burn: String.t()
+        }
       ],
       opts: [
         kind: :value,
         default: [],
         description:
-          "Optional :warning and :reduce margin ratio thresholds (status becomes :critical above :reduce)."
+          "Optional :warning and :reduce margin ratio thresholds as canonical decimal strings; native Elixir callers may also pass Decimal or integer (status becomes :critical above :reduce)."
       ]
     ],
     returns: %{

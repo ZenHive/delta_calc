@@ -43,12 +43,30 @@ defmodule DeltaCalc.AccountMetrics do
       account: [
         kind: :value,
         description:
-          "Map with :entry_price, :notional, :equity, :margin_used, :mmr_total, :side, and :swan_pct."
+          "Map with :entry_price, :notional, :equity, :margin_used, :mmr_total, :side, and :swan_pct. " <>
+            "Exact fields use canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{
+          entry_price: String.t(),
+          notional: String.t(),
+          equity: String.t(),
+          margin_used: String.t(),
+          mmr_total: String.t(),
+          side: :long | :short,
+          swan_pct: String.t()
+        }
       ],
       opts: [
         kind: :value,
         default: %{},
-        description: "Optional map with :safety_cfg passed to DeltaCalc.Calc.safety/5."
+        description:
+          "Optional map with :safety_cfg passed to DeltaCalc.Calc.safety/5. " <>
+            "Exact multiplier fields use canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{
+          optional(:safety_cfg) => %{
+            optional(:threshold_multiplier) => String.t(),
+            optional(:safe_multiplier) => String.t()
+          }
+        }
       ]
     ],
     returns: %{
@@ -94,8 +112,18 @@ defmodule DeltaCalc.AccountMetrics do
 
   api(:margin_usage_pct, "Calculate margin used as a percentage of account equity.",
     params: [
-      margin_used: [kind: :value, description: "Margin currently used by the account."],
-      equity: [kind: :value, description: "Current account equity."]
+      margin_used: [
+        kind: :value,
+        description:
+          "Margin currently used by the account as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      equity: [
+        kind: :value,
+        description:
+          "Current account equity as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ]
     ],
     returns: %{type: :decimal, description: "Margin usage percentage, rounded to 8 places."}
   )

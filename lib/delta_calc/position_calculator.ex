@@ -39,7 +39,18 @@ defmodule DeltaCalc.PositionCalculator do
       params: [
         kind: :value,
         description:
-          "Position inputs: aum, side, entry_price, subaccount_allocation, initial_position_pct, black_swan_pct, ui_leverage, mmr_rate, mark_buffer"
+          "Position inputs use canonical decimal strings for aum, entry_price, subaccount_allocation, initial_position_pct, black_swan_pct, ui_leverage, mmr_rate, and mark_buffer; side is :long or :short. Native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          aum: String.t(),
+          side: :long | :short,
+          entry_price: String.t(),
+          subaccount_allocation: String.t(),
+          initial_position_pct: String.t(),
+          black_swan_pct: String.t(),
+          ui_leverage: String.t(),
+          mmr_rate: String.t(),
+          mark_buffer: String.t()
+        }
       ]
     ],
     returns: %{

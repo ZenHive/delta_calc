@@ -124,7 +124,50 @@ defmodule DeltaCalc.ManifestConsistencyTest do
       assert api.hints.params.side.description =~ "liquidation"
       assert api.hints.params.opts.description =~ ":mark_buffer"
     end
+
+    test "MCP input schemas never advertise exact values as JSON numbers" do
+      offenders =
+        Manifest.tools()
+        |> Enum.flat_map(fn tool ->
+          number_schema_paths(tool.inputSchema)
+          |> Enum.map(&{tool.name, &1})
+        end)
+
+      assert offenders == [],
+             "JSON-number input schemas permit inexact binary floats: #{inspect(offenders)}"
+    end
+
+    test "structured exact fields retain natural schemas for non-exact values" do
+      tool =
+        Enum.find(
+          Manifest.tools(),
+          &(&1.name == "options_risk__calculate_negative_funding_impact")
+        )
+
+      properties = get_in(tool, [:inputSchema, :properties, :params, "properties"])
+
+      assert properties["negative_rate"] == %{"type" => "string"}
+      assert properties["position_size"] == %{"type" => "string"}
+      assert properties["periods_per_day"] == %{"type" => "integer", "minimum" => 1}
+      assert properties["capital_protected"] == %{"type" => "boolean"}
+    end
   end
+
+  defp number_schema_paths(value, path \\ [])
+
+  defp number_schema_paths(%{"type" => "number"}, path), do: [Enum.reverse(path)]
+
+  defp number_schema_paths(value, path) when is_map(value) do
+    Enum.flat_map(value, fn {key, nested} -> number_schema_paths(nested, [key | path]) end)
+  end
+
+  defp number_schema_paths(value, path) when is_list(value) do
+    value
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {nested, index} -> number_schema_paths(nested, [index | path]) end)
+  end
+
+  defp number_schema_paths(_value, _path), do: []
 
   defp api_modules_from_lib do
     @lib_delta_calc

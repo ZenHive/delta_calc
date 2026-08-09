@@ -64,6 +64,36 @@ defmodule DeltaCalc.ManifestTest do
 
       assert MapSet.subset?(api_keys, manifest_keys)
     end
+
+    test "advertises exact scalar and structured inputs as canonical decimal strings" do
+      manifest = Manifest.build()
+
+      funding_apr = manifest_function!(manifest, "DeltaCalc.Funding", "funding_apr")
+
+      position =
+        manifest_function!(manifest, "DeltaCalc.PositionCalculator", "calculate_position")
+
+      assert get_in(funding_apr, [:hints, :params, :rate, :schema]) == %{"type" => "string"}
+
+      assert get_in(position, [
+               :hints,
+               :params,
+               :params,
+               :schema,
+               "properties",
+               "entry_price",
+               "type"
+             ]) == "string"
+
+      assert get_in(position, [
+               :hints,
+               :params,
+               :params,
+               :schema,
+               "properties",
+               "side"
+             ]) == %{"type" => "string", "enum" => ["long", "short"]}
+    end
   end
 
   describe "tools/0" do
@@ -122,6 +152,34 @@ defmodule DeltaCalc.ManifestTest do
       assert collisions == [],
              "Duplicate bare api names across modules: #{inspect(collisions)}"
     end
+
+    test "canonical decimal strings survive MCP JSON transport and invalid exact inputs fail" do
+      tool = Enum.find(Manifest.tools(), &(&1.name == "carry__basis"))
+      exact = "9007199254740993.1234567890123456"
+
+      assert get_in(tool, [:inputSchema, :properties, :spot_price, "type"]) == "string"
+      assert get_in(tool, [:inputSchema, :properties, :perp_price, "type"]) == "string"
+
+      transported =
+        %{tool: tool.name, arguments: %{spot_price: exact, perp_price: exact}}
+        |> Jason.encode!()
+        |> Jason.decode!()
+
+      transported_exact = get_in(transported, ["arguments", "spot_price"])
+
+      assert transported_exact == exact
+      assert Decimal.equal?(DeltaCalc.Decimal.cast!(transported_exact), Decimal.new(exact))
+      assert Decimal.equal?(DeltaCalc.Decimal.cast!(Decimal.new("1.25")), Decimal.new("1.25"))
+      assert Decimal.equal?(DeltaCalc.Decimal.cast!(7), Decimal.new(7))
+
+      assert_raise ArgumentError, ~r/canonical decimal string/, fn ->
+        DeltaCalc.Decimal.cast!("12.34oops")
+      end
+
+      assert_raise ArgumentError, ~r/canonical decimal string/, fn ->
+        DeltaCalc.Decimal.cast!(0.1)
+      end
+    end
   end
 
   describe "modules/0" do
@@ -148,5 +206,12 @@ defmodule DeltaCalc.ManifestTest do
                DeltaCalc.Carry
              ]
     end
+  end
+
+  defp manifest_function!(manifest, module_name, function_name) do
+    manifest.modules
+    |> Enum.find(&(&1.module == module_name))
+    |> Map.fetch!(:functions)
+    |> Enum.find(&(&1.name == function_name))
   end
 end

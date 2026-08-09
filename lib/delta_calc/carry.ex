@@ -52,13 +52,15 @@ defmodule DeltaCalc.Carry do
     params: [
       spot_price: [
         kind: :value,
-        description: "Spot market price.",
-        schema: float()
+        description:
+          "Spot market price as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       perp_price: [
         kind: :value,
-        description: "Perpetual or futures price.",
-        schema: float()
+        description:
+          "Perpetual or futures price as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ]
     ],
     returns: %{
@@ -91,8 +93,13 @@ defmodule DeltaCalc.Carry do
       params: [
         kind: :value,
         description:
-          "Map with :spot_price, :perp_price, optional :holding_days, and optional :periods_per_day.",
-        schema: map()
+          "Map with :spot_price and :perp_price as canonical decimal strings plus optional positive-integer :holding_days and :periods_per_day; native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          optional(:holding_days) => pos_integer(),
+          optional(:periods_per_day) => pos_integer(),
+          spot_price: String.t(),
+          perp_price: String.t()
+        }
       ]
     ],
     returns: %{
@@ -125,9 +132,16 @@ defmodule DeltaCalc.Carry do
       params: [
         kind: :value,
         description:
-          "Map with :spot_price, :perp_price, :funding_rate as a per-period decimal fraction " <>
-            "(e.g. 0.0001 for 0.01%), optional :holding_days, and optional :periods_per_day.",
-        schema: map()
+          "Map with :spot_price, :perp_price, and :funding_rate as canonical decimal strings " <>
+            "(e.g. \"0.0001\" for 0.01%), plus optional positive-integer :holding_days and :periods_per_day; " <>
+            "native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          optional(:holding_days) => pos_integer(),
+          optional(:periods_per_day) => pos_integer(),
+          spot_price: String.t(),
+          perp_price: String.t(),
+          funding_rate: String.t()
+        }
       ]
     ],
     returns: %{

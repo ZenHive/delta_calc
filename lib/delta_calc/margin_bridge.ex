@@ -50,18 +50,21 @@ defmodule DeltaCalc.MarginBridge do
     params: [
       initial_margin: [
         kind: :value,
-        description: "Initial margin required for the perp hedge.",
-        schema: float()
+        description:
+          "Initial margin required for the perp hedge as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       option_premium: [
         kind: :value,
-        description: "Option premium financed via portfolio margin.",
-        schema: float()
+        description:
+          "Option premium financed via portfolio margin as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       capital: [
         kind: :value,
-        description: "Total collateral capital backing the strategy.",
-        schema: float()
+        description:
+          "Total collateral capital backing the strategy as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ]
     ],
     returns: %{
@@ -95,13 +98,15 @@ defmodule DeltaCalc.MarginBridge do
     params: [
       available_margin: [
         kind: :value,
-        description: "Remaining margin buffer before a margin call.",
-        schema: float()
+        description:
+          "Remaining margin buffer before a margin call as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       daily_burn: [
         kind: :value,
-        description: "Daily margin consumption (e.g. negative funding drain).",
-        schema: float()
+        description:
+          "Daily margin consumption as a canonical decimal string (e.g. negative funding drain); native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ]
     ],
     returns: %{
@@ -128,13 +133,15 @@ defmodule DeltaCalc.MarginBridge do
     params: [
       remaining_debt: [
         kind: :value,
-        description: "Outstanding option premium still to be repaid.",
-        schema: float()
+        description:
+          "Outstanding option premium still to be repaid as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       daily_funding: [
         kind: :value,
-        description: "Expected daily funding income applied to payback.",
-        schema: float()
+        description:
+          "Expected daily funding income applied to payback as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       opts: [
         kind: :value,
@@ -182,13 +189,15 @@ defmodule DeltaCalc.MarginBridge do
         kind: :value,
         description:
           "Negative funding rate as a decimal fraction per funding period " <>
-            "(e.g. -0.00025 for -0.025%); scale to daily cost via `:periods_per_day` in opts.",
-        schema: float()
+            "as a canonical decimal string (e.g. \"-0.00025\" for -0.025%); native Elixir callers " <>
+            "may also pass Decimal or integer. Scale to daily cost via `:periods_per_day` in opts.",
+        schema: String.t()
       ],
       position_size: [
         kind: :value,
-        description: "Short perp notional in quote currency.",
-        schema: float()
+        description:
+          "Short perp notional in quote currency as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       duration_days: [
         kind: :value,
@@ -199,10 +208,10 @@ defmodule DeltaCalc.MarginBridge do
         kind: :value,
         default: [],
         description:
-          "Optional keyword list. `:periods_per_day` — funding periods per calendar day " <>
+          "Optional keyword list. `:periods_per_day` — positive-integer funding periods per calendar day " <>
             "(default convention: 3; override for the caller's cadence). " <>
-            "`:capital`, `:initial_margin_ratio`, and optional `:margin_threshold` " <>
-            "compute kill_switch_day."
+            "`:capital`, `:initial_margin_ratio`, and optional `:margin_threshold` use canonical decimal strings " <>
+            "and compute kill_switch_day; native Elixir callers may also pass Decimal or integer for exact fields."
       ]
     ],
     returns: %{
@@ -260,20 +269,22 @@ defmodule DeltaCalc.MarginBridge do
       per_period_funding_rate: [
         kind: :value,
         description:
-          "Funding rate as a decimal fraction per funding period (e.g. -0.00022 for -0.022%).",
-        schema: float()
+          "Funding rate as a canonical decimal string representing a per-period fraction (e.g. \"-0.00022\" for -0.022%); native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       margin_ratio: [
         kind: :value,
-        description: "Current margin usage ratio (0–1).",
-        schema: float()
+        description:
+          "Current margin usage ratio (0-1) as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       opts: [
         kind: :value,
         default: [],
         description:
-          "Optional `:periods_per_day`, `:daily_funding_threshold`, and `:margin_threshold`. " <>
-            "Defaults are overridable risk conventions."
+          "Optional positive-integer `:periods_per_day` plus `:daily_funding_threshold` and `:margin_threshold` " <>
+            "as canonical decimal strings. Native Elixir callers may also pass Decimal or integer for exact fields; " <>
+            "defaults are overridable risk conventions."
       ]
     ],
     returns: %{

@@ -61,11 +61,26 @@ defmodule DeltaCalc.StressScenario do
       account: [
         kind: :value,
         description:
-          "Map with :equity and :positions (each with :side, :quantity, :mark_price, :mmr; optional :id or :symbol)."
+          "Map with :equity and position :quantity, :mark_price, and :mmr as canonical decimal strings; each position also has :side and optional string :id or :symbol. Native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          equity: String.t(),
+          positions: [
+            %{
+              optional(:id) => String.t(),
+              optional(:symbol) => String.t(),
+              side: :long | :short,
+              quantity: String.t(),
+              mark_price: String.t(),
+              mmr: String.t()
+            }
+          ]
+        }
       ],
       shock_pct: [
         kind: :value,
-        description: "Signed price move in percent (negative = price down, positive = price up)."
+        description:
+          "Signed price move in percent as a canonical decimal string (negative = price down, positive = price up); native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ]
     ],
     returns: %{
@@ -116,11 +131,26 @@ defmodule DeltaCalc.StressScenario do
       account: [
         kind: :value,
         description:
-          "Map with :equity and :positions (each with :side, :quantity, :mark_price, :mmr; optional :id or :symbol)."
+          "Map with :equity and position :quantity, :mark_price, and :mmr as canonical decimal strings; each position also has :side and optional string :id or :symbol. Native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          equity: String.t(),
+          positions: [
+            %{
+              optional(:id) => String.t(),
+              optional(:symbol) => String.t(),
+              side: :long | :short,
+              quantity: String.t(),
+              mark_price: String.t(),
+              mmr: String.t()
+            }
+          ]
+        }
       ],
       shock_pct: [
         kind: :value,
-        description: "Signed price move in percent applied uniformly to every mark price."
+        description:
+          "Signed price move in percent as a canonical decimal string applied uniformly to every mark price; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ]
     ],
     returns: %{

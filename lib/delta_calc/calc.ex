@@ -35,8 +35,18 @@ defmodule DeltaCalc.Calc do
 
   api(:effective_leverage, "Calculate effective leverage from notional and wallet equity.",
     params: [
-      notional: [kind: :value, description: "Position notional value"],
-      wallet_equity: [kind: :value, description: "Wallet/subaccount equity"]
+      notional: [
+        kind: :value,
+        description:
+          "Position notional value as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      wallet_equity: [
+        kind: :value,
+        description:
+          "Wallet/subaccount equity as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ]
     ],
     returns: %{
       type: :decimal,
@@ -80,8 +90,18 @@ defmodule DeltaCalc.Calc do
 
   api(:leverage_to_aum, "Calculate position notional as a fraction of total AUM.",
     params: [
-      notional: [kind: :value, description: "Position notional value"],
-      total_aum: [kind: :value, description: "Total assets under management"]
+      notional: [
+        kind: :value,
+        description:
+          "Position notional value as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      total_aum: [
+        kind: :value,
+        description:
+          "Total assets under management as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ]
     ],
     returns: %{
       type: :decimal,
@@ -125,10 +145,29 @@ defmodule DeltaCalc.Calc do
 
   api(:liquidation, "Calculate liquidation price using simplified analytical model.",
     params: [
-      entry: [kind: :value, description: "Entry price (> 0)"],
-      leff: [kind: :value, description: "Effective leverage (>= 0)"],
-      mmr_total: [kind: :value, description: "Total minimum margin requirement (0-1)"],
-      side: [kind: :value, description: "Position side (:long or :short)"]
+      entry: [
+        kind: :value,
+        description:
+          "Entry price (> 0) as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      leff: [
+        kind: :value,
+        description:
+          "Effective leverage (>= 0) as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      mmr_total: [
+        kind: :value,
+        description:
+          "Total minimum margin requirement (0-1) as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      side: [
+        kind: :value,
+        description: "Position side (:long or :short)",
+        schema: :long | :short
+      ]
     ],
     returns: %{
       type: :decimal,
@@ -234,11 +273,35 @@ defmodule DeltaCalc.Calc do
 
   api(:allocate, "Compute subaccount equity envelope from mode configuration.",
     params: [
-      aum: [kind: :value, description: "Assets under management"],
-      mode_cfg: [kind: :value, description: "Mode config %{pct: Decimal, cap: Decimal}"],
-      assets: [kind: :value, description: "Asset symbols (interface compatibility)"],
-      weights: [kind: :value, description: "Asset weight map (interface compatibility)"],
-      per_sub_cap_pct: [kind: :value, description: "Per-subaccount capital percentage (0-1)"]
+      aum: [
+        kind: :value,
+        description:
+          "Assets under management as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      mode_cfg: [
+        kind: :value,
+        description:
+          "Mode config with :pct and :cap as canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{pct: String.t(), cap: String.t()}
+      ],
+      assets: [
+        kind: :value,
+        description: "Asset symbols (interface compatibility)",
+        schema: [String.t()]
+      ],
+      weights: [
+        kind: :value,
+        description:
+          "Asset weight map (interface compatibility). Exact values use canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: map()
+      ],
+      per_sub_cap_pct: [
+        kind: :value,
+        description:
+          "Per-subaccount capital percentage (0-1) as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ]
     ],
     returns: %{
       type: :map,
@@ -307,11 +370,35 @@ defmodule DeltaCalc.Calc do
 
   api(:position, "Calculate position notional and effective leverage.",
     params: [
-      sub_eq: [kind: :value, description: "Subaccount equity"],
-      init_margin_pct: [kind: :value, description: "Initial margin percentage (0-1)"],
-      ui_lev: [kind: :value, description: "UI leverage (1-125)"],
-      entry: [kind: :value, description: "Entry price"],
-      side: [kind: :value, description: "Position side (:long or :short)"]
+      sub_eq: [
+        kind: :value,
+        description:
+          "Subaccount equity as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      init_margin_pct: [
+        kind: :value,
+        description:
+          "Initial margin percentage (0-1) as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      ui_lev: [
+        kind: :value,
+        description:
+          "UI leverage (1-125) as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      entry: [
+        kind: :value,
+        description:
+          "Entry price as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      side: [
+        kind: :value,
+        description: "Position side (:long or :short)",
+        schema: :long | :short
+      ]
     ],
     returns: %{
       type: :map,
@@ -372,9 +459,24 @@ defmodule DeltaCalc.Calc do
 
   api(:multi_leg_position, "Calculate multi-leg cross-margin position aggregates.",
     params: [
-      legs: [kind: :value, description: "List of %{entry: Decimal, notional: Decimal}"],
-      current_price: [kind: :value, description: "Current market price"],
-      initial_equity: [kind: :value, description: "Starting subaccount equity"]
+      legs: [
+        kind: :value,
+        description:
+          "List of position legs whose :entry and :notional fields are canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: [%{entry: String.t(), notional: String.t()}]
+      ],
+      current_price: [
+        kind: :value,
+        description:
+          "Current market price as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      initial_equity: [
+        kind: :value,
+        description:
+          "Starting subaccount equity as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ]
     ],
     returns: %{
       type: :map,
@@ -497,14 +599,38 @@ defmodule DeltaCalc.Calc do
 
   api(:safety, "Evaluate position safety and compute risk metrics.",
     params: [
-      liq: [kind: :value, description: "Liquidation price"],
-      entry: [kind: :value, description: "Entry price (> 0)"],
-      swan_pct: [kind: :value, description: "Black swan threshold percentage"],
-      side: [kind: :value, description: "Position side (:long or :short)"],
+      liq: [
+        kind: :value,
+        description:
+          "Liquidation price as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      entry: [
+        kind: :value,
+        description:
+          "Entry price (> 0) as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      swan_pct: [
+        kind: :value,
+        description:
+          "Black swan threshold percentage as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      side: [
+        kind: :value,
+        description: "Position side (:long or :short)",
+        schema: :long | :short
+      ],
       cfg: [
         kind: :value,
         default: %{},
-        description: "Safety config with :threshold_multiplier and :safe_multiplier"
+        description:
+          "Safety config with :threshold_multiplier and :safe_multiplier as canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{
+          optional(:threshold_multiplier) => String.t(),
+          optional(:safe_multiplier) => String.t()
+        }
       ]
     ],
     returns: %{
@@ -686,17 +812,56 @@ defmodule DeltaCalc.Calc do
 
   api(:compare_dca_safety, "Compare safety metrics before and after adding a DCA leg.",
     params: [
-      single_leg: [kind: :value, description: "Initial leg %{entry: Decimal, notional: Decimal}"],
-      dca_leg: [kind: :value, description: "DCA leg %{entry: Decimal, notional: Decimal}"],
-      current_price: [kind: :value, description: "Market price when adding DCA leg"],
-      initial_equity: [kind: :value, description: "Starting subaccount equity"],
-      mmr: [kind: :value, description: "Minimum margin requirement"],
-      side: [kind: :value, description: "Position side (:long or :short)"],
-      swan_pct: [kind: :value, description: "Black swan threshold percentage"],
+      single_leg: [
+        kind: :value,
+        description:
+          "Initial leg with :entry and :notional as canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{entry: String.t(), notional: String.t()}
+      ],
+      dca_leg: [
+        kind: :value,
+        description:
+          "DCA leg with :entry and :notional as canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{entry: String.t(), notional: String.t()}
+      ],
+      current_price: [
+        kind: :value,
+        description:
+          "Market price when adding DCA leg as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      initial_equity: [
+        kind: :value,
+        description:
+          "Starting subaccount equity as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      mmr: [
+        kind: :value,
+        description:
+          "Minimum margin requirement as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      side: [
+        kind: :value,
+        description: "Position side (:long or :short)",
+        schema: :long | :short
+      ],
+      swan_pct: [
+        kind: :value,
+        description:
+          "Black swan threshold percentage as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
       safety_cfg: [
         kind: :value,
         default: %{},
-        description: "Optional safety configuration map"
+        description:
+          "Optional safety configuration whose multiplier fields use canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{
+          optional(:threshold_multiplier) => String.t(),
+          optional(:safe_multiplier) => String.t()
+        }
       ]
     ],
     returns: %{
@@ -796,7 +961,8 @@ defmodule DeltaCalc.Calc do
     params: [
       long_preset: [
         kind: :value,
-        description: "List of {price_mult, reserve_pct} tuples for longs"
+        description:
+          "List of {price_mult, reserve_pct} pairs whose exact values use canonical decimal strings; native Elixir callers may also pass Decimal or integer."
       ]
     ],
     returns: %{
@@ -842,27 +1008,51 @@ defmodule DeltaCalc.Calc do
     params: [
       position: [
         kind: :value,
-        description: "Initial position %{notional: Decimal, eff_lev: Decimal}"
+        description:
+          "Initial position with :notional and :eff_lev as canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{notional: String.t(), eff_lev: String.t()}
       ],
-      reserve: [kind: :value, description: "Reserve available for DCA"],
-      entry_price: [kind: :value, description: "Initial entry price"],
-      ui_lev: [kind: :value, description: "UI leverage for new positions"],
+      reserve: [
+        kind: :value,
+        description:
+          "Reserve available for DCA as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      entry_price: [
+        kind: :value,
+        description:
+          "Initial entry price as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      ui_lev: [
+        kind: :value,
+        description:
+          "UI leverage for new positions as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
       ladder_preset: [
         kind: :value,
         description:
-          "List of side-specific {price_mult, reserve_pct} tuples; multipliers are used as supplied"
+          "List of side-specific {price_mult, reserve_pct} pairs whose exact values use canonical decimal strings; native Elixir callers may also pass Decimal or integer; multipliers are used as supplied"
       ],
       side: [
         kind: :value,
-        description: "Position side (:long or :short) used for liquidation math"
+        description: "Position side (:long or :short) used for liquidation math",
+        schema: :long | :short
       ],
-      mmr_rate: [kind: :value, description: "Minimum margin requirement rate"],
+      mmr_rate: [
+        kind: :value,
+        description:
+          "Minimum margin requirement rate as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
       opts: [
         kind: :value,
         default: [],
         description:
           "Optional `:mark_buffer` added to the applicable MMR and `:mmr_schedule` list " <>
             "of {minimum_notional, mmr_rate} tiers; " <>
+            "exact values use canonical decimal strings and native Elixir callers may also pass Decimal or integer; " <>
             "the highest applicable threshold wins"
       ]
     ],
@@ -1197,7 +1387,12 @@ defmodule DeltaCalc.Calc do
 
   api(:quantize, "Round a Decimal to standard output precision (8 places).",
     params: [
-      value: [kind: :value, description: "Decimal value to quantize"]
+      value: [
+        kind: :value,
+        description:
+          "Value to quantize as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ]
     ],
     returns: %{type: :decimal, description: "Value rounded to 8 decimal places"}
   )

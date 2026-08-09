@@ -64,8 +64,9 @@ defmodule DeltaCalc.Funding do
     params: [
       rate: [
         kind: :value,
-        description: "Per-period funding rate as a decimal fraction (e.g. 0.0001 for 0.01%).",
-        schema: float()
+        description:
+          "Per-period funding rate as a canonical decimal string (e.g. \"0.0001\" for 0.01%); native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       period_hours: [
         kind: :value,
@@ -113,16 +114,19 @@ defmodule DeltaCalc.Funding do
       rates: [
         kind: :value,
         description:
-          "Rates are per-period decimal fractions (e.g. 0.0001 for 0.01%). " <>
-            "Single symbol: %{venue => rate}. Multiple symbols: %{\"SYMBOL\" => %{venue => rate}}.",
+          "Rates are canonical decimal strings representing per-period fractions (e.g. \"0.0001\" for 0.01%). " <>
+            "Single symbol: %{venue => rate}. Multiple symbols: %{\"SYMBOL\" => %{venue => rate}}. " <>
+            "Native Elixir callers may also pass Decimal or integer rates.",
         schema: map()
       ],
       periods_per_day: [
         kind: :value,
         default: 3,
         description:
-          "Funding periods per calendar day as a scalar or %{venue => periods}. " <>
-            "Default 3 for 8h venues; use 24 for Deribit hourly funding."
+          "Funding periods per calendar day as a positive integer or %{venue => positive integer}. " <>
+            "Agent transport uses the scalar form; native Elixir callers may also pass a venue map. " <>
+            "Default 3 for 8h venues; use 24 for Deribit hourly funding.",
+        schema: pos_integer()
       ]
     ],
     returns: %{
@@ -172,9 +176,9 @@ defmodule DeltaCalc.Funding do
         kind: :value,
         default: "0.001",
         description:
-          "Minimum absolute raw-period spread in decimal-fraction units. " <>
-            "Daily-normalized comparison entries are scaled before filtering.",
-        schema: float()
+          "Minimum absolute raw-period spread as a canonical decimal string in decimal-fraction units; " <>
+            "native Elixir callers may also pass Decimal or integer. Daily-normalized comparison entries are scaled before filtering.",
+        schema: String.t()
       ]
     ],
     returns: %{
@@ -217,7 +221,8 @@ defmodule DeltaCalc.Funding do
       series: [
         kind: :value,
         description:
-          "List of per-period decimal-fraction rates (Decimal/number) or maps with a :rate key."
+          "List of per-period rates as canonical decimal strings. Native Elixir callers may also pass Decimal or integer values, or maps with a :rate key.",
+        schema: [String.t()]
       ]
     ],
     returns: %{

@@ -51,13 +51,19 @@ defmodule DeltaCalc.Fees do
     params: [
       fill_price: [
         kind: :value,
-        description: "Reported fill price before fees and slippage.",
-        schema: float()
+        description:
+          "Reported fill price before fees and slippage as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       params: [
         kind: :value,
         description:
-          "Map with :fee_rate (taker or maker fraction), optional :slippage_bps, optional :side (:long default)."
+          "Map with :fee_rate and optional :slippage_bps as canonical decimal strings plus optional :side (:long default); native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          optional(:slippage_bps) => String.t(),
+          optional(:side) => :long | :short,
+          fee_rate: String.t()
+        }
       ]
     ],
     returns: %{
@@ -86,13 +92,19 @@ defmodule DeltaCalc.Fees do
     params: [
       fill_price: [
         kind: :value,
-        description: "Reported fill price before fees and slippage.",
-        schema: float()
+        description:
+          "Reported fill price before fees and slippage as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       params: [
         kind: :value,
         description:
-          "Map with :fee_rate (taker or maker fraction), optional :slippage_bps, optional :side (:long default)."
+          "Map with :fee_rate and optional :slippage_bps as canonical decimal strings plus optional :side (:long default); native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          optional(:slippage_bps) => String.t(),
+          optional(:side) => :long | :short,
+          fee_rate: String.t()
+        }
       ]
     ],
     returns: %{
@@ -122,7 +134,15 @@ defmodule DeltaCalc.Fees do
       params: [
         kind: :value,
         description:
-          "Map with :open_fee_rate and :close_fee_rate plus either :notional or :entry_price and :size; optional :exit_price for close notional."
+          "Map with :open_fee_rate and :close_fee_rate plus either :notional or :entry_price and :size; optional :exit_price for close notional. Exact fields use canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{
+          optional(:notional) => String.t(),
+          optional(:entry_price) => String.t(),
+          optional(:size) => String.t(),
+          optional(:exit_price) => String.t(),
+          open_fee_rate: String.t(),
+          close_fee_rate: String.t()
+        }
       ]
     ],
     returns: %{
@@ -158,19 +178,27 @@ defmodule DeltaCalc.Fees do
     params: [
       entry_price: [
         kind: :value,
-        description: "Position entry price.",
-        schema: float()
+        description:
+          "Position entry price as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ],
       params: [
         kind: :value,
         description:
-          "Map with :size, :open_fee_rate, :close_fee_rate; optional :exit_price estimate and :side (:long default)."
+          "Map with :size, :open_fee_rate, and :close_fee_rate as canonical decimal strings; optional :exit_price uses the same form and :side defaults to :long. Native Elixir callers may also pass Decimal or integer for exact fields.",
+        schema: %{
+          optional(:exit_price) => String.t(),
+          optional(:side) => :long | :short,
+          size: String.t(),
+          open_fee_rate: String.t(),
+          close_fee_rate: String.t()
+        }
       ],
       accrued_funding: [
         kind: :value,
         description:
-          "Net accrued funding in quote currency (negative when paid, positive when received).",
-        schema: float()
+          "Net accrued funding in quote currency as a canonical decimal string (negative when paid, positive when received); native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
       ]
     ],
     returns: %{

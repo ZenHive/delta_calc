@@ -1989,7 +1989,7 @@
       "phase": 3,
       "bundle": "consumer_math",
       "milestone": "v0_3",
-      "status": "in_progress",
+      "status": "done",
       "title": "Expose side-aware public multi_leg_position (shorts)",
       "scores": {
         "d": 3,
@@ -2027,10 +2027,17 @@
         "test/delta_calc/calc_test.exs",
         "test/delta_calc/manifest_consistency_test.exs"
       ],
+      "shipped_in": "c0258ad45538efd551963325784b3ba99f267034",
       "body": "Calc.multi_leg_position/4 (private) supports :long and :short, but the only public entry point, multi_leg_position/3, hardcodes :long. The api() advertises just /3. Short DCA callers therefore cannot get correct side-aware average entry, PnL, and effective leverage through the public surface. Expose a side-aware public arity (or require side in the public params) and document it. compare_dca_safety already passes side to the private /4, so the math exists — it just needs a public door.\n\nDispatch trigger: public API change on critical position math.\n",
       "created_at": "2026-06-19",
       "started_at": "2026-08-09",
+      "done_at": "2026-08-09",
       "scored_at": "2026-07-25",
+      "implemented": "Landed by codex via merge-train; reviewer-approved (run run-1786278466087-8dc17394, c0258ad45538efd551963325784b3ba99f267034).",
+      "delivered_by": "codex",
+      "verified": true,
+      "verified_by": "claude",
+      "verification_ref": "harness-run:run-1786278466087-8dc17394",
       "cross_repo": []
     },
     {

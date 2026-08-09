@@ -1,7 +1,7 @@
 defmodule DeltaCalc.CalcTest do
   use ExUnit.Case, async: true
 
-  alias DeltaCalc.Calc
+  alias DeltaCalc.{Calc, Leverage, Safety}
 
   # Compare Decimals within an absolute tolerance (never via to_float).
   defp assert_close(actual, expected, tolerance) do
@@ -9,6 +9,87 @@ defmodule DeltaCalc.CalcTest do
 
     assert Decimal.compare(diff, Decimal.new(tolerance)) != :gt,
            "expected #{Decimal.to_string(expected)} ± #{tolerance}, got #{Decimal.to_string(actual)}"
+  end
+
+  describe "compatibility facade" do
+    test "re-exports the original public function arities" do
+      exports = [
+        effective_leverage: 2,
+        leverage_to_aum: 2,
+        liquidation: 4,
+        allocate: 5,
+        position: 5,
+        multi_leg_position: 3,
+        multi_leg_position: 4,
+        safety: 4,
+        safety: 5,
+        compare_dca_safety: 7,
+        compare_dca_safety: 8,
+        convert_ladder_for_short: 1,
+        dca_ladder: 7,
+        dca_ladder: 8,
+        quantize: 1
+      ]
+
+      assert Enum.all?(exports, fn {name, arity} -> function_exported?(Calc, name, arity) end)
+    end
+
+    test "Leverage owns default arity and zero guards" do
+      leg = %{entry: Decimal.new("3000"), notional: Decimal.new("100")}
+
+      assert Leverage.multi_leg_position([leg], Decimal.new("3000"), Decimal.new("50")) ==
+               Calc.multi_leg_position([leg], Decimal.new("3000"), Decimal.new("50"))
+
+      empty_position = Leverage.multi_leg_position([], Decimal.new("3000"), Decimal.new("50"))
+      assert Decimal.equal?(empty_position.avg_entry, Decimal.new(0))
+
+      zero_position =
+        Leverage.position(
+          Decimal.new(0),
+          Decimal.new("0.5"),
+          Decimal.new(2),
+          Decimal.new("3000"),
+          :long
+        )
+
+      assert Decimal.equal?(zero_position.eff_lev, Decimal.new(0))
+    end
+
+    test "Safety owns default arities" do
+      leg = %{entry: Decimal.new("3000"), notional: Decimal.new("100")}
+
+      assert Safety.safety(
+               Decimal.new("1500"),
+               Decimal.new("3000"),
+               Decimal.new("25"),
+               :long
+             ) ==
+               Calc.safety(
+                 Decimal.new("1500"),
+                 Decimal.new("3000"),
+                 Decimal.new("25"),
+                 :long
+               )
+
+      assert Safety.compare_dca_safety(
+               leg,
+               %{entry: Decimal.new("2800"), notional: Decimal.new("100")},
+               Decimal.new("2800"),
+               Decimal.new("50"),
+               Decimal.new("0.005"),
+               :long,
+               Decimal.new("25")
+             ) ==
+               Calc.compare_dca_safety(
+                 leg,
+                 %{entry: Decimal.new("2800"), notional: Decimal.new("100")},
+                 Decimal.new("2800"),
+                 Decimal.new("50"),
+                 Decimal.new("0.005"),
+                 :long,
+                 Decimal.new("25")
+               )
+    end
   end
 
   describe "effective_leverage/2" do
@@ -828,6 +909,8 @@ defmodule DeltaCalc.CalcTest do
       assert Enum.count(result.steps) == 1
       step1 = Enum.at(result.steps, 0)
 
+      refute Map.has_key?(step1, :_cumulative_tokens)
+      refute Map.has_key?(step1, :_new_wallet_equity)
       assert_close(step1.dca_price, Decimal.new("2850"), "0.01")
       assert_close(step1.spend, Decimal.new("150"), "0.01")
       assert_close(step1.new_notional, Decimal.new("450"), "0.01")

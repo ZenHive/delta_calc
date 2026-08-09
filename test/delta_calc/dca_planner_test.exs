@@ -65,6 +65,8 @@ defmodule DeltaCalc.DCAPlannerTest do
       assert aggressive.final_notional
 
       first_def = Enum.at(defensive.steps, 0)
+      refute Map.has_key?(first_def, :_cumulative_tokens)
+      refute Map.has_key?(first_def, :_new_wallet_equity)
       assert D.eq?(first_def.dca_price, D.new("2850.00000000"), D.new("0.00000001"))
       assert D.eq?(first_def.spend, D.new("15.00000000"), D.new("0.00000001"))
       assert D.eq?(first_def.leverage_to_aum, D.new("0.01300000"), D.new("0.00000001"))
@@ -118,6 +120,52 @@ defmodule DeltaCalc.DCAPlannerTest do
 
         assert D.compare(buffered_strategy.final_liq, unbuffered_strategy.final_liq) == :gt
       end
+    end
+  end
+
+  describe "dca_ladder/8" do
+    test "owns the direct ladder API while Calc remains a compatibility facade" do
+      position = %{notional: D.new("100"), eff_lev: D.new("2")}
+      preset = [{D.new("0.95"), D.new("0.30")}]
+
+      direct =
+        DCAPlanner.dca_ladder(
+          position,
+          D.new("50"),
+          D.new("3000"),
+          D.new("2"),
+          preset,
+          :long,
+          D.new("0.005")
+        )
+
+      facade =
+        DeltaCalc.Calc.dca_ladder(
+          position,
+          D.new("50"),
+          D.new("3000"),
+          D.new("2"),
+          preset,
+          :long,
+          D.new("0.005")
+        )
+
+      assert direct == facade
+      refute Map.has_key?(hd(direct.steps), :_cumulative_tokens)
+      refute Map.has_key?(hd(direct.steps), :_new_wallet_equity)
+    end
+  end
+
+  describe "convert_ladder_for_short/1" do
+    test "owns preset conversion while Calc preserves the original entry point" do
+      preset = [{D.new("0.95"), D.new("0.30")}]
+
+      assert DCAPlanner.convert_ladder_for_short(preset) ==
+               DeltaCalc.Calc.convert_ladder_for_short(preset)
+
+      assert [{multiplier, allocation}] = DCAPlanner.convert_ladder_for_short(preset)
+      assert D.equal?(multiplier, D.new("1.05"))
+      assert D.equal?(allocation, D.new("0.30"))
     end
   end
 
@@ -240,6 +288,8 @@ defmodule DeltaCalc.DCAPlannerTest do
   describe "Descripex api() declarations" do
     test "public functions are annotated with api() hints" do
       fns = [
+        dca_ladder: 8,
+        convert_ladder_for_short: 1,
         calculate_dca_ladder: 1,
         build_defensive_preset: 3,
         build_aggressive_preset: 3,

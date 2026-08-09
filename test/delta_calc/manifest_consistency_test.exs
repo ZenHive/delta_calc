@@ -118,7 +118,7 @@ defmodule DeltaCalc.ManifestConsistencyTest do
     end
 
     test "DCA metadata distinguishes side-specific prices from side-driven liquidation" do
-      api = DeltaCalc.Calc.__api__(:dca_ladder)
+      api = DeltaCalc.DCAPlanner.__api__(:dca_ladder)
 
       assert api.hints.params.ladder_preset.description =~ "side-specific"
       assert api.hints.params.side.description =~ "liquidation"
@@ -126,13 +126,15 @@ defmodule DeltaCalc.ManifestConsistencyTest do
     end
 
     test "multi-leg position advertises its side-aware public arity" do
-      api = DeltaCalc.Calc.__api__(:multi_leg_position)
+      api = DeltaCalc.Leverage.__api__(:multi_leg_position)
 
       assert api.arity == 4
       assert api.defaults == 1
       assert api.param_order == [:legs, :current_price, :initial_equity, :side]
       assert api.hints.params.side.default == :long
       assert api.hints.params.side.description =~ ":short"
+      assert Code.ensure_loaded?(DeltaCalc.Calc)
+      assert function_exported?(DeltaCalc.Leverage, :multi_leg_position, 4)
       assert function_exported?(DeltaCalc.Calc, :multi_leg_position, 4)
     end
 

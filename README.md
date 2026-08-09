@@ -24,8 +24,13 @@ end
 # In iex -S mix or any Elixir app with :delta_calc as a dependency
 alias DeltaCalc.{
   Calc,
+  Leverage,
+  Liquidation,
+  Allocation,
+  Safety,
   Presets,
   DCAPlanner,
+  Quantization,
   PositionCalculator,
   Hedging,
   Funding,
@@ -46,8 +51,8 @@ alias DeltaCalc.{
 
 ## `DeltaCalc.Calc`
 
-Core engine: effective leverage, liquidation price, allocation envelopes, position sizing,
-multi-leg aggregation, safety scoring, and DCA ladder math.
+Compatibility façade preserving the original entry points. The focused implementation modules
+are `Leverage`, `Liquidation`, `Allocation`, `Safety`, `DCAPlanner`, and `Quantization`.
 
 ```elixir
 # effective_leverage(notional, wallet_equity) -> Decimal

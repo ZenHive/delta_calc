@@ -2,14 +2,14 @@ defmodule DeltaCalc.DCAPlanner do
   @moduledoc """
   DCA ladder planning and strategy management.
 
-  Builds defensive and aggressive DCA presets, enhances ladder steps with portfolio
-  metrics, and orchestrates full ladder calculations via `DeltaCalc.Calc`.
+  Builds defensive and aggressive DCA presets, calculates reserve-funded ladder steps,
+  and enhances those steps with portfolio metrics.
   """
 
   use Descripex, namespace: "/dca_planner"
 
-  alias DeltaCalc.Calc
-  alias DeltaCalc.Presets
+  alias DeltaCalc.Decimal, as: DecimalInput
+  alias DeltaCalc.{Leverage, Liquidation, Presets}
 
   @default_zero Decimal.new("0")
   @default_one Decimal.new("1")
@@ -17,6 +17,7 @@ defmodule DeltaCalc.DCAPlanner do
 
   @type dca_preset :: [{Decimal.t(), Decimal.t()}]
   @type dca_step :: map()
+  @type mmr_schedule :: [{DecimalInput.input(), DecimalInput.input()}]
   @type dca_result :: %{
           optional(:defensive) => map(),
           optional(:aggressive) => map()
@@ -34,6 +35,326 @@ defmodule DeltaCalc.DCAPlanner do
           aum: Decimal.t(),
           black_swan_pct: Decimal.t()
         }
+
+  api(:dca_ladder, "Calculate DCA ladder steps using reserve allocation.",
+    params: [
+      position: [
+        kind: :value,
+        description:
+          "Initial position with :notional and :eff_lev as canonical decimal strings; native Elixir callers may also pass Decimal or integer.",
+        schema: %{notional: String.t(), eff_lev: String.t()}
+      ],
+      reserve: [
+        kind: :value,
+        description:
+          "Reserve available for DCA as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      entry_price: [
+        kind: :value,
+        description:
+          "Initial entry price as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      ui_lev: [
+        kind: :value,
+        description:
+          "UI leverage for new positions as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      ladder_preset: [
+        kind: :value,
+        description:
+          "List of side-specific {price_mult, reserve_pct} pairs whose exact values use canonical decimal strings; native Elixir callers may also pass Decimal or integer; multipliers are used as supplied"
+      ],
+      side: [
+        kind: :value,
+        description: "Position side (:long or :short) used for liquidation math",
+        schema: :long | :short
+      ],
+      mmr_rate: [
+        kind: :value,
+        description:
+          "Minimum margin requirement rate as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
+        schema: String.t()
+      ],
+      opts: [
+        kind: :value,
+        default: [],
+        description:
+          "Optional `:mark_buffer` added to the applicable MMR and `:mmr_schedule` list " <>
+            "of {minimum_notional, mmr_rate} tiers; " <>
+            "exact values use canonical decimal strings and native Elixir callers may also pass Decimal or integer; " <>
+            "the highest applicable threshold wins"
+      ]
+    ],
+    returns: %{
+      type: :map,
+      description: "Map with steps, final_avg_entry, final_notional, final_liq, final_eff_lev"
+    }
+  )
+
+  @spec dca_ladder(
+          map(),
+          Decimal.t(),
+          Decimal.t(),
+          Decimal.t(),
+          list(),
+          :long | :short,
+          Decimal.t(),
+          keyword() | Decimal.t()
+        ) :: map()
+  def dca_ladder(
+        position,
+        reserve,
+        entry_price,
+        ui_lev,
+        ladder_preset,
+        side,
+        mmr_rate,
+        opts \\ []
+      ) do
+    reserve = DecimalInput.cast!(reserve)
+    entry_price = DecimalInput.cast!(entry_price)
+    ui_lev = DecimalInput.cast!(ui_lev)
+    mmr_rate = DecimalInput.cast!(mmr_rate)
+    {mark_buffer, mmr_schedule} = dca_options(opts)
+    initial_notional = DecimalInput.cast!(position.notional)
+    initial_eff_lev = DecimalInput.cast!(position.eff_lev)
+
+    {steps, _final_state} =
+      ladder_preset
+      |> Enum.with_index(1)
+      |> Enum.reduce({[], initialize_dca_state(position, reserve, entry_price)}, fn
+        {{price_mult, reserve_pct}, step_num}, accumulator ->
+          process_single_dca_step(
+            accumulator,
+            {price_mult, reserve_pct, step_num},
+            {entry_price, ui_lev, reserve, mmr_rate, mark_buffer, mmr_schedule, side}
+          )
+      end)
+
+    steps
+    |> Enum.reverse()
+    |> calculate_final_metrics({
+      entry_price,
+      initial_notional,
+      initial_eff_lev,
+      mmr_rate,
+      mark_buffer,
+      mmr_schedule,
+      side
+    })
+  end
+
+  api(:convert_ladder_for_short, "Convert a long DCA ladder preset to a short preset.",
+    params: [
+      long_preset: [
+        kind: :value,
+        description:
+          "List of {price_mult, reserve_pct} pairs whose exact values use canonical decimal strings; native Elixir callers may also pass Decimal or integer."
+      ]
+    ],
+    returns: %{
+      type: :list,
+      description: "List of {price_mult, reserve_pct} tuples for shorts"
+    }
+  )
+
+  @spec convert_ladder_for_short(list()) :: list()
+  def convert_ladder_for_short(long_preset) do
+    Enum.map(long_preset, fn {price_mult, reserve_pct} ->
+      price_mult = DecimalInput.cast!(price_mult)
+      reserve_pct = DecimalInput.cast!(reserve_pct)
+      {Decimal.sub(Decimal.new(2), price_mult), reserve_pct}
+    end)
+  end
+
+  @spec initialize_dca_state(map(), Decimal.t(), Decimal.t()) :: map()
+  defp initialize_dca_state(position, reserve, entry_price) do
+    initial_notional = DecimalInput.cast!(position.notional)
+    initial_eff_lev = DecimalInput.cast!(position.eff_lev)
+
+    wallet_equity =
+      if Decimal.compare(initial_eff_lev, @default_zero) == :gt,
+        do: Decimal.div(initial_notional, initial_eff_lev),
+        else: reserve
+
+    %{
+      cumulative_notional: initial_notional,
+      cumulative_tokens: Decimal.div(initial_notional, entry_price),
+      remaining_reserve: reserve,
+      wallet_equity: wallet_equity,
+      last_avg_entry: entry_price
+    }
+  end
+
+  @spec process_single_dca_step(
+          {list(), map()},
+          {Decimal.t(), Decimal.t(), integer()},
+          {Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), mmr_schedule(),
+           :long | :short}
+        ) :: {list(), map()}
+  defp process_single_dca_step(
+         {steps, state},
+         {price_mult, reserve_pct, step_num},
+         {entry_price, ui_lev, reserve, mmr_rate, mark_buffer, mmr_schedule, side}
+       ) do
+    dca_price = Decimal.mult(entry_price, DecimalInput.cast!(price_mult))
+
+    actual_spend =
+      reserve
+      |> Decimal.mult(DecimalInput.cast!(reserve_pct))
+      |> Decimal.min(state.remaining_reserve)
+
+    if Decimal.compare(actual_spend, @default_zero) == :eq do
+      {steps, state}
+    else
+      {step, cumulative_tokens, wallet_equity} =
+        calculate_dca_step(
+          state,
+          {actual_spend, ui_lev, dca_price, mmr_rate, mark_buffer, mmr_schedule, side, step_num}
+        )
+
+      next_state = %{
+        cumulative_notional: step.cumulative_notional,
+        cumulative_tokens: cumulative_tokens,
+        remaining_reserve: Decimal.sub(state.remaining_reserve, actual_spend),
+        wallet_equity: wallet_equity,
+        last_avg_entry: step.new_avg_entry
+      }
+
+      {[step | steps], next_state}
+    end
+  end
+
+  @spec calculate_dca_step(
+          map(),
+          {Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), mmr_schedule(),
+           :long | :short, integer()}
+        ) :: {map(), Decimal.t(), Decimal.t()}
+  defp calculate_dca_step(
+         state,
+         {actual_spend, ui_lev, dca_price, mmr_rate, mark_buffer, mmr_schedule, side, step_num}
+       ) do
+    new_notional = Decimal.mult(actual_spend, ui_lev)
+    cumulative_notional = Decimal.add(state.cumulative_notional, new_notional)
+
+    cumulative_tokens =
+      state.cumulative_tokens
+      |> Decimal.add(Decimal.div(new_notional, dca_price))
+
+    new_avg_entry =
+      if Decimal.compare(cumulative_tokens, @default_zero) == :gt,
+        do: Decimal.div(cumulative_notional, cumulative_tokens),
+        else: state.last_avg_entry
+
+    new_eff_lev =
+      cumulative_notional
+      |> Leverage.effective_leverage(state.wallet_equity)
+      |> decimal_result_or_zero()
+
+    adjusted_mmr =
+      calculate_adjusted_mmr(cumulative_notional, mmr_rate, mark_buffer, mmr_schedule)
+
+    new_liq =
+      new_avg_entry
+      |> Liquidation.liquidation(new_eff_lev, adjusted_mmr, side)
+      |> decimal_result_or_zero()
+
+    step = %{
+      step_num: step_num,
+      dca_price: dca_price,
+      spend: actual_spend,
+      new_notional: new_notional,
+      new_avg_entry: new_avg_entry,
+      new_liq: new_liq,
+      new_eff_lev: new_eff_lev,
+      cumulative_notional: cumulative_notional
+    }
+
+    {step, cumulative_tokens, state.wallet_equity}
+  end
+
+  @spec calculate_tiered_mmr(Decimal.t(), Decimal.t(), mmr_schedule()) :: Decimal.t()
+  defp calculate_tiered_mmr(notional, base_mmr, mmr_schedule) do
+    notional_abs = Decimal.abs(notional)
+
+    mmr_schedule
+    |> Enum.reduce({nil, base_mmr}, fn {threshold, rate}, {selected_threshold, selected_rate} ->
+      threshold = DecimalInput.cast!(threshold)
+      rate = DecimalInput.cast!(rate)
+
+      if tier_is_more_specific?(notional_abs, threshold, selected_threshold),
+        do: {threshold, rate},
+        else: {selected_threshold, selected_rate}
+    end)
+    |> elem(1)
+  end
+
+  @spec tier_is_more_specific?(Decimal.t(), Decimal.t(), Decimal.t() | nil) :: boolean()
+  defp tier_is_more_specific?(notional, threshold, selected_threshold) do
+    Decimal.compare(notional, threshold) in [:eq, :gt] and
+      (is_nil(selected_threshold) or Decimal.compare(threshold, selected_threshold) == :gt)
+  end
+
+  @spec calculate_adjusted_mmr(Decimal.t(), Decimal.t(), Decimal.t(), mmr_schedule()) ::
+          Decimal.t()
+  defp calculate_adjusted_mmr(notional, base_mmr, mark_buffer, mmr_schedule) do
+    notional
+    |> calculate_tiered_mmr(base_mmr, mmr_schedule)
+    |> Decimal.add(mark_buffer)
+  end
+
+  @spec dca_options(keyword() | Decimal.t()) :: {Decimal.t(), mmr_schedule()}
+  defp dca_options(opts) when is_list(opts) do
+    mark_buffer = opts |> Keyword.get(:mark_buffer, @default_zero) |> DecimalInput.cast!()
+    {mark_buffer, Keyword.get(opts, :mmr_schedule, [])}
+  end
+
+  defp dca_options(mark_buffer), do: {DecimalInput.cast!(mark_buffer), []}
+
+  @spec calculate_final_metrics(
+          list(),
+          {Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), mmr_schedule(),
+           :long | :short}
+        ) :: map()
+  defp calculate_final_metrics(
+         steps,
+         {entry_price, initial_notional, initial_eff_lev, mmr_rate, mark_buffer, mmr_schedule,
+          side}
+       ) do
+    if Enum.empty?(steps) do
+      adjusted_mmr =
+        calculate_adjusted_mmr(initial_notional, mmr_rate, mark_buffer, mmr_schedule)
+
+      %{
+        steps: [],
+        final_avg_entry: entry_price,
+        final_notional: initial_notional,
+        final_liq:
+          entry_price
+          |> Liquidation.liquidation(initial_eff_lev, adjusted_mmr, side)
+          |> decimal_result_or_zero(),
+        final_eff_lev: initial_eff_lev
+      }
+    else
+      last_step = List.last(steps)
+
+      %{
+        steps: steps,
+        final_avg_entry: last_step.new_avg_entry,
+        final_notional: last_step.cumulative_notional,
+        final_liq: last_step.new_liq,
+        final_eff_lev: last_step.new_eff_lev
+      }
+    end
+  end
+
+  @spec decimal_result_or_zero(Leverage.decimal_result() | Liquidation.decimal_result()) ::
+          Decimal.t()
+  defp decimal_result_or_zero(%Decimal{} = value), do: value
+  defp decimal_result_or_zero({:error, _reason}), do: @default_zero
 
   api(
     :calculate_dca_ladder,
@@ -96,7 +417,7 @@ defmodule DeltaCalc.DCAPlanner do
 
   Each strategy contains:
   - `:steps` - List of enhanced DCA steps with safety metrics
-  - Other fields from `Calc.dca_ladder/8` result
+  - Other fields from `dca_ladder/8` result
 
   ## Examples
 
@@ -139,7 +460,7 @@ defmodule DeltaCalc.DCAPlanner do
         build_aggressive_preset(dca_params.params, dca_params.entry_price, dca_params.side)
 
       defensive_result =
-        Calc.dca_ladder(
+        dca_ladder(
           dca_params.position_with_tokens,
           dca_params.dca_reserve,
           dca_params.entry_price,
@@ -151,7 +472,7 @@ defmodule DeltaCalc.DCAPlanner do
         )
 
       aggressive_result =
-        Calc.dca_ladder(
+        dca_ladder(
           dca_params.position_with_tokens,
           dca_params.dca_reserve,
           dca_params.entry_price,
@@ -366,7 +687,7 @@ defmodule DeltaCalc.DCAPlanner do
       steps: [
         kind: :value,
         description:
-          "List of DCA steps from Calc.dca_ladder/8; exact step fields use canonical decimal strings for agent transport."
+          "List of DCA steps from DCAPlanner.dca_ladder/8; exact step fields use canonical decimal strings for agent transport."
       ],
       aum: [
         kind: :value,
@@ -406,7 +727,7 @@ defmodule DeltaCalc.DCAPlanner do
   for comprehensive risk assessment at each ladder level.
 
   ## Parameters
-  - `steps`: List of DCA steps from `Calc.dca_ladder/8`
+  - `steps`: List of DCA steps from `dca_ladder/8`
   - `aum`: Total Assets Under Management (Decimal)
   - `black_swan_pct`: Black swan threshold as decimal (0-1)
   - `entry_price`: Entry price (Decimal)
@@ -443,7 +764,7 @@ defmodule DeltaCalc.DCAPlanner do
           Decimal.compare(step.new_liq, black_swan_price) == :gt
         end
 
-      case Calc.leverage_to_aum(step.cumulative_notional, aum) do
+      case Leverage.leverage_to_aum(step.cumulative_notional, aum) do
         %Decimal{} = leverage_to_aum ->
           step =
             Map.merge(step, %{
@@ -504,8 +825,8 @@ defmodule DeltaCalc.DCAPlanner do
     preset = Presets.load_dca_preset()
 
     case {side, strategy} do
-      {:short, :defensive} -> Calc.convert_ladder_for_short(preset)
-      {:long, :aggressive} -> Calc.convert_ladder_for_short(preset)
+      {:short, :defensive} -> convert_ladder_for_short(preset)
+      {:long, :aggressive} -> convert_ladder_for_short(preset)
       _ -> preset
     end
   end

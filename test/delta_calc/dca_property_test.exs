@@ -3,7 +3,7 @@ defmodule DeltaCalc.DCAPropertyTest do
   use ExUnitProperties
 
   alias Decimal, as: D
-  alias DeltaCalc.Calc
+  alias DeltaCalc.DCAPlanner
 
   describe "DCA ladder property tests" do
     property "DCA ladder always produces valid results for any valid inputs" do
@@ -28,7 +28,7 @@ defmodule DeltaCalc.DCAPropertyTest do
         ladder_preset = generate_valid_ladder(num_steps)
 
         result =
-          Calc.dca_ladder(
+          DCAPlanner.dca_ladder(
             position,
             D.new(to_string(reserve)),
             D.new(to_string(entry_price)),
@@ -58,6 +58,7 @@ defmodule DeltaCalc.DCAPropertyTest do
           assert step.new_avg_entry
           assert step.new_liq
           assert D.compare(step.spend, D.new("0")) == :gt
+          refute Enum.any?(Map.keys(step), &String.starts_with?(Atom.to_string(&1), "_"))
         end)
       end
     end
@@ -78,7 +79,7 @@ defmodule DeltaCalc.DCAPropertyTest do
         ladder_preset = generate_valid_ladder(num_steps)
 
         result =
-          Calc.dca_ladder(
+          DCAPlanner.dca_ladder(
             position,
             D.new(to_string(reserve)),
             D.new(to_string(entry_price)),
@@ -115,7 +116,7 @@ defmodule DeltaCalc.DCAPropertyTest do
         ladder_preset = generate_valid_ladder(num_steps)
 
         result =
-          Calc.dca_ladder(
+          DCAPlanner.dca_ladder(
             position,
             reserve_decimal,
             D.new(to_string(entry_price)),
@@ -150,7 +151,7 @@ defmodule DeltaCalc.DCAPropertyTest do
         ladder_preset = generate_defensive_ladder(num_steps)
 
         result =
-          Calc.dca_ladder(
+          DCAPlanner.dca_ladder(
             position,
             D.new("500"),
             D.new(to_string(entry_price)),
@@ -193,7 +194,7 @@ defmodule DeltaCalc.DCAPropertyTest do
         ladder_preset = generate_defensive_ladder(num_steps)
 
         result =
-          Calc.dca_ladder(
+          DCAPlanner.dca_ladder(
             position,
             D.new("500"),
             entry_decimal,
@@ -221,7 +222,7 @@ defmodule DeltaCalc.DCAPropertyTest do
         }
 
         result =
-          Calc.dca_ladder(
+          DCAPlanner.dca_ladder(
             position,
             D.new("0"),
             D.new(to_string(entry_price)),
@@ -246,7 +247,7 @@ defmodule DeltaCalc.DCAPropertyTest do
         }
 
         result =
-          Calc.dca_ladder(
+          DCAPlanner.dca_ladder(
             position,
             D.new("500"),
             D.new("100"),
@@ -281,7 +282,7 @@ defmodule DeltaCalc.DCAPropertyTest do
           ladder_preset = [{price_mult, D.new("0.30")}]
 
           result =
-            Calc.dca_ladder(
+            DCAPlanner.dca_ladder(
               position,
               D.new("500"),
               D.new(to_string(entry_price)),

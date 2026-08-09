@@ -5,9 +5,13 @@ defmodule DeltaCalc.ManifestTest do
 
   @expected_modules [
     "DeltaCalc.Decimal",
-    "DeltaCalc.Calc",
+    "DeltaCalc.Leverage",
+    "DeltaCalc.Liquidation",
+    "DeltaCalc.Allocation",
+    "DeltaCalc.Safety",
     "DeltaCalc.Presets",
     "DeltaCalc.DCAPlanner",
+    "DeltaCalc.Quantization",
     "DeltaCalc.PositionCalculator",
     "DeltaCalc.Hedging",
     "DeltaCalc.Funding",
@@ -118,7 +122,13 @@ defmodule DeltaCalc.ManifestTest do
     test "tool names use short module prefixes" do
       tool_names = Manifest.tools() |> Enum.map(& &1.name) |> Enum.sort()
 
-      assert "calc__effective_leverage" in tool_names
+      assert "leverage__effective_leverage" in tool_names
+      assert "liquidation__liquidation" in tool_names
+      assert "allocation__allocate" in tool_names
+      assert "safety__safety" in tool_names
+      assert "dca_planner__dca_ladder" in tool_names
+      assert "dca_planner__convert_ladder_for_short" in tool_names
+      assert "quantization__quantize" in tool_names
       assert "hedging__calculate_required_cex_balance" in tool_names
       assert "position_calculator__calculate_position" in tool_names
       assert "funding__funding_apr" in tool_names
@@ -186,9 +196,13 @@ defmodule DeltaCalc.ManifestTest do
     test "returns the calculator module list" do
       assert Manifest.modules() == [
                DeltaCalc.Decimal,
-               DeltaCalc.Calc,
+               DeltaCalc.Leverage,
+               DeltaCalc.Liquidation,
+               DeltaCalc.Allocation,
+               DeltaCalc.Safety,
                DeltaCalc.Presets,
                DeltaCalc.DCAPlanner,
+               DeltaCalc.Quantization,
                DeltaCalc.PositionCalculator,
                DeltaCalc.Hedging,
                DeltaCalc.Funding,

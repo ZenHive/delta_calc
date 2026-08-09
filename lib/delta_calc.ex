@@ -9,11 +9,14 @@ defmodule DeltaCalc do
 
   ## Modules
 
-    * `DeltaCalc.Calc` — core engine: effective leverage, leverage-to-AUM,
-      liquidation price, allocation envelope, position sizing, multi-leg
-      cross-margin aggregation, safety scoring, DCA ladders.
+    * `DeltaCalc.Leverage` — effective leverage, position sizing, and multi-leg aggregation.
+    * `DeltaCalc.Liquidation` — simplified long/short liquidation estimates.
+    * `DeltaCalc.Allocation` — subaccount allocation envelopes.
+    * `DeltaCalc.Safety` — safety scoring and before/after DCA comparisons.
     * `DeltaCalc.Presets` — default risk modes, black-swan thresholds, DCA preset.
-    * `DeltaCalc.DCAPlanner` — defensive/aggressive DCA ladder orchestration.
+    * `DeltaCalc.DCAPlanner` — DCA ladder math, presets, and orchestration.
+    * `DeltaCalc.Quantization` — retired-dashboard output compatibility.
+    * `DeltaCalc.Calc` — compatibility façade over these focused modules.
     * `DeltaCalc.PositionCalculator` — full position-sizing pipeline
       (takes a plain `config` map; decoupled from LiveView assigns).
     * `DeltaCalc.Hedging` — pure spot-hedging formulas: required CEX balance,
@@ -21,8 +24,8 @@ defmodule DeltaCalc do
 
   ## Agent surface
 
-  Every public function is annotated with an `api/3` declaration (via Descripex), so the
-  engine is discoverable and callable by AI agents (`__api__/0`, JSON Schema, MCP
+  Every manifest module's public function is annotated with an `api/3` declaration (via
+  Descripex), so the engine is discoverable and callable by AI agents (`__api__/0`, JSON Schema, MCP
   tools via `Descripex.MCP.tools/1`, aggregated by `DeltaCalc.Manifest`). A trading
   agent can plan a position or size a hedge by calling DeltaCalc as a tool.
 

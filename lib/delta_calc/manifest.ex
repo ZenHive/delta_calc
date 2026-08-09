@@ -16,9 +16,13 @@ defmodule DeltaCalc.Manifest do
 
   @modules [
     DeltaCalc.Decimal,
-    DeltaCalc.Calc,
+    DeltaCalc.Leverage,
+    DeltaCalc.Liquidation,
+    DeltaCalc.Allocation,
+    DeltaCalc.Safety,
     DeltaCalc.Presets,
     DeltaCalc.DCAPlanner,
+    DeltaCalc.Quantization,
     DeltaCalc.PositionCalculator,
     DeltaCalc.Hedging,
     DeltaCalc.Funding,

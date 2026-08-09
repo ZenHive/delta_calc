@@ -2076,7 +2076,7 @@
       "phase": 3,
       "bundle": "contract_hardening",
       "milestone": "v0_3",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Make DCA and position-sizing inputs behaviorally truthful",
       "scores": {
         "d": 5,
@@ -2129,6 +2129,7 @@
       ],
       "body": "Current-code audit on 2026-07-25 found three distinct contract lies. Calc.dca_ladder advertises mark_buffer but drops it before liquidation; its private calculate_dca_price helper accepts side even though callers already supply side-specific multipliers; PositionCalculator requires fee_rate and risk-mode config although fee_rate is unused and mode_config is only echoed.\n\nApply mark_buffer to the DCA liquidation MMR, remove the unused private side argument, and make the primary PositionCalculator API depend only on the caller-selected subaccount allocation and values that drive sizing. A compatibility wrapper may remain only when clearly documented; fee calculations stay in DeltaCalc.Fees. The non-positive entry-price guard already shipped in Task 49 and is not part of this task.\n\nDispatch trigger: public contract correction across critical DCA and position-sizing math.\n",
       "created_at": "2026-06-19",
+      "started_at": "2026-08-09",
       "scored_at": "2026-07-25",
       "cross_repo": []
     },

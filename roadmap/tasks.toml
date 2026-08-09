@@ -1218,7 +1218,7 @@ id = 44
 phase = 3
 bundle = "contract_hardening"
 milestone = "v0_3"
-status = "pending"
+status = "in_progress"
 title = "Make DCA and position-sizing inputs behaviorally truthful"
 scores = { d = 5, b = 6, u = 6 }
 markers = ["bug"]
@@ -1237,6 +1237,7 @@ Apply mark_buffer to the DCA liquidation MMR, remove the unused private side arg
 Dispatch trigger: public contract correction across critical DCA and position-sizing math.
 """
 created_at = "2026-06-19"
+started_at = "2026-08-09"
 scored_at = "2026-07-25"
 
 [[task]]

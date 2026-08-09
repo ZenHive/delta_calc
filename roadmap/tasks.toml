@@ -1138,7 +1138,7 @@ id = 41
 phase = 3
 bundle = "contract_hardening"
 milestone = "v0_3"
-status = "pending"
+status = "in_progress"
 title = "Remove baked-in venue risk constants from generic margin/liquidation math"
 scores = { d = 5, b = 8, u = 7 }
 markers = ["bug"]
@@ -1157,6 +1157,7 @@ Make the MMR tier schedule caller-supplied. Normalize kill-switch funding to a d
 Dispatch trigger: critical liquidation and funding-risk math spanning multiple modules and a repo-wide domain invariant.
 """
 created_at = "2026-06-19"
+started_at = "2026-08-09"
 scored_at = "2026-07-25"
 
 [[task]]

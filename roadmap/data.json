@@ -1927,7 +1927,7 @@
       "phase": 3,
       "bundle": "contract_hardening",
       "milestone": "v0_3",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Remove baked-in venue risk constants from generic margin/liquidation math",
       "scores": {
         "d": 5,
@@ -1973,6 +1973,7 @@
       ],
       "body": "Generic calc functions bake in venue/risk-engine constants. Calc.calculate_tiered_mmr hardcodes a tier ladder (0-50k base, 50k-250k x1.5, 250k-1M x2, 1M+ x2.5) inside the DCA liquidation path; MarginBridge's kill-switch thresholds assume an 8h/default cadence while sibling functions accept periods_per_day. These are the venue-constant anti-pattern this repo's CLAUDE.md explicitly warns about: internally consistent, fully tested, and wrong for any venue that differs.\n\nMake the MMR tier schedule caller-supplied. Normalize kill-switch funding to a daily fraction by multiplying the caller's per-period rate by periods_per_day before comparing it with a caller-supplied daily threshold. Any convenience default must be documented as an overridable convention, with tests proving non-default values flow through.\n\nDispatch trigger: critical liquidation and funding-risk math spanning multiple modules and a repo-wide domain invariant.\n",
       "created_at": "2026-06-19",
+      "started_at": "2026-08-09",
       "scored_at": "2026-07-25",
       "cross_repo": []
     },

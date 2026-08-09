@@ -218,7 +218,7 @@ defmodule DeltaCalc.MarginBridgeTest do
       assert result.kill_switch_day == nil
     end
 
-    test "default periods_per_day is 3 (8h funding cadence)" do
+    test "default periods_per_day convention is 3 and remains overridable" do
       default =
         MarginBridge.stress_test_prolonged_negative(
           Decimal.new("-0.00025"),
@@ -238,7 +238,7 @@ defmodule DeltaCalc.MarginBridgeTest do
       assert Decimal.equal?(default.daily_cost, Decimal.new("45"))
     end
 
-    test "Deribit hourly cadence (24 periods/day) scales daily cost 8x vs 8h default" do
+    test "24 periods per day scales daily cost 8x versus the default convention" do
       result =
         MarginBridge.stress_test_prolonged_negative(
           Decimal.new("-0.00025"),
@@ -251,8 +251,8 @@ defmodule DeltaCalc.MarginBridgeTest do
       assert Decimal.equal?(result.total_cost, Decimal.new("32400"))
     end
 
-    test "kill_switch_day shrinks with higher Deribit funding frequency" do
-      eight_hour =
+    test "kill_switch_day shrinks with a higher caller-supplied funding cadence" do
+      three_period =
         MarginBridge.stress_test_prolonged_negative(
           Decimal.new("-0.00025"),
           Decimal.new("60000"),
@@ -262,7 +262,7 @@ defmodule DeltaCalc.MarginBridgeTest do
           initial_margin_ratio: Decimal.new("0.15")
         )
 
-      deribit =
+      twenty_four_period =
         MarginBridge.stress_test_prolonged_negative(
           Decimal.new("-0.00025"),
           Decimal.new("60000"),
@@ -272,13 +272,13 @@ defmodule DeltaCalc.MarginBridgeTest do
           initial_margin_ratio: Decimal.new("0.15")
         )
 
-      assert eight_hour.kill_switch_day == 134
-      assert deribit.kill_switch_day == 17
+      assert three_period.kill_switch_day == 134
+      assert twenty_four_period.kill_switch_day == 17
     end
   end
 
   describe "check_kill_switch/2" do
-    test "triggers when avg funding below -0.02% and margin above 25%" do
+    test "normalizes the default per-period rate to daily before comparing" do
       result =
         MarginBridge.check_kill_switch(
           Decimal.new("-0.00022"),
@@ -286,9 +286,11 @@ defmodule DeltaCalc.MarginBridgeTest do
         )
 
       assert result.kill_switch_triggered
-      assert Decimal.equal?(result.avg_funding_24h, Decimal.new("-0.00022"))
+      assert Decimal.equal?(result.per_period_funding_rate, Decimal.new("-0.00022"))
+      assert Decimal.equal?(result.periods_per_day, Decimal.new("3"))
+      assert Decimal.equal?(result.daily_funding_rate, Decimal.new("-0.00066"))
       assert Decimal.equal?(result.margin_ratio, Decimal.new("0.26"))
-      assert Decimal.equal?(result.funding_threshold, Decimal.new("-0.0002"))
+      assert Decimal.equal?(result.daily_funding_threshold, Decimal.new("-0.0006"))
       assert Decimal.equal?(result.margin_threshold, Decimal.new("0.25"))
     end
 
@@ -322,12 +324,35 @@ defmodule DeltaCalc.MarginBridgeTest do
       refute result.kill_switch_triggered
     end
 
-    test "respects custom funding threshold" do
+    test "a non-default cadence changes the daily kill-switch result" do
+      three_period =
+        MarginBridge.check_kill_switch(
+          Decimal.new("-0.00005"),
+          Decimal.new("0.30"),
+          periods_per_day: 3,
+          daily_funding_threshold: Decimal.new("-0.0002")
+        )
+
+      twenty_four_period =
+        MarginBridge.check_kill_switch(
+          Decimal.new("-0.00005"),
+          Decimal.new("0.30"),
+          periods_per_day: 24,
+          daily_funding_threshold: Decimal.new("-0.0002")
+        )
+
+      refute three_period.kill_switch_triggered
+      assert twenty_four_period.kill_switch_triggered
+      assert Decimal.equal?(three_period.daily_funding_rate, Decimal.new("-0.00015"))
+      assert Decimal.equal?(twenty_four_period.daily_funding_rate, Decimal.new("-0.00120"))
+    end
+
+    test "respects custom daily funding and margin thresholds" do
       result =
         MarginBridge.check_kill_switch(
           Decimal.new("-0.00015"),
           Decimal.new("0.30"),
-          funding_threshold: Decimal.new("-0.0002")
+          daily_funding_threshold: Decimal.new("-0.0006")
         )
 
       refute result.kill_switch_triggered
@@ -336,10 +361,20 @@ defmodule DeltaCalc.MarginBridgeTest do
         MarginBridge.check_kill_switch(
           Decimal.new("-0.00015"),
           Decimal.new("0.30"),
-          funding_threshold: Decimal.new("-0.0001")
+          daily_funding_threshold: Decimal.new("-0.0003")
         )
 
       assert strict.kill_switch_triggered
+
+      relaxed_margin =
+        MarginBridge.check_kill_switch(
+          Decimal.new("-0.00015"),
+          Decimal.new("0.30"),
+          daily_funding_threshold: Decimal.new("-0.0003"),
+          margin_threshold: Decimal.new("0.35")
+        )
+
+      refute relaxed_margin.kill_switch_triggered
     end
   end
 

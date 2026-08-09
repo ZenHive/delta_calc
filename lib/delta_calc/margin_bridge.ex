@@ -12,9 +12,8 @@ defmodule DeltaCalc.MarginBridge do
 
   @zero Decimal.new(0)
   @default_periods_per_day 3
-  @kill_switch_margin_threshold Decimal.new("0.25")
-  # Fraction unit (0.0002 = 0.02%), matching Funding/Carry/Hedging.
-  @default_kill_switch_funding_threshold Decimal.new("-0.0002")
+  @default_kill_switch_margin_threshold Decimal.new("0.25")
+  @default_kill_switch_daily_funding_threshold Decimal.new("-0.0006")
 
   @typedoc "Payback projection from remaining debt and daily funding income."
   @type payback_timeline :: %{
@@ -36,9 +35,11 @@ defmodule DeltaCalc.MarginBridge do
 
   @typedoc "Kill-switch evaluation for margin bridge safety."
   @type kill_switch_result :: %{
-          avg_funding_24h: Decimal.t(),
+          per_period_funding_rate: Decimal.t(),
+          periods_per_day: Decimal.t(),
+          daily_funding_rate: Decimal.t(),
           margin_ratio: Decimal.t(),
-          funding_threshold: Decimal.t(),
+          daily_funding_threshold: Decimal.t(),
           margin_threshold: Decimal.t(),
           kill_switch_triggered: boolean()
         }
@@ -199,8 +200,9 @@ defmodule DeltaCalc.MarginBridge do
         default: [],
         description:
           "Optional keyword list. `:periods_per_day` — funding periods per calendar day " <>
-            "(default 3 for 8h venues; use 24 for Deribit hourly). " <>
-            "`:capital` and `:initial_margin_ratio` compute kill_switch_day."
+            "(default convention: 3; override for the caller's cadence). " <>
+            "`:capital`, `:initial_margin_ratio`, and optional `:margin_threshold` " <>
+            "compute kill_switch_day."
       ]
     ],
     returns: %{
@@ -216,7 +218,7 @@ defmodule DeltaCalc.MarginBridge do
 
   `negative_rate` is a decimal fraction per funding period (e.g. `-0.00025` for
   `-0.025%`), matching `Funding`/`Hedging` — not a percent number. Scale to daily
-  cost with `periods_per_day` (default 3 for 8h funding; use 24 for Deribit hourly).
+  cost with `periods_per_day`. Its default of 3 is an overridable cadence convention.
   """
   @spec stress_test_prolonged_negative(
           DecimalInput.input(),
@@ -230,6 +232,7 @@ defmodule DeltaCalc.MarginBridge do
     negative_rate = DecimalInput.cast!(negative_rate)
     position_size = DecimalInput.cast!(position_size)
     periods_per_day = periods_per_day(opts)
+    margin_threshold = margin_threshold(opts)
 
     daily_cost = negative_funding_daily_cost(negative_rate, position_size, periods_per_day)
     total_cost = Decimal.mult(daily_cost, Decimal.new(duration_days))
@@ -244,19 +247,20 @@ defmodule DeltaCalc.MarginBridge do
         kill_switch_day(
           daily_cost,
           Keyword.get(opts, :capital),
-          Keyword.get(opts, :initial_margin_ratio)
+          Keyword.get(opts, :initial_margin_ratio),
+          margin_threshold
         )
     }
   end
 
   api(
     :check_kill_switch,
-    "Evaluate whether negative funding plus high margin usage triggers the kill switch.",
+    "Evaluate daily-normalized negative funding plus high margin usage.",
     params: [
-      avg_funding_24h: [
+      per_period_funding_rate: [
         kind: :value,
         description:
-          "24h average funding rate as a decimal fraction per period (e.g. -0.00022 for -0.022%).",
+          "Funding rate as a decimal fraction per funding period (e.g. -0.00022 for -0.022%).",
         schema: float()
       ],
       margin_ratio: [
@@ -268,42 +272,46 @@ defmodule DeltaCalc.MarginBridge do
         kind: :value,
         default: [],
         description:
-          "Optional `:funding_threshold` (default -0.0002 fraction = -0.02% per period)."
+          "Optional `:periods_per_day`, `:daily_funding_threshold`, and `:margin_threshold`. " <>
+            "Defaults are overridable risk conventions."
       ]
     ],
     returns: %{
       type: :map,
       description:
-        "Map with avg_funding_24h, margin_ratio, thresholds, and kill_switch_triggered " <>
-          "(true when avg funding below threshold AND margin ratio above 25%)."
+        "Map with per-period and daily funding rates, cadence, thresholds, margin ratio, " <>
+          "and kill_switch_triggered."
     }
   )
 
   @doc """
-  Return kill-switch status when `avg_funding_24h` is below threshold and margin exceeds 25%.
+  Return kill-switch status after normalizing per-period funding to a daily fraction.
 
-  The funding rate and optional `:funding_threshold` are per-period decimal fractions.
+  The comparison is `per_period_funding_rate * periods_per_day < daily_funding_threshold`.
+  The default cadence of 3, daily threshold of `-0.0006`, and margin threshold of
+  `0.25` are conventions; each is overridable through `opts`.
   """
   @spec check_kill_switch(DecimalInput.input(), DecimalInput.input(), keyword()) ::
           kill_switch_result()
-  def check_kill_switch(avg_funding_24h, margin_ratio, opts \\ []) do
-    avg_funding_24h = DecimalInput.cast!(avg_funding_24h)
+  def check_kill_switch(per_period_funding_rate, margin_ratio, opts \\ []) do
+    per_period_funding_rate = DecimalInput.cast!(per_period_funding_rate)
     margin_ratio = DecimalInput.cast!(margin_ratio)
-
-    funding_threshold =
-      opts
-      |> Keyword.get(:funding_threshold, @default_kill_switch_funding_threshold)
-      |> DecimalInput.cast!()
+    periods_per_day = periods_per_day(opts)
+    daily_funding_rate = Decimal.mult(per_period_funding_rate, periods_per_day)
+    daily_funding_threshold = daily_funding_threshold(opts)
+    margin_threshold = margin_threshold(opts)
 
     kill_switch_triggered =
-      Decimal.compare(avg_funding_24h, funding_threshold) == :lt and
-        Decimal.compare(margin_ratio, @kill_switch_margin_threshold) == :gt
+      Decimal.compare(daily_funding_rate, daily_funding_threshold) == :lt and
+        Decimal.compare(margin_ratio, margin_threshold) == :gt
 
     %{
-      avg_funding_24h: avg_funding_24h,
+      per_period_funding_rate: per_period_funding_rate,
+      periods_per_day: periods_per_day,
+      daily_funding_rate: daily_funding_rate,
       margin_ratio: margin_ratio,
-      funding_threshold: funding_threshold,
-      margin_threshold: @kill_switch_margin_threshold,
+      daily_funding_threshold: daily_funding_threshold,
+      margin_threshold: margin_threshold,
       kill_switch_triggered: kill_switch_triggered
     }
   end
@@ -338,6 +346,18 @@ defmodule DeltaCalc.MarginBridge do
     |> DecimalInput.cast!()
   end
 
+  defp daily_funding_threshold(opts) do
+    opts
+    |> Keyword.get(:daily_funding_threshold, @default_kill_switch_daily_funding_threshold)
+    |> DecimalInput.cast!()
+  end
+
+  defp margin_threshold(opts) do
+    opts
+    |> Keyword.get(:margin_threshold, @default_kill_switch_margin_threshold)
+    |> DecimalInput.cast!()
+  end
+
   defp negative_funding_daily_cost(negative_rate, position_size, periods_per_day) do
     # Fraction unit: abs(rate) * position * periods_per_day (no /100).
     negative_rate
@@ -346,16 +366,16 @@ defmodule DeltaCalc.MarginBridge do
     |> Decimal.mult(periods_per_day)
   end
 
-  defp kill_switch_day(_daily_cost, capital, initial_margin_ratio)
+  defp kill_switch_day(_daily_cost, capital, initial_margin_ratio, _margin_threshold)
        when is_nil(capital) or is_nil(initial_margin_ratio),
        do: nil
 
-  defp kill_switch_day(daily_cost, capital, initial_margin_ratio) do
+  defp kill_switch_day(daily_cost, capital, initial_margin_ratio, margin_threshold) do
     capital = DecimalInput.cast!(capital)
     initial_margin_ratio = DecimalInput.cast!(initial_margin_ratio)
 
     margin_headroom =
-      @kill_switch_margin_threshold
+      margin_threshold
       |> Decimal.sub(initial_margin_ratio)
       |> Decimal.max(@zero)
 

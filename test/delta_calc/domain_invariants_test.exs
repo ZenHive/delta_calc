@@ -28,6 +28,7 @@ defmodule DeltaCalc.DomainInvariantsTest do
 
   use ExUnit.Case, async: true
 
+  alias DeltaCalc.Calc
   alias DeltaCalc.Funding
   alias DeltaCalc.Hedging
   alias DeltaCalc.MarginBridge
@@ -122,26 +123,66 @@ defmodule DeltaCalc.DomainInvariantsTest do
     #
     # Hand calc: doubling periods_per_day doubles daily funding cost.
     #   3 periods: 0.0001 * 10_000 * 3 = 3.0
-    #   24 periods (Deribit hourly): 0.0001 * 10_000 * 24 = 24.0
+    #   24 periods: 0.0001 * 10_000 * 24 = 24.0
     test "funding cadence flows through as a caller param, not a fixed 8h default" do
       base = Hedging.calculate_funding_cost(Decimal.new("10000"), Decimal.new("0.0001"), 3)
       hourly = Hedging.calculate_funding_cost(Decimal.new("10000"), Decimal.new("0.0001"), 24)
 
       assert_close(base, Decimal.new("3.0"))
       assert_close(hourly, Decimal.new("24.0"))
+
+      three_period =
+        MarginBridge.check_kill_switch(
+          Decimal.new("-0.00005"),
+          Decimal.new("0.30"),
+          periods_per_day: 3,
+          daily_funding_threshold: Decimal.new("-0.0002")
+        )
+
+      twenty_four_period =
+        MarginBridge.check_kill_switch(
+          Decimal.new("-0.00005"),
+          Decimal.new("0.30"),
+          periods_per_day: 24,
+          daily_funding_threshold: Decimal.new("-0.0002")
+        )
+
+      refute three_period.kill_switch_triggered
+      assert twenty_four_period.kill_switch_triggered
     end
 
-    # Task 41 pending: once Calc.dca_ladder accepts a caller-supplied MMR tier
-    # schedule, assert a NON-default schedule changes the liquidation result.
-    # Tag :domain_pending until the tier schedule is a :value param.
-    @tag :domain_pending
+    # Independent setup: the single DCA step produces cumulative notional 1,950.
+    # A caller tier beginning at 1,900 therefore applies its 0.02 MMR, while the
+    # flat call uses 0.005. A higher long MMR produces a higher liquidation price.
     test "Calc.dca_ladder accepts a caller-supplied MMR tier schedule" do
-      flunk("""
-      TODO(Task 41): wire this once dca_ladder/_ exposes a tier-schedule param.
-      Construct two ladders differing only in the MMR tier schedule and assert
-      the liquidation prices differ — proving the 50k/250k/1M ladder is not
-      hardcoded into the generic engine.
-      """)
+      position = %{notional: Decimal.new(1500), eff_lev: Decimal.new("1.5")}
+      ladder = [{Decimal.new("0.95"), Decimal.new("0.3")}]
+
+      flat =
+        Calc.dca_ladder(
+          position,
+          Decimal.new(500),
+          Decimal.new(3000),
+          Decimal.new(3),
+          ladder,
+          :long,
+          Decimal.new("0.005")
+        )
+
+      tiered =
+        Calc.dca_ladder(
+          position,
+          Decimal.new(500),
+          Decimal.new(3000),
+          Decimal.new(3),
+          ladder,
+          :long,
+          Decimal.new("0.005"),
+          mmr_schedule: [{Decimal.new(1900), Decimal.new("0.02")}]
+        )
+
+      assert_close(tiered.final_notional, Decimal.new("1950"))
+      assert Decimal.compare(tiered.final_liq, flat.final_liq) == :gt
     end
   end
 

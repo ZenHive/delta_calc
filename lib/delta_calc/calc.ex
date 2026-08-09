@@ -31,6 +31,7 @@ defmodule DeltaCalc.Calc do
 
   @type decimal_result :: Decimal.t() | {:error, atom()}
   @type safety_result :: map() | {:error, :non_positive_entry}
+  @type mmr_schedule :: [{DecimalInput.input(), DecimalInput.input()}]
 
   api(:effective_leverage, "Calculate effective leverage from notional and wallet equity.",
     params: [
@@ -852,10 +853,12 @@ defmodule DeltaCalc.Calc do
       ],
       side: [kind: :value, description: "Position side (:long or :short)"],
       mmr_rate: [kind: :value, description: "Minimum margin requirement rate"],
-      mark_buffer: [
+      opts: [
         kind: :value,
-        default: Decimal.new(0),
-        description: "Mark price buffer (optional)"
+        default: [],
+        description:
+          "Optional `:mmr_schedule` list of {minimum_notional, mmr_rate} tiers; " <>
+            "the highest applicable threshold wins"
       ]
     ],
     returns: %{
@@ -879,7 +882,10 @@ defmodule DeltaCalc.Calc do
     - ladder_preset: List of {price_mult, reserve_pct} tuples
     - side: :long or :short
     - mmr_rate: Minimum margin requirement rate
-    - mark_buffer: Mark price buffer (optional, defaults to 0)
+    - opts: Optional keyword list. `:mmr_schedule` accepts
+      `{minimum_notional, mmr_rate}` tiers. The highest
+      threshold not exceeding cumulative notional applies. The empty-list
+      convention keeps `mmr_rate` flat and can be overridden by any caller schedule.
 
   ## Returns
     Map with:
@@ -895,7 +901,7 @@ defmodule DeltaCalc.Calc do
       iex> ladder_preset = [{Decimal.new("0.95"), Decimal.new("0.3")},
       ...>                 {Decimal.new("0.90"), Decimal.new("0.3")}]
       iex> dca_ladder(position, Decimal.new(500), Decimal.new(3000), Decimal.new(3),
-      ...>            ladder_preset, :long, Decimal.new("0.005"), Decimal.new(0))
+      ...>            ladder_preset, :long, Decimal.new("0.005"))
       %{
         steps: [...],
         final_avg_entry: #Decimal<...>,
@@ -912,7 +918,7 @@ defmodule DeltaCalc.Calc do
           list(),
           :long | :short,
           Decimal.t(),
-          Decimal.t()
+          keyword() | Decimal.t()
         ) ::
           map()
   def dca_ladder(
@@ -923,12 +929,13 @@ defmodule DeltaCalc.Calc do
         ladder_preset,
         side,
         mmr_rate,
-        _mark_buffer \\ Decimal.new(0)
+        opts \\ []
       ) do
     reserve = DecimalInput.cast!(reserve)
     entry_price = DecimalInput.cast!(entry_price)
     ui_lev = DecimalInput.cast!(ui_lev)
     mmr_rate = DecimalInput.cast!(mmr_rate)
+    mmr_schedule = mmr_schedule(opts)
 
     initial_notional = DecimalInput.cast!(position.notional)
     initial_eff_lev = DecimalInput.cast!(position.eff_lev)
@@ -945,7 +952,7 @@ defmodule DeltaCalc.Calc do
         process_single_dca_step(
           {steps_acc, state},
           {price_mult, reserve_pct, step_num},
-          {entry_price, ui_lev, reserve, mmr_rate, side}
+          {entry_price, ui_lev, reserve, mmr_rate, mmr_schedule, side}
         )
       end)
 
@@ -958,6 +965,7 @@ defmodule DeltaCalc.Calc do
       initial_notional,
       initial_eff_lev,
       mmr_rate,
+      mmr_schedule,
       side
     })
   end
@@ -987,12 +995,12 @@ defmodule DeltaCalc.Calc do
   @spec process_single_dca_step(
           {list(), map()},
           {Decimal.t(), Decimal.t(), integer()},
-          {Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), :long | :short}
+          {Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), mmr_schedule(), :long | :short}
         ) :: {list(), map()}
   defp process_single_dca_step(
          {steps_acc, state},
          {price_mult, reserve_pct, step_num},
-         {entry_price, ui_lev, reserve, mmr_rate, side}
+         {entry_price, ui_lev, reserve, mmr_rate, mmr_schedule, side}
        ) do
     price_mult = DecimalInput.cast!(price_mult)
     reserve_pct = DecimalInput.cast!(reserve_pct)
@@ -1012,7 +1020,7 @@ defmodule DeltaCalc.Calc do
       step_result =
         calculate_dca_step(
           state,
-          {actual_spend, ui_lev, dca_price, mmr_rate, side, step_num}
+          {actual_spend, ui_lev, dca_price, mmr_rate, mmr_schedule, side, step_num}
         )
 
       # Update state for next iteration
@@ -1031,9 +1039,13 @@ defmodule DeltaCalc.Calc do
 
   @spec calculate_dca_step(
           map(),
-          {Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), :long | :short, integer()}
+          {Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), mmr_schedule(), :long | :short,
+           integer()}
         ) :: map()
-  defp calculate_dca_step(state, {actual_spend, ui_lev, dca_price, mmr_rate, side, step_num}) do
+  defp calculate_dca_step(
+         state,
+         {actual_spend, ui_lev, dca_price, mmr_rate, mmr_schedule, side, step_num}
+       ) do
     # Calculate new position metrics
     new_notional = Decimal.mult(actual_spend, ui_lev)
     new_tokens = Decimal.div(new_notional, dca_price)
@@ -1060,9 +1072,7 @@ defmodule DeltaCalc.Calc do
       |> effective_leverage(new_wallet_equity)
       |> decimal_result_or_zero()
 
-    # Calculate new liquidation price with re-tiered MMR
-    # Re-tier MMR based on new cumulative notional for more accurate liquidation calculations
-    adjusted_mmr_rate = calculate_tiered_mmr(cumulative_notional, mmr_rate)
+    adjusted_mmr_rate = calculate_tiered_mmr(cumulative_notional, mmr_rate, mmr_schedule)
 
     new_liq =
       new_avg_entry
@@ -1095,45 +1105,43 @@ defmodule DeltaCalc.Calc do
     }
   end
 
-  # Calculates tiered MMR based on position size.
-  #
-  # This implements a simplified tier structure common across major exchanges:
-  # - Tier 1: 0-50k USD -> base MMR
-  # - Tier 2: 50k-250k USD -> base MMR * 1.5
-  # - Tier 3: 250k-1M USD -> base MMR * 2
-  # - Tier 4: 1M+ USD -> base MMR * 2.5
-  #
-  # Real exchanges have more complex structures, but this provides a reasonable
-  # approximation for risk planning.
-  @spec calculate_tiered_mmr(Decimal.t(), Decimal.t()) :: Decimal.t()
-  defp calculate_tiered_mmr(notional, base_mmr) do
+  @spec calculate_tiered_mmr(Decimal.t(), Decimal.t(), mmr_schedule()) :: Decimal.t()
+  defp calculate_tiered_mmr(notional, base_mmr, mmr_schedule) do
     notional_abs = Decimal.abs(notional)
 
-    tier_multiplier =
-      cond do
-        Decimal.compare(notional_abs, Decimal.new(50_000)) == :lt ->
-          Decimal.new(1)
+    mmr_schedule
+    |> Enum.reduce({nil, base_mmr}, fn {threshold, rate}, {selected_threshold, selected_rate} ->
+      threshold = DecimalInput.cast!(threshold)
+      rate = DecimalInput.cast!(rate)
 
-        Decimal.compare(notional_abs, Decimal.new(250_000)) == :lt ->
-          Decimal.new("1.5")
-
-        Decimal.compare(notional_abs, Decimal.new(1_000_000)) == :lt ->
-          Decimal.new(2)
-
-        true ->
-          Decimal.new("2.5")
+      if tier_is_more_specific?(notional_abs, threshold, selected_threshold) do
+        {threshold, rate}
+      else
+        {selected_threshold, selected_rate}
       end
-
-    Decimal.mult(base_mmr, tier_multiplier)
+    end)
+    |> elem(1)
   end
+
+  @spec tier_is_more_specific?(Decimal.t(), Decimal.t(), Decimal.t() | nil) :: boolean()
+  defp tier_is_more_specific?(notional, threshold, selected_threshold) do
+    applies? = Decimal.compare(notional, threshold) in [:eq, :gt]
+
+    applies? and
+      (is_nil(selected_threshold) or Decimal.compare(threshold, selected_threshold) == :gt)
+  end
+
+  @spec mmr_schedule(keyword() | Decimal.t()) :: mmr_schedule()
+  defp mmr_schedule(opts) when is_list(opts), do: Keyword.get(opts, :mmr_schedule, [])
+  defp mmr_schedule(_mark_buffer), do: []
 
   @spec calculate_final_metrics(
           list(),
-          {Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), :long | :short}
+          {Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), mmr_schedule(), :long | :short}
         ) :: map()
   defp calculate_final_metrics(
          steps,
-         {entry_price, initial_notional, initial_eff_lev, mmr_rate, side}
+         {entry_price, initial_notional, initial_eff_lev, mmr_rate, mmr_schedule, side}
        ) do
     if Enum.empty?(steps) do
       %{
@@ -1142,7 +1150,11 @@ defmodule DeltaCalc.Calc do
         final_notional: initial_notional,
         final_liq:
           entry_price
-          |> liquidation(initial_eff_lev, mmr_rate, side)
+          |> liquidation(
+            initial_eff_lev,
+            calculate_tiered_mmr(initial_notional, mmr_rate, mmr_schedule),
+            side
+          )
           |> decimal_result_or_zero(),
         final_eff_lev: initial_eff_lev
       }

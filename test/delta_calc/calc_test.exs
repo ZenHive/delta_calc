@@ -807,6 +807,41 @@ defmodule DeltaCalc.CalcTest do
       assert Decimal.compare(result.final_avg_entry, entry_price) == :lt
     end
 
+    test "caller-supplied MMR tiers change liquidation at the matching notional threshold" do
+      position = %{notional: Decimal.new(1500), eff_lev: Decimal.new("1.5")}
+      ladder_preset = [{Decimal.new("0.95"), Decimal.new("0.3")}]
+
+      flat =
+        Calc.dca_ladder(
+          position,
+          Decimal.new(500),
+          Decimal.new(3000),
+          Decimal.new(3),
+          ladder_preset,
+          :long,
+          Decimal.new("0.005")
+        )
+
+      tiered =
+        Calc.dca_ladder(
+          position,
+          Decimal.new(500),
+          Decimal.new(3000),
+          Decimal.new(3),
+          ladder_preset,
+          :long,
+          Decimal.new("0.005"),
+          mmr_schedule: [
+            {Decimal.new(2000), Decimal.new("0.03")},
+            {Decimal.new(1900), Decimal.new("0.02")},
+            {Decimal.new(0), Decimal.new("0.01")}
+          ]
+        )
+
+      assert Decimal.equal?(tiered.final_notional, Decimal.new("1950.00000000"))
+      assert Decimal.compare(tiered.final_liq, flat.final_liq) == :gt
+    end
+
     test "calculates multi-step DCA ladder for long position" do
       position = %{notional: Decimal.new(1500), eff_lev: Decimal.new("1.5")}
       reserve = Decimal.new(500)

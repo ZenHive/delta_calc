@@ -49,6 +49,14 @@ defmodule DeltaCalc.DCAPlannerTest do
   end
 
   describe "calculate_dca_ladder/1" do
+    # Independent DCA golden — provenance: hand calc from public ladder contract.
+    # Base position (conservative, ui=2, init_pct=0.5, entry=3000):
+    #   sub_eq=100; init=50; reserve=50; notional=50×2=100; tokens=100/3000
+    # Defensive step 1 price=2850 (caller-supplied), alloc=30% of reserve:
+    #   spend = 50 × 0.30 = 15; add_notional = 15 × 2 = 30
+    #   cumulative_notional = 100 + 30 = 130
+    #   lev_to_aum = 130 / 10000 = 0.013
+    #   black_swan @ 15%: 3000 × 0.85 = 2550
     test "returns defensive and aggressive strategies with enhanced steps" do
       {dca_params, _pos} = position_setup()
       result = DCAPlanner.calculate_dca_ladder(dca_params)

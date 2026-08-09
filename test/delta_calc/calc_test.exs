@@ -3,6 +3,14 @@ defmodule DeltaCalc.CalcTest do
 
   alias DeltaCalc.Calc
 
+  # Compare Decimals within an absolute tolerance (never via to_float).
+  defp assert_close(actual, expected, tolerance) do
+    diff = actual |> Decimal.sub(expected) |> Decimal.abs()
+
+    assert Decimal.compare(diff, Decimal.new(tolerance)) != :gt,
+           "expected #{Decimal.to_string(expected)} ± #{tolerance}, got #{Decimal.to_string(actual)}"
+  end
+
   describe "effective_leverage/2" do
     test "calculates correct leverage for normal case" do
       result = Calc.effective_leverage(Decimal.new(10_000), Decimal.new(5000))
@@ -93,18 +101,23 @@ defmodule DeltaCalc.CalcTest do
   end
 
   describe "liquidation/4" do
+    # Independent golden — provenance: public isolated-margin liquidation
+    # contract (generic). Long: liq = entry × (1 − (1 − mmr) / L_eff).
+    # Hand calc, entry=3000, L_eff=2, mmr=0.005:
+    #   (1 − mmr) = 0.995; 0.995/2 = 0.4975; 1 − 0.4975 = 0.5025;
+    #   3000 × 0.5025 = 1507.5
     test "calculates long liquidation correctly" do
-      # Entry: 3000, Leff: 2x, MMR: 0.5%
-      # Formula: 3000 * (1 - (1 - 0.005) / 2) = 3000 * 0.5025 = 1507.5
       result = Calc.liquidation(Decimal.new(3000), Decimal.new(2), Decimal.new("0.005"), :long)
-      assert_in_delta(Decimal.to_float(result), 1507.5, 0.01)
+      assert_close(result, Decimal.new("1507.5"), "0.01")
     end
 
+    # Independent golden — provenance: public isolated-margin short contract.
+    # Short: liq = entry × (1 + (1 − mmr) / L_eff).
+    # Hand calc, entry=3000, L_eff=2, mmr=0.005:
+    #   1 + 0.4975 = 1.4975; 3000 × 1.4975 = 4492.5
     test "calculates short liquidation correctly" do
-      # Entry: 3000, Leff: 2x, MMR: 0.5%
-      # Formula: 3000 * (1 + (1 - 0.005) / 2) = 3000 * 1.4975 = 4492.5
       result = Calc.liquidation(Decimal.new(3000), Decimal.new(2), Decimal.new("0.005"), :short)
-      assert_in_delta(Decimal.to_float(result), 4492.5, 0.01)
+      assert_close(result, Decimal.new("4492.5"), "0.01")
     end
 
     test "returns zero for zero leverage no-position case" do
@@ -122,20 +135,19 @@ defmodule DeltaCalc.CalcTest do
                {:error, :non_positive_entry}
     end
 
+    # Hand calc: entry=50000, L=10, mmr=0.005 →
+    #   0.995/10 = 0.0995; 1 − 0.0995 = 0.9005; 50000 × 0.9005 = 45025
     test "handles high leverage long" do
-      # Entry: 50000, Leff: 10x, MMR: 0.5%
-      # Formula: 50000 * (1 - (1 - 0.005) / 10) = 50000 * 0.9005 = 45025
       result = Calc.liquidation(Decimal.new(50_000), Decimal.new(10), Decimal.new("0.005"), :long)
-      assert_in_delta(Decimal.to_float(result), 45_025.0, 0.01)
+      assert_close(result, Decimal.new("45025"), "0.01")
     end
 
+    # Hand calc: 1 + 0.0995 = 1.0995; 50000 × 1.0995 = 54975
     test "handles high leverage short" do
-      # Entry: 50000, Leff: 10x, MMR: 0.5%
-      # Formula: 50000 * (1 + (1 - 0.005) / 10) = 50000 * 1.0995 = 54975
       result =
         Calc.liquidation(Decimal.new(50_000), Decimal.new(10), Decimal.new("0.005"), :short)
 
-      assert_in_delta(Decimal.to_float(result), 54_975.0, 0.01)
+      assert_close(result, Decimal.new("54975"), "0.01")
     end
 
     test "clamps negative MMR to zero" do
@@ -460,16 +472,20 @@ defmodule DeltaCalc.CalcTest do
   end
 
   describe "golden scenarios" do
+    # Independent sizing + liquidation golden.
+    # Provenance: hand calc from public position-sizing and isolated-margin contracts.
+    #   sub_eq = min(0.01, 0.01) × 10000 = 100
+    #   init_margin = 100 × 0.5 = 50; notional = 50 × 3 = 150
+    #   eff_lev = 150 / 100 = 1.5; lev_to_aum = 150 / 10000 = 0.015
+    #   long liq @ mmr=0.005: 0.995/1.5 = 0.663333…; 1−0.663333…=0.336666…;
+    #   3000 × 0.336666… = 1010 exactly
     test "ETH long @ $3000, 3x UI, 50% initial margin, conservative mode" do
-      # Setup
       aum = Decimal.new(10_000)
       mode_cfg = %{pct: Decimal.new("0.01"), cap: Decimal.new("0.01")}
 
-      # Allocate
       allocation =
         Calc.allocate(aum, mode_cfg, [:ETH], %{ETH: Decimal.new(100)}, Decimal.new("0.5"))
 
-      # Position
       position =
         Calc.position(
           allocation.sub_eq,
@@ -479,7 +495,6 @@ defmodule DeltaCalc.CalcTest do
           :long
         )
 
-      # Liquidation (assuming 0.5% MMR)
       liq =
         Calc.liquidation(
           Decimal.new(3000),
@@ -488,7 +503,6 @@ defmodule DeltaCalc.CalcTest do
           :long
         )
 
-      # Safety
       safety =
         Calc.safety(
           liq,
@@ -498,28 +512,28 @@ defmodule DeltaCalc.CalcTest do
           %{threshold_multiplier: Decimal.new("0.6"), safe_multiplier: Decimal.new("1.0")}
         )
 
-      # Calculate leverage to AUM
       leverage_aum = Calc.leverage_to_aum(position.notional, aum)
 
-      # Assertions
-      assert_in_delta(Decimal.to_float(position.eff_lev), 1.5, 0.01)
-      # Leverage to AUM: notional/AUM = 150/10000 = 0.015x
-      assert_in_delta(Decimal.to_float(leverage_aum), 0.015, 0.001)
-      # With 1.5x leverage: 3000 * (1 - (1 - 0.005) / 1.5) = 3000 * 0.3367 = 1010
-      assert_in_delta(Decimal.to_float(liq), 1010.0, 1.0)
+      assert_close(position.eff_lev, Decimal.new("1.5"), "0.01")
+      assert_close(leverage_aum, Decimal.new("0.015"), "0.001")
+      assert_close(liq, Decimal.new("1010"), "1.0")
       assert safety.verdict == :safe
     end
 
+    # Independent sizing + liquidation golden.
+    # Provenance: hand calc from public contracts.
+    #   sub_eq = min(0.03, 0.02) × 10000 = 200
+    #   init_margin = 200 × 0.3 = 60; notional = 60 × 2 = 120
+    #   eff_lev = 120 / 200 = 0.6; lev_to_aum = 120 / 10000 = 0.012
+    #   short liq: 0.995/0.6 = 1.658333…; 1+1.658333…=2.658333…;
+    #   50000 × 2.658333… = 132916.6666… (quantize → 132916.66666667)
     test "BTC short @ $50000, 2x UI, 30% initial margin, moderate mode" do
-      # Setup
       aum = Decimal.new(10_000)
       mode_cfg = %{pct: Decimal.new("0.03"), cap: Decimal.new("0.02")}
 
-      # Allocate (will use cap of 2%)
       allocation =
         Calc.allocate(aum, mode_cfg, [:BTC], %{BTC: Decimal.new(100)}, Decimal.new("0.3"))
 
-      # Position
       position =
         Calc.position(
           allocation.sub_eq,
@@ -529,7 +543,6 @@ defmodule DeltaCalc.CalcTest do
           :short
         )
 
-      # Liquidation (assuming 0.5% MMR)
       liq =
         Calc.liquidation(
           Decimal.new(50_000),
@@ -538,7 +551,6 @@ defmodule DeltaCalc.CalcTest do
           :short
         )
 
-      # Safety
       safety =
         Calc.safety(
           liq,
@@ -548,15 +560,11 @@ defmodule DeltaCalc.CalcTest do
           %{threshold_multiplier: Decimal.new("0.6"), safe_multiplier: Decimal.new("1.0")}
         )
 
-      # Calculate leverage to AUM
       leverage_aum = Calc.leverage_to_aum(position.notional, aum)
 
-      # Assertions
-      assert_in_delta(Decimal.to_float(position.eff_lev), 0.6, 0.01)
-      # Leverage to AUM: notional/AUM = 120/10000 = 0.012x
-      assert_in_delta(Decimal.to_float(leverage_aum), 0.012, 0.001)
-      # With 0.6x leverage: 50000 * (1 + (1 - 0.005) / 0.6) = 50000 * 2.6583 = 132917
-      assert_in_delta(Decimal.to_float(liq), 132_917.0, 1.0)
+      assert_close(position.eff_lev, Decimal.new("0.6"), "0.01")
+      assert_close(leverage_aum, Decimal.new("0.012"), "0.001")
+      assert_close(liq, Decimal.new("132916.66666667"), "1.0")
       assert safety.verdict == :safe
     end
   end
@@ -759,7 +767,42 @@ defmodule DeltaCalc.CalcTest do
   end
 
   describe "dca_ladder/8" do
-    test "calculates DCA ladder for long position" do
+    # Independent DCA golden — provenance: hand calc from public ladder contract.
+    # Initial: notional=1500 @ entry=3000 → tokens = 1500/3000 = 0.5; L_eff=1.5
+    #   → wallet equity = 1500/1.5 = 1000
+    # Step 1 only (single-step fixture for exact avg-entry independence):
+    #   dca_price = 3000 × 0.95 = 2850
+    #   spend = 500 × 0.3 = 150; add_notional = 150 × 3 = 450
+    #   add_tokens = 450/2850 = 3/19
+    #   total_tokens = 1/2 + 3/19 = 25/38
+    #   avg_entry = 1950 / (25/38) = 1950 × 38/25 = 2964 exactly
+    #   final_notional = 1950; final_eff_lev = 1950/1000 = 1.95
+    test "calculates DCA ladder for long position — independent first-step fixture" do
+      position = %{notional: Decimal.new(1500), eff_lev: Decimal.new("1.5")}
+      reserve = Decimal.new(500)
+      entry_price = Decimal.new(3000)
+      ui_lev = Decimal.new(3)
+
+      ladder_preset = [{Decimal.new("0.95"), Decimal.new("0.3")}]
+      mmr_rate = Decimal.new("0.005")
+
+      result =
+        Calc.dca_ladder(position, reserve, entry_price, ui_lev, ladder_preset, :long, mmr_rate)
+
+      assert Enum.count(result.steps) == 1
+      step1 = Enum.at(result.steps, 0)
+
+      assert_close(step1.dca_price, Decimal.new("2850"), "0.01")
+      assert_close(step1.spend, Decimal.new("150"), "0.01")
+      assert_close(step1.new_notional, Decimal.new("450"), "0.01")
+      assert_close(step1.new_avg_entry, Decimal.new("2964"), "0.01")
+      assert_close(result.final_notional, Decimal.new("1950"), "0.01")
+      assert_close(result.final_avg_entry, Decimal.new("2964"), "0.01")
+      assert_close(result.final_eff_lev, Decimal.new("1.95"), "0.01")
+      assert Decimal.compare(result.final_avg_entry, entry_price) == :lt
+    end
+
+    test "calculates multi-step DCA ladder for long position" do
       position = %{notional: Decimal.new(1500), eff_lev: Decimal.new("1.5")}
       reserve = Decimal.new(500)
       entry_price = Decimal.new(3000)
@@ -776,33 +819,21 @@ defmodule DeltaCalc.CalcTest do
       result =
         Calc.dca_ladder(position, reserve, entry_price, ui_lev, ladder_preset, :long, mmr_rate)
 
-      # Should have 3 steps
       assert Enum.count(result.steps) == 3
 
-      # Check first step
       step1 = Enum.at(result.steps, 0)
-      # 3000 * 0.95
-      assert_in_delta(Decimal.to_float(step1.dca_price), 2850.0, 0.01)
-      # 500 * 0.3
-      assert_in_delta(Decimal.to_float(step1.spend), 150.0, 0.01)
+      assert_close(step1.dca_price, Decimal.new("2850"), "0.01")
+      assert_close(step1.spend, Decimal.new("150"), "0.01")
 
-      # Check second step
       step2 = Enum.at(result.steps, 1)
-      # 3000 * 0.90
-      assert_in_delta(Decimal.to_float(step2.dca_price), 2700.0, 0.01)
-      # 500 * 0.3
-      assert_in_delta(Decimal.to_float(step2.spend), 150.0, 0.01)
+      assert_close(step2.dca_price, Decimal.new("2700"), "0.01")
+      assert_close(step2.spend, Decimal.new("150"), "0.01")
 
-      # Check third step
       step3 = Enum.at(result.steps, 2)
-      # 3000 * 0.85
-      assert_in_delta(Decimal.to_float(step3.dca_price), 2550.0, 0.01)
-      # 500 * 0.3
-      assert_in_delta(Decimal.to_float(step3.spend), 150.0, 0.01)
+      assert_close(step3.dca_price, Decimal.new("2550"), "0.01")
+      assert_close(step3.spend, Decimal.new("150"), "0.01")
 
-      # Final metrics should show increased position
       assert Decimal.compare(result.final_notional, position.notional) == :gt
-      # Final average entry should be lower than initial for long
       assert Decimal.compare(result.final_avg_entry, entry_price) == :lt
     end
 
@@ -826,22 +857,15 @@ defmodule DeltaCalc.CalcTest do
       # Should have 3 steps
       assert Enum.count(result.steps) == 3
 
-      # Check first step
       step1 = Enum.at(result.steps, 0)
-      # 3000 * 1.05
-      assert_in_delta(Decimal.to_float(step1.dca_price), 3150.0, 0.01)
+      assert_close(step1.dca_price, Decimal.new("3150"), "0.01")
 
-      # Check second step
       step2 = Enum.at(result.steps, 1)
-      # 3000 * 1.10
-      assert_in_delta(Decimal.to_float(step2.dca_price), 3300.0, 0.01)
+      assert_close(step2.dca_price, Decimal.new("3300"), "0.01")
 
-      # Check third step
       step3 = Enum.at(result.steps, 2)
-      # 3000 * 1.15
-      assert_in_delta(Decimal.to_float(step3.dca_price), 3450.0, 0.01)
+      assert_close(step3.dca_price, Decimal.new("3450"), "0.01")
 
-      # Final average entry should be higher than initial for short
       assert Decimal.compare(result.final_avg_entry, entry_price) == :gt
     end
 
@@ -863,15 +887,13 @@ defmodule DeltaCalc.CalcTest do
       result =
         Calc.dca_ladder(position, reserve, entry_price, ui_lev, ladder_preset, :long, mmr_rate)
 
-      # Calculate total spend
       total_spend =
         Enum.reduce(result.steps, Decimal.new(0), fn step, acc ->
           Decimal.add(acc, step.spend)
         end)
 
-      # Total spend should not exceed reserve
       assert Decimal.compare(total_spend, reserve) in [:lt, :eq]
-      assert_in_delta(Decimal.to_float(total_spend), 100.0, 0.01)
+      assert_close(total_spend, Decimal.new("100"), "0.01")
     end
 
     test "handles empty ladder preset" do

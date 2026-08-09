@@ -152,6 +152,11 @@ defmodule DeltaCalc.DomainInvariantsTest do
     # reference — and compared as Decimals with explicit tolerances. A fixture
     # derived from the same formula proves consistency, not correctness.
     #
+    # Companion fixtures for sizing / DCA / fees / funding live in the per-module
+    # golden tests (calc_test, position_calculator_test, dca_planner_test,
+    # fees_test, funding_test). This file pins the cross-cutting liquidation and
+    # funding cost cases that ratify domain units, not implementation identity.
+    #
     # Provenance: hand-computed. Funding cost over N days =
     #   position * rate * periods_per_day * days.
     #   10_000 * 0.0001 * 3 * 5 = 15.0
@@ -161,17 +166,25 @@ defmodule DeltaCalc.DomainInvariantsTest do
       assert_close(five_day, Decimal.new("15.0"))
     end
 
-    # Task 45 pending: add independently-sourced fixtures for liquidation price
-    # and position sizing. Each must document its provenance (hand-computed
-    # worked example or external reference) and compare Decimals with a stated
-    # tolerance — never to_float. Tag :domain_pending until the fixtures exist.
-    @tag :domain_pending
+    # Provenance: public isolated-margin liquidation contract (generic, not
+    # venue-specific). For a long: liq = entry × (1 − (1 − mmr) / L_eff).
+    # Hand calc, entry=3000, L_eff=2, mmr=0.005:
+    #   (1 − mmr) = 0.995
+    #   0.995 / 2 = 0.4975
+    #   1 − 0.4975 = 0.5025
+    #   3000 × 0.5025 = 1507.5
+    # Expected literal is written here; it does not call Calc.liquidation or
+    # reuse its internal constants beyond the public input contract.
     test "liquidation price matches an independently-sourced fixture" do
-      flunk("""
-      TODO(Task 45): add a liquidation-price fixture from a hand-worked example
-      or venue spec (NOT recomputed from Calc's own formula), with documented
-      provenance and a Decimal tolerance.
-      """)
+      actual =
+        DeltaCalc.Calc.liquidation(
+          Decimal.new(3000),
+          Decimal.new(2),
+          Decimal.new("0.005"),
+          :long
+        )
+
+      assert_close(actual, Decimal.new("1507.5"), "0.00000001")
     end
   end
 end

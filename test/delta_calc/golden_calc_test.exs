@@ -4,19 +4,28 @@ defmodule DeltaCalc.GoldenCalcTest do
 
   alias DeltaCalc.Calc
 
+  # Compare Decimals within an absolute tolerance (never via to_float).
+  defp assert_close(actual, expected, tolerance) do
+    diff = actual |> Decimal.sub(expected) |> Decimal.abs()
+
+    assert Decimal.compare(diff, Decimal.new(tolerance)) != :gt,
+           "expected #{Decimal.to_string(expected)} ± #{tolerance}, got #{Decimal.to_string(actual)}"
+  end
+
   describe "golden scenario 1: ETH long @ $3000, 3x UI, 50% initial margin, conservative mode" do
+    # Independent sizing + liquidation golden.
+    # Provenance: hand calc from public position-sizing and isolated-margin contracts.
+    #   init_margin = 100 × 0.5 = 50; notional = 50 × 3 = 150
+    #   eff_lev = 150 / 100 = 1.5
+    #   long liq @ mmr=0.005: 0.995/1.5 = 0.663333…; 1−0.663333…=0.336666…;
+    #   3000 × 0.336666… = 1010 exactly
     test "calculates expected values correctly" do
-      # Setup
       entry_price = Decimal.new(3000)
       ui_leverage = Decimal.new(3)
       initial_margin_pct = Decimal.new("0.5")
-      # 0.5% MMR
       mmr_rate = Decimal.new("0.005")
-
-      # Conservative allocation (1% of $10k AUM = $100 subaccount equity)
       sub_eq = Decimal.new(100)
 
-      # Calculate position
       position =
         Calc.position(
           sub_eq,
@@ -26,7 +35,6 @@ defmodule DeltaCalc.GoldenCalcTest do
           :long
         )
 
-      # Calculate liquidation
       liquidation_price =
         Calc.liquidation(
           entry_price,
@@ -35,7 +43,6 @@ defmodule DeltaCalc.GoldenCalcTest do
           :long
         )
 
-      # Calculate safety (25% black swan for conservative)
       safety =
         Calc.safety(
           liquidation_price,
@@ -45,32 +52,26 @@ defmodule DeltaCalc.GoldenCalcTest do
           %{threshold_multiplier: Decimal.new("0.6"), safe_multiplier: Decimal.new("1.0")}
         )
 
-      # Assertions with 0.0001 tolerance
-      # Expected effective leverage: 1.5x (50% * 3x)
-      assert_in_delta(Decimal.to_float(position.eff_lev), 1.5, 0.0001)
-
-      # Expected liquidation: $3000 * (1 - (1 - 0.005) / 1.5) ≈ $1010
-      # More precisely: 3000 * (1 - 0.995/1.5) = 3000 * 0.3367 = 1010
-      assert_in_delta(Decimal.to_float(liquidation_price), 1010.0, 0.0001)
-
-      # Expected verdict: safe (liquidation is 66.3% below entry, well below 25% threshold)
+      assert_close(position.eff_lev, Decimal.new("1.5"), "0.0001")
+      assert_close(liquidation_price, Decimal.new("1010"), "0.0001")
       assert safety.verdict == :safe
     end
   end
 
   describe "golden scenario 2: BTC short @ $50000, 2x UI, 30% initial margin, moderate mode" do
+    # Independent sizing + liquidation golden.
+    # Provenance: hand calc from public contracts.
+    #   init_margin = 200 × 0.3 = 60; notional = 60 × 2 = 120
+    #   eff_lev = 120 / 200 = 0.6
+    #   short liq: 0.995/0.6 = 1.658333…; 1+1.658333…=2.658333…;
+    #   50000 × 2.658333… = 132916.6666… (quantize → 132916.66666667)
     test "calculates expected values correctly" do
-      # Setup
       entry_price = Decimal.new(50_000)
       ui_leverage = Decimal.new(2)
       initial_margin_pct = Decimal.new("0.3")
-      # 0.5% MMR
       mmr_rate = Decimal.new("0.005")
-
-      # Moderate allocation (2% of $10k AUM = $200 subaccount equity)
       sub_eq = Decimal.new(200)
 
-      # Calculate position
       position =
         Calc.position(
           sub_eq,
@@ -80,7 +81,6 @@ defmodule DeltaCalc.GoldenCalcTest do
           :short
         )
 
-      # Calculate liquidation
       liquidation_price =
         Calc.liquidation(
           entry_price,
@@ -89,7 +89,6 @@ defmodule DeltaCalc.GoldenCalcTest do
           :short
         )
 
-      # Calculate safety (20% black swan for moderate)
       safety =
         Calc.safety(
           liquidation_price,
@@ -99,15 +98,8 @@ defmodule DeltaCalc.GoldenCalcTest do
           %{threshold_multiplier: Decimal.new("0.6"), safe_multiplier: Decimal.new("1.0")}
         )
 
-      # Assertions with 0.0001 tolerance
-      # Expected effective leverage: 0.6x (30% * 2x)
-      assert_in_delta(Decimal.to_float(position.eff_lev), 0.6, 0.0001)
-
-      # Expected liquidation: $50000 * (1 + (1 - 0.005) / 0.6) ≈ $132,917
-      # More precisely: 50000 * (1 + 0.995/0.6) = 50000 * 2.6583 = 132,916.67
-      assert_in_delta(Decimal.to_float(liquidation_price), 132_916.6667, 0.0001)
-
-      # Expected verdict: safe (liquidation is 165.8% above entry, well above 20% threshold)
+      assert_close(position.eff_lev, Decimal.new("0.6"), "0.0001")
+      assert_close(liquidation_price, Decimal.new("132916.66666667"), "0.0001")
       assert safety.verdict == :safe
     end
   end

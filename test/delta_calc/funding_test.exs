@@ -4,6 +4,13 @@ defmodule DeltaCalc.FundingTest do
   alias DeltaCalc.Funding
 
   describe "funding_apr/2" do
+    # Independent funding golden — provenance: hand calc from public APR contract.
+    # Per-period rate is a fraction (0.0001 = 0.01%). period_hours=8 → 3 periods/day.
+    #   hourly_rate = 0.0001 / 8 = 0.0000125 → ×100 → 0.00125 → round 4 dp = 0.0013
+    #   daily_rate  = 0.0001 × (24/8) = 0.0003 → ×100 → 0.03
+    #   annual_rate = 0.0003 × 365 = 0.1095 → ×100 → 10.95
+    # Expected literals are fixed here; they do not call Funding.funding_apr
+    # or recompute from its internal constants beyond the public input contract.
     test "annualises an 8-hour funding rate" do
       assert {:ok, apr} = Funding.funding_apr(Decimal.new("0.0001"), 8)
 
@@ -20,6 +27,8 @@ defmodule DeltaCalc.FundingTest do
       assert Decimal.compare(apr.annual, Decimal.new(0)) == :lt
     end
 
+    # Hand calc: period=4h → 6 periods/day; daily = 0.0001×6 = 0.0006 → 0.06%;
+    # annual = 0.0006×365 = 0.219 → 21.90%
     test "supports non-default funding intervals" do
       assert {:ok, apr} = Funding.funding_apr(Decimal.new("0.0001"), 4)
 

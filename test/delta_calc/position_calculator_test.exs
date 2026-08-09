@@ -2,7 +2,7 @@ defmodule DeltaCalc.PositionCalculatorTest do
   use ExUnit.Case, async: true
 
   alias Decimal, as: D
-  alias DeltaCalc.{Calc, PositionCalculator, Presets}
+  alias DeltaCalc.{PositionCalculator, Presets}
 
   @config %{risk_modes: Presets.load_modes()}
 
@@ -24,8 +24,24 @@ defmodule DeltaCalc.PositionCalculatorTest do
     Map.merge(defaults, Map.new(overrides))
   end
 
+  # Compare Decimals within an absolute tolerance (never via to_float).
+  defp assert_close(actual, expected, tolerance) do
+    diff = actual |> D.sub(expected) |> D.abs()
+
+    assert D.compare(diff, D.new(tolerance)) != :gt,
+           "expected #{D.to_string(expected)} ± #{tolerance}, got #{D.to_string(actual)}"
+  end
+
   describe "calculate_position/2 — golden ETH long (source scenario 1)" do
-    test "matches TradingDashboard golden calc pipeline with 3x UI leverage" do
+    # Independent sizing + liquidation golden.
+    # Provenance: hand calc from public position-sizing and isolated-margin contracts.
+    #   sub_eq=100; init_position = 100×0.5 = 50; reserve = 50; leftover = 9900
+    #   notional = 50×3 = 150; tokens = 150/3000 = 0.05; eff_lev = 150/100 = 1.5
+    #   lev_to_aum = 150/10000 = 0.015
+    #   long liq @ mmr=0.005, L=1.5: 3000×(1 − 0.995/1.5) = 1010 exactly
+    #   black_swan @ 25%: 3000×0.75 = 2250
+    #   distance_to_liq_pct = (3000−1010)/3000 × 100 = 66.33333333…
+    test "matches hand-computed sizing and liquidation fixture with 3x UI leverage" do
       params =
         base_params(
           ui_leverage: D.new("3"),
@@ -83,16 +99,13 @@ defmodule DeltaCalc.PositionCalculatorTest do
   end
 
   describe "calculate_position/2 — position and leverage" do
+    # Hand calc from public sizing contract (default base_params):
+    #   notional = 100 × 0.5 × 2 = 100; eff_lev = 100/100 = 1; lev_to_aum = 100/10000 = 0.01
     test "notional equals initial allocation times UI leverage" do
       params = base_params()
       result = PositionCalculator.calculate_position(params, @config)
 
-      expected_notional =
-        params.subaccount_allocation
-        |> D.mult(params.initial_position_pct)
-        |> D.mult(params.ui_leverage)
-
-      assert D.equal?(result.position.notional, Calc.quantize(expected_notional))
+      assert D.equal?(result.position.notional, D.new("100.00000000"))
       assert D.equal?(result.effective_leverage, D.new("1.00000000"))
       assert D.equal?(result.leverage_to_aum, D.new("0.01000000"))
     end
@@ -162,6 +175,10 @@ defmodule DeltaCalc.PositionCalculatorTest do
   end
 
   describe "calculate_position/2 — BTC short golden (source scenario 2)" do
+    # Independent sizing + liquidation golden.
+    # Provenance: hand calc from public contracts.
+    #   notional = 200×0.3×2 = 120; eff_lev = 120/200 = 0.6
+    #   short liq: 50000×(1 + 0.995/0.6) = 132916.6666… (quantize → 132916.66666667)
     test "moderate short at 50k entry matches expected leverage and liquidation" do
       params = %{
         aum: D.new("10000"),
@@ -182,8 +199,7 @@ defmodule DeltaCalc.PositionCalculatorTest do
       assert D.equal?(result.position.notional, D.new("120.00000000"))
       assert D.equal?(result.effective_leverage, D.new("0.60000000"))
       assert result.safety.is_safe
-
-      assert_in_delta D.to_float(result.safety.liquidation_price), 132_916.6667, 0.01
+      assert_close(result.safety.liquidation_price, D.new("132916.66666667"), "0.01")
     end
   end
 

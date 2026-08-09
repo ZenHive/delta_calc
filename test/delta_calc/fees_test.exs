@@ -8,6 +8,11 @@ defmodule DeltaCalc.FeesTest do
   @slippage_bps Decimal.new("10")
 
   describe "effective_entry/2" do
+    # Independent fees golden — provenance: hand calc from public fill-adjustment
+    # contract. Long effective_entry = fill × (1 + fee_rate + slippage_bps/10_000).
+    #   fill=50000, fee=0.0004, slippage=10 bps = 0.001
+    #   adjustment = 0.0004 + 0.001 = 0.0014
+    #   50000 × 1.0014 = 50070 exactly
     test "increases long entry price for fee and slippage" do
       result =
         Fees.effective_entry(@fill, %{
@@ -19,6 +24,7 @@ defmodule DeltaCalc.FeesTest do
       assert Decimal.equal?(result, Decimal.new("50070.00000000"))
     end
 
+    # Hand calc: short entry = fill × (1 − adjustment) = 50000 × 0.9986 = 49930
     test "decreases short entry price for fee and slippage" do
       result =
         Fees.effective_entry(@fill, %{
@@ -30,12 +36,14 @@ defmodule DeltaCalc.FeesTest do
       assert Decimal.equal?(result, Decimal.new("49930.00000000"))
     end
 
+    # Hand calc: fee only 0.0004 → 50000 × 1.0004 = 50020
     test "defaults to long side and zero slippage" do
       result = Fees.effective_entry(@fill, %{fee_rate: @fee_rate})
 
       assert Decimal.equal?(result, Decimal.new("50020.00000000"))
     end
 
+    # Hand calc: maker 0.0002 → 50000 × 1.0002 = 50010
     test "accepts maker fee only without slippage" do
       result =
         Fees.effective_entry(@fill, %{
@@ -86,6 +94,8 @@ defmodule DeltaCalc.FeesTest do
   end
 
   describe "roundtrip_cost/1" do
+    # Independent roundtrip golden — provenance: hand calc.
+    #   open + close = 10000 × 0.0004 + 10000 × 0.0004 = 4 + 4 = 8
     test "returns open and close fees from notional" do
       result =
         Fees.roundtrip_cost(%{
@@ -97,6 +107,7 @@ defmodule DeltaCalc.FeesTest do
       assert Decimal.equal?(result, Decimal.new("8.00000000"))
     end
 
+    # Hand calc: (50000×2)×0.0004 × 2 legs = 40 × 2 = 80
     test "returns fees from entry price and size" do
       result =
         Fees.roundtrip_cost(%{
@@ -109,6 +120,10 @@ defmodule DeltaCalc.FeesTest do
       assert Decimal.equal?(result, Decimal.new("80.00000000"))
     end
 
+    # Hand calc (independent literal — not recomputed from fee × notional algebra):
+    #   open = 50000 × 1 × 0.0004 = 20
+    #   close = 51000 × 1 × 0.0004 = 20.4
+    #   total = 40.4
     test "uses exit price for close leg when provided" do
       result =
         Fees.roundtrip_cost(%{
@@ -119,12 +134,10 @@ defmodule DeltaCalc.FeesTest do
           close_fee_rate: @fee_rate
         })
 
-      open_fee = Decimal.mult(@fill, @fee_rate)
-      close_fee = Decimal.mult(Decimal.new("51000"), @fee_rate)
-
-      assert Decimal.equal?(result, Decimal.add(open_fee, close_fee) |> Decimal.round(8))
+      assert Decimal.equal?(result, Decimal.new("40.40000000"))
     end
 
+    # Hand calc: 10000×0.0004 + 10000×0.0002 = 4 + 2 = 6
     test "supports asymmetric taker open and maker close rates" do
       result =
         Fees.roundtrip_cost(%{

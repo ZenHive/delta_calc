@@ -14,7 +14,8 @@ defmodule DeltaCalc.GoldenCalcTest do
 
   describe "golden scenario 1: ETH long @ $3000, 3x UI, 50% initial margin, conservative mode" do
     # Independent sizing + liquidation golden.
-    # Provenance: hand calc from public position-sizing and isolated-margin contracts.
+    # Provenance: hand calc from the public Calc.position/5 and
+    # Calc.liquidation/4 contracts.
     #   init_margin = 100 × 0.5 = 50; notional = 50 × 3 = 150
     #   eff_lev = 150 / 100 = 1.5
     #   long liq @ mmr=0.005: 0.995/1.5 = 0.663333…; 1−0.663333…=0.336666…;
@@ -60,7 +61,8 @@ defmodule DeltaCalc.GoldenCalcTest do
 
   describe "golden scenario 2: BTC short @ $50000, 2x UI, 30% initial margin, moderate mode" do
     # Independent sizing + liquidation golden.
-    # Provenance: hand calc from public contracts.
+    # Provenance: hand calc from the public Calc.position/5 and
+    # Calc.liquidation/4 contracts.
     #   init_margin = 200 × 0.3 = 60; notional = 60 × 2 = 120
     #   eff_lev = 120 / 200 = 0.6
     #   short liq: 0.995/0.6 = 1.658333…; 1+1.658333…=2.658333…;

@@ -157,7 +157,8 @@ defmodule DeltaCalc.DomainInvariantsTest do
     # fees_test, funding_test). This file pins the cross-cutting liquidation and
     # funding cost cases that ratify domain units, not implementation identity.
     #
-    # Provenance: hand-computed. Funding cost over N days =
+    # Provenance: hand calc from the public Hedging.calculate_funding_cost/3
+    # contract. Funding cost over N days =
     #   position * rate * periods_per_day * days.
     #   10_000 * 0.0001 * 3 * 5 = 15.0
     test "funding cost matches a hand-computed fixture (provenance: dimensional)" do
@@ -166,8 +167,9 @@ defmodule DeltaCalc.DomainInvariantsTest do
       assert_close(five_day, Decimal.new("15.0"))
     end
 
-    # Provenance: public isolated-margin liquidation contract (generic, not
-    # venue-specific). For a long: liq = entry × (1 − (1 − mmr) / L_eff).
+    # Provenance: hand calc from the public simplified liquidation contract in
+    # Calc.liquidation/4 (generic, not venue-specific).
+    # For a long: liq = entry × (1 − (1 − mmr) / L_eff).
     # Hand calc, entry=3000, L_eff=2, mmr=0.005:
     #   (1 − mmr) = 0.995
     #   0.995 / 2 = 0.4975

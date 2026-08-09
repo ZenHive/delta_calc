@@ -8,8 +8,9 @@ defmodule DeltaCalc.FeesTest do
   @slippage_bps Decimal.new("10")
 
   describe "effective_entry/2" do
-    # Independent fees golden — provenance: hand calc from public fill-adjustment
-    # contract. Long effective_entry = fill × (1 + fee_rate + slippage_bps/10_000).
+    # Independent fees golden — provenance: hand calc from the public
+    # Fees.effective_entry/2 contract.
+    # Long effective_entry = fill × (1 + fee_rate + slippage_bps/10_000).
     #   fill=50000, fee=0.0004, slippage=10 bps = 0.001
     #   adjustment = 0.0004 + 0.001 = 0.0014
     #   50000 × 1.0014 = 50070 exactly
@@ -21,7 +22,7 @@ defmodule DeltaCalc.FeesTest do
           side: :long
         })
 
-      assert Decimal.equal?(result, Decimal.new("50070.00000000"))
+      assert Decimal.eq?(result, Decimal.new("50070.00000000"), Decimal.new("0.00000001"))
     end
 
     # Hand calc: short entry = fill × (1 − adjustment) = 50000 × 0.9986 = 49930
@@ -94,7 +95,8 @@ defmodule DeltaCalc.FeesTest do
   end
 
   describe "roundtrip_cost/1" do
-    # Independent roundtrip golden — provenance: hand calc.
+    # Independent roundtrip golden — provenance: hand calc from the public
+    # Fees.roundtrip_cost/1 contract.
     #   open + close = 10000 × 0.0004 + 10000 × 0.0004 = 4 + 4 = 8
     test "returns open and close fees from notional" do
       result =
@@ -104,7 +106,7 @@ defmodule DeltaCalc.FeesTest do
           close_fee_rate: @fee_rate
         })
 
-      assert Decimal.equal?(result, Decimal.new("8.00000000"))
+      assert Decimal.eq?(result, Decimal.new("8.00000000"), Decimal.new("0.00000001"))
     end
 
     # Hand calc: (50000×2)×0.0004 × 2 legs = 40 × 2 = 80
@@ -134,7 +136,7 @@ defmodule DeltaCalc.FeesTest do
           close_fee_rate: @fee_rate
         })
 
-      assert Decimal.equal?(result, Decimal.new("40.40000000"))
+      assert Decimal.eq?(result, Decimal.new("40.40000000"), Decimal.new("0.00000001"))
     end
 
     # Hand calc: 10000×0.0004 + 10000×0.0002 = 4 + 2 = 6

@@ -101,8 +101,9 @@ defmodule DeltaCalc.CalcTest do
   end
 
   describe "liquidation/4" do
-    # Independent golden — provenance: public isolated-margin liquidation
-    # contract (generic). Long: liq = entry × (1 − (1 − mmr) / L_eff).
+    # Independent golden — provenance: hand calc from the public simplified
+    # liquidation contract in Calc.liquidation/4.
+    # Long: liq = entry × (1 − (1 − mmr) / L_eff).
     # Hand calc, entry=3000, L_eff=2, mmr=0.005:
     #   (1 − mmr) = 0.995; 0.995/2 = 0.4975; 1 − 0.4975 = 0.5025;
     #   3000 × 0.5025 = 1507.5
@@ -111,7 +112,8 @@ defmodule DeltaCalc.CalcTest do
       assert_close(result, Decimal.new("1507.5"), "0.01")
     end
 
-    # Independent golden — provenance: public isolated-margin short contract.
+    # Independent golden — provenance: hand calc from the public simplified
+    # liquidation contract in Calc.liquidation/4.
     # Short: liq = entry × (1 + (1 − mmr) / L_eff).
     # Hand calc, entry=3000, L_eff=2, mmr=0.005:
     #   1 + 0.4975 = 1.4975; 3000 × 1.4975 = 4492.5
@@ -473,7 +475,8 @@ defmodule DeltaCalc.CalcTest do
 
   describe "golden scenarios" do
     # Independent sizing + liquidation golden.
-    # Provenance: hand calc from public position-sizing and isolated-margin contracts.
+    # Provenance: hand calc from the public Calc.allocate/5, Calc.position/5,
+    # Calc.leverage_to_aum/2, and Calc.liquidation/4 contracts.
     #   sub_eq = min(0.01, 0.01) × 10000 = 100
     #   init_margin = 100 × 0.5 = 50; notional = 50 × 3 = 150
     #   eff_lev = 150 / 100 = 1.5; lev_to_aum = 150 / 10000 = 0.015
@@ -521,7 +524,8 @@ defmodule DeltaCalc.CalcTest do
     end
 
     # Independent sizing + liquidation golden.
-    # Provenance: hand calc from public contracts.
+    # Provenance: hand calc from the public Calc.allocate/5, Calc.position/5,
+    # Calc.leverage_to_aum/2, and Calc.liquidation/4 contracts.
     #   sub_eq = min(0.03, 0.02) × 10000 = 200
     #   init_margin = 200 × 0.3 = 60; notional = 60 × 2 = 120
     #   eff_lev = 120 / 200 = 0.6; lev_to_aum = 120 / 10000 = 0.012
@@ -767,7 +771,8 @@ defmodule DeltaCalc.CalcTest do
   end
 
   describe "dca_ladder/8" do
-    # Independent DCA golden — provenance: hand calc from public ladder contract.
+    # Independent DCA golden — provenance: hand calc from the public
+    # Calc.dca_ladder/8 contract.
     # Initial: notional=1500 @ entry=3000 → tokens = 1500/3000 = 0.5; L_eff=1.5
     #   → wallet equity = 1500/1.5 = 1000
     # Step 1 only (single-step fixture for exact avg-entry independence):

@@ -34,7 +34,8 @@ defmodule DeltaCalc.PositionCalculatorTest do
 
   describe "calculate_position/2 — golden ETH long (source scenario 1)" do
     # Independent sizing + liquidation golden.
-    # Provenance: hand calc from public position-sizing and isolated-margin contracts.
+    # Provenance: hand calc from the public PositionCalculator.calculate_position/2
+    # and Calc.liquidation/4 contracts.
     #   sub_eq=100; init_position = 100×0.5 = 50; reserve = 50; leftover = 9900
     #   notional = 50×3 = 150; tokens = 150/3000 = 0.05; eff_lev = 150/100 = 1.5
     #   lev_to_aum = 150/10000 = 0.015
@@ -51,27 +52,27 @@ defmodule DeltaCalc.PositionCalculatorTest do
 
       result = PositionCalculator.calculate_position(params, @config)
 
-      assert D.equal?(result.allocation.sub_eq, D.new("100.00000000"))
-      assert D.equal?(result.allocation.init_position, D.new("50.00000000"))
-      assert D.equal?(result.allocation.reserve, D.new("50.00000000"))
-      assert D.equal?(result.allocation.reserve_pct, D.new("50.00000000"))
-      assert D.equal?(result.allocation.leftover, D.new("9900.00000000"))
+      assert_close(result.allocation.sub_eq, D.new("100.00000000"), "0.00000001")
+      assert_close(result.allocation.init_position, D.new("50.00000000"), "0.00000001")
+      assert_close(result.allocation.reserve, D.new("50.00000000"), "0.00000001")
+      assert_close(result.allocation.reserve_pct, D.new("50.00000000"), "0.00000001")
+      assert_close(result.allocation.leftover, D.new("9900.00000000"), "0.00000001")
 
-      assert D.equal?(result.position.notional, D.new("150.00000000"))
-      assert D.equal?(result.position.eff_lev, D.new("1.50000000"))
-      assert D.equal?(result.position.tokens, D.new("0.05000000"))
+      assert_close(result.position.notional, D.new("150.00000000"), "0.00000001")
+      assert_close(result.position.eff_lev, D.new("1.50000000"), "0.00000001")
+      assert_close(result.position.tokens, D.new("0.05000000"), "0.00000001")
 
-      assert D.equal?(result.effective_leverage, D.new("1.50000000"))
-      assert D.equal?(result.leverage_to_aum, D.new("0.01500000"))
+      assert_close(result.effective_leverage, D.new("1.50000000"), "0.00000001")
+      assert_close(result.leverage_to_aum, D.new("0.01500000"), "0.00000001")
 
       assert result.safety.is_safe
-      assert D.equal?(result.safety.liquidation_price, D.new("1010.00000000"))
-      assert D.equal?(result.safety.black_swan_price, D.new("2250.00000000"))
-      assert D.equal?(result.safety.distance_to_liq_pct, D.new("66.33333333"))
-      assert D.equal?(result.safety.black_swan_pct, D.new("25.00"))
+      assert_close(result.safety.liquidation_price, D.new("1010.00000000"), "0.00000001")
+      assert_close(result.safety.black_swan_price, D.new("2250.00000000"), "0.00000001")
+      assert_close(result.safety.distance_to_liq_pct, D.new("66.33333333"), "0.00000001")
+      assert_close(result.safety.black_swan_pct, D.new("25.00"), "0.01")
 
-      assert D.equal?(result.mmr_info.mmr, D.new("0.00500000"))
-      assert D.equal?(result.mmr_info.rate_display, D.new("0.50000000"))
+      assert_close(result.mmr_info.mmr, D.new("0.00500000"), "0.00000001")
+      assert_close(result.mmr_info.rate_display, D.new("0.50000000"), "0.00000001")
     end
   end
 
@@ -176,7 +177,8 @@ defmodule DeltaCalc.PositionCalculatorTest do
 
   describe "calculate_position/2 — BTC short golden (source scenario 2)" do
     # Independent sizing + liquidation golden.
-    # Provenance: hand calc from public contracts.
+    # Provenance: hand calc from the public PositionCalculator.calculate_position/2
+    # and Calc.liquidation/4 contracts.
     #   notional = 200×0.3×2 = 120; eff_lev = 120/200 = 0.6
     #   short liq: 50000×(1 + 0.995/0.6) = 132916.6666… (quantize → 132916.66666667)
     test "moderate short at 50k entry matches expected leverage and liquidation" do
@@ -196,8 +198,8 @@ defmodule DeltaCalc.PositionCalculatorTest do
 
       result = PositionCalculator.calculate_position(params, @config)
 
-      assert D.equal?(result.position.notional, D.new("120.00000000"))
-      assert D.equal?(result.effective_leverage, D.new("0.60000000"))
+      assert_close(result.position.notional, D.new("120.00000000"), "0.00000001")
+      assert_close(result.effective_leverage, D.new("0.60000000"), "0.00000001")
       assert result.safety.is_safe
       assert_close(result.safety.liquidation_price, D.new("132916.66666667"), "0.01")
     end

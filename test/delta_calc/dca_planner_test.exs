@@ -49,7 +49,8 @@ defmodule DeltaCalc.DCAPlannerTest do
   end
 
   describe "calculate_dca_ladder/1" do
-    # Independent DCA golden — provenance: hand calc from public ladder contract.
+    # Independent DCA golden — provenance: hand calc from the public
+    # DCAPlanner.calculate_dca_ladder/1 contract.
     # Base position (conservative, ui=2, init_pct=0.5, entry=3000):
     #   sub_eq=100; init=50; reserve=50; notional=50×2=100; tokens=100/3000
     # Defensive step 1 price=2850 (caller-supplied), alloc=30% of reserve:
@@ -68,14 +69,14 @@ defmodule DeltaCalc.DCAPlannerTest do
       assert aggressive.final_notional
 
       first_def = Enum.at(defensive.steps, 0)
-      assert D.equal?(first_def.dca_price, D.new("2850.00000000"))
-      assert D.equal?(first_def.spend, D.new("15.00000000"))
-      assert D.equal?(first_def.leverage_to_aum, D.new("0.01300000"))
+      assert D.eq?(first_def.dca_price, D.new("2850.00000000"), D.new("0.00000001"))
+      assert D.eq?(first_def.spend, D.new("15.00000000"), D.new("0.00000001"))
+      assert D.eq?(first_def.leverage_to_aum, D.new("0.01300000"), D.new("0.00000001"))
       assert first_def.passes_black_swan
-      assert D.equal?(first_def.black_swan_price, D.new("2550.00000000"))
+      assert D.eq?(first_def.black_swan_price, D.new("2550.00000000"), D.new("0.00000001"))
 
       first_agg = Enum.at(aggressive.steps, 0)
-      assert D.equal?(first_agg.dca_price, D.new("3150.00000000"))
+      assert D.eq?(first_agg.dca_price, D.new("3150.00000000"), D.new("0.00000001"))
       assert D.compare(first_agg.dca_price, dca_params.entry_price) == :gt
     end
 

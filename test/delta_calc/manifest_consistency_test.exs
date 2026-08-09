@@ -125,6 +125,17 @@ defmodule DeltaCalc.ManifestConsistencyTest do
       assert api.hints.params.opts.description =~ ":mark_buffer"
     end
 
+    test "multi-leg position advertises its side-aware public arity" do
+      api = DeltaCalc.Calc.__api__(:multi_leg_position)
+
+      assert api.arity == 4
+      assert api.defaults == 1
+      assert api.param_order == [:legs, :current_price, :initial_equity, :side]
+      assert api.hints.params.side.default == :long
+      assert api.hints.params.side.description =~ ":short"
+      assert function_exported?(DeltaCalc.Calc, :multi_leg_position, 4)
+    end
+
     test "MCP input schemas never advertise exact values as JSON numbers" do
       offenders =
         Manifest.tools()

@@ -457,7 +457,7 @@ defmodule DeltaCalc.Calc do
     }
   end
 
-  api(:multi_leg_position, "Calculate multi-leg cross-margin position aggregates.",
+  api(:multi_leg_position, "Calculate side-aware multi-leg cross-margin position aggregates.",
     params: [
       legs: [
         kind: :value,
@@ -476,6 +476,12 @@ defmodule DeltaCalc.Calc do
         description:
           "Starting subaccount equity as a canonical decimal string; native Elixir callers may also pass Decimal or integer.",
         schema: String.t()
+      ],
+      side: [
+        kind: :value,
+        default: :long,
+        description: "Position side (:long or :short) used for unrealized PnL",
+        schema: :long | :short
       ]
     ],
     returns: %{
@@ -497,6 +503,7 @@ defmodule DeltaCalc.Calc do
     - legs: List of %{entry: Decimal.t(), notional: Decimal.t()}
     - current_price: Current market price
     - initial_equity: Starting subaccount equity
+    - side: :long or :short; defaults to :long
 
   ## Returns
     Map with:
@@ -512,7 +519,7 @@ defmodule DeltaCalc.Calc do
       ...>   %{entry: Decimal.new(3000), notional: Decimal.new(125)},
       ...>   %{entry: Decimal.new(2800), notional: Decimal.new(125)}
       ...> ]
-      iex> multi_leg_position(legs, Decimal.new(2800), Decimal.new(50))
+      iex> multi_leg_position(legs, Decimal.new(2800), Decimal.new(50), :long)
       %{
         total_notional: #Decimal<250.00000000>,
         avg_entry: #Decimal<2896.55172414>,
@@ -521,13 +528,8 @@ defmodule DeltaCalc.Calc do
         effective_leverage: #Decimal<6.00000000>
       }
   """
-  @spec multi_leg_position(list(map()), Decimal.t(), Decimal.t()) :: map()
-  def multi_leg_position(legs, current_price, initial_equity) do
-    multi_leg_position(legs, current_price, initial_equity, :long)
-  end
-
   @spec multi_leg_position(list(map()), Decimal.t(), Decimal.t(), :long | :short) :: map()
-  defp multi_leg_position(legs, current_price, initial_equity, side) do
+  def multi_leg_position(legs, current_price, initial_equity, side \\ :long) do
     current_price = DecimalInput.cast!(current_price)
     initial_equity = DecimalInput.cast!(initial_equity)
 

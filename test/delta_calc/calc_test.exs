@@ -573,7 +573,7 @@ defmodule DeltaCalc.CalcTest do
     end
   end
 
-  describe "multi_leg_position/3" do
+  describe "multi_leg_position/3 and /4" do
     test "calculates corrected cross-margin example from forum post" do
       # Initial: $50 equity, first leg $125 notional at $3.00
       # Price drops to $2.80, add second leg $125 notional
@@ -632,6 +632,20 @@ defmodule DeltaCalc.CalcTest do
 
       # Leverage decreases: 150 / 60 = 2.5
       assert_in_delta(Decimal.to_float(result.effective_leverage), 2.5, 0.01)
+    end
+
+    test "calculates short multi-leg PnL and leverage" do
+      legs = [
+        %{entry: Decimal.new(3000), notional: Decimal.new(125)},
+        %{entry: Decimal.new(3200), notional: Decimal.new(125)}
+      ]
+
+      result = Calc.multi_leg_position(legs, Decimal.new(3200), Decimal.new(50), :short)
+
+      assert_close(result.avg_entry, Decimal.new("3096.77419355"), "0.00000001")
+      assert_close(result.unrealized_pnl, Decimal.new("-8.33333333"), "0.00000001")
+      assert_close(result.current_equity, Decimal.new("41.66666667"), "0.00000001")
+      assert_close(result.effective_leverage, Decimal.new("6.00000000"), "0.00000001")
     end
   end
 

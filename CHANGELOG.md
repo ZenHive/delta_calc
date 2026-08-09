@@ -5,6 +5,14 @@ Release-level history for completed roadmap phases. The per-task delivery ledger
 
 ## Unreleased
 
+- Advertised every exact Decimal money/price/rate `:value` input as a canonical JSON-string
+  contract across all calculation modules (matching the `DeltaCalc.Decimal` coercion boundary);
+  a manifest-wide CI invariant now rejects any MCP input schema advertising `{"type": "number"}`.
+- Made `Calc.multi_leg_position` public and side-aware (`side` defaults to `:long`), so short
+  multi-leg positions reach the existing side-aware math through a documented API.
+- Added base-numeraire math to `DeltaCalc.DeltaNeutral`: inverse-perp exposure, settlement-period
+  net-delta handling, covered-call coverage (capacity/uncovered reporting without implying
+  approval), and risk-target checks.
 - **Breaking:** `DeltaCalc.PositionCalculator.calculate_position/2` is now `calculate_position/1` —
   the unused `fee_rate` input (fee modeling belongs to `DeltaCalc.Fees`) and the echoed risk-mode
   config were removed, so the API no longer advertises inputs that don't affect the calculation.

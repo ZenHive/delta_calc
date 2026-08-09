@@ -5,6 +5,10 @@ Release-level history for completed roadmap phases. The per-task delivery ledger
 
 ## Unreleased
 
+- Split the `Calc` god-module along cohesion seams into `DeltaCalc.Leverage`, `Liquidation`,
+  `Allocation`, `Safety`, and `Quantization` (DCA-ladder logic moved to `DCAPlanner`).
+  `DeltaCalc.Calc` remains as an undocumented compatibility façade delegating all 11 previous
+  public functions; the agent manifest advertises the extracted modules instead.
 - **Breaking:** moved rounding to explicit caller-controlled output boundaries — generic
   price/rate/percentage/ratio math no longer quantizes internally and returns full active
   `Decimal.Context` precision (34 under decimal 3.x). `OptionLadder` strike rounding takes

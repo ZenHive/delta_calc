@@ -1943,8 +1943,8 @@
       "depends_on": [
         38
       ],
-      "assignee": "grok",
-      "model": "grok-4.5",
+      "assignee": "codex",
+      "model": "gpt-5.6-sol",
       "acceptance_criteria": [
         "Calc.dca_ladder MMR re-tiering uses a caller-supplied threshold-and-rate schedule; no notional threshold or multiplier is hardcoded in the generic engine",
         "MarginBridge kill-switch accepts a per-period funding-rate fraction, periods_per_day, and a daily funding threshold, and compares daily_rate = per_period_rate × periods_per_day",
@@ -2326,8 +2326,8 @@
         39,
         45
       ],
-      "assignee": "grok",
-      "model": "grok-4.5",
+      "assignee": "codex",
+      "model": "gpt-5.6-sol",
       "acceptance_criteria": [
         "Pure calculations preserve Decimal precision until an explicitly documented output boundary",
         "Generic price, rate, percentage, and ratio functions do not impose one library-wide decimal-place count; a boundary that quantizes accepts caller-supplied scale or step and rounding mode, or documents why its fixed contract is intrinsic",

@@ -968,6 +968,15 @@ exact quantized size*. Prefer that shape over reimplementing either end.
   (`lib/trading_dashboard/risk/*.ex`, `portfolio.ex` + `portfolio/snapshot.ex` hedging formulas,
   `test/trading_dashboard/risk/*.exs`).
 
+## Dispatch Roster — codex only (repo override)
+
+All harness-dispatchable tasks in this repo route to **`assignee = "codex"`, `model = "gpt-5.6-sol"`** —
+overriding the global spread-across-adapters default. Rationale (2026-08-09, waves 38/45/39): both
+grok-4.5 runs needed reviewer fixes (incl. an unsafe dynamic-atom bug and a forbidden CHANGELOG edit)
+while codex delivered the largest lib-wide task fix-free; ledger shows codex at 44.6% vs grok at 27.4%
+first-attempt-pass. In a `Decimal` money-math library, reviewer-fix churn on lib code is the wrong place
+to save tokens. Re-pin any task filed with a different assignee when you touch it.
+
 ## Roadmap
 
 `roadmap/tasks.toml` is canonical (`rmap` renders `ROADMAP.md` + `roadmap/data.json`). Phases 1–2

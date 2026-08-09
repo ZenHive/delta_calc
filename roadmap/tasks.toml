@@ -1147,8 +1147,8 @@ acceptance_criteria = ["Calc.dca_ladder MMR re-tiering uses a caller-supplied th
 out_of_scope = ["Funding-rate unit standardization (separate task)", "Adding venue presets"]
 files_to_modify = ["lib/delta_calc/calc.ex", "lib/delta_calc/margin_bridge.ex", "test/delta_calc/calc_test.exs", "test/delta_calc/margin_bridge_test.exs", "test/delta_calc/domain_invariants_test.exs"]
 touches = ["lib/delta_calc/calc.ex", "lib/delta_calc/margin_bridge.ex", "test/delta_calc/calc_test.exs", "test/delta_calc/margin_bridge_test.exs", "test/delta_calc/domain_invariants_test.exs"]
-assignee = "grok"
-model = "grok-4.5"
+assignee = "codex"
+model = "gpt-5.6-sol"
 body = """
 Generic calc functions bake in venue/risk-engine constants. Calc.calculate_tiered_mmr hardcodes a tier ladder (0-50k base, 50k-250k x1.5, 250k-1M x2, 1M+ x2.5) inside the DCA liquidation path; MarginBridge's kill-switch thresholds assume an 8h/default cadence while sibling functions accept periods_per_day. These are the venue-constant anti-pattern this repo's CLAUDE.md explicitly warns about: internally consistent, fully tested, and wrong for any venue that differs.
 
@@ -1324,8 +1324,8 @@ acceptance_criteria = ["Pure calculations preserve Decimal precision until an ex
 out_of_scope = ["Presentation formatting", "Fetching venue tick sizes or precision metadata", "Changing unrelated calculation APIs"]
 files_to_modify = ["lib/delta_calc/account_metrics.ex", "lib/delta_calc/calc.ex", "lib/delta_calc/carry.ex", "lib/delta_calc/concentration.ex", "lib/delta_calc/dca_planner.ex", "lib/delta_calc/delta_neutral.ex", "lib/delta_calc/fees.ex", "lib/delta_calc/funding.ex", "lib/delta_calc/funding_projection.ex", "lib/delta_calc/hedging.ex", "lib/delta_calc/margin_bridge.ex", "lib/delta_calc/option_ladder.ex", "lib/delta_calc/options_risk.ex", "lib/delta_calc/pnl.ex", "lib/delta_calc/portfolio_margin.ex", "lib/delta_calc/position_calculator.ex", "lib/delta_calc/stress_scenario.ex"]
 touches = ["lib/delta_calc/account_metrics.ex", "lib/delta_calc/calc.ex", "lib/delta_calc/carry.ex", "lib/delta_calc/concentration.ex", "lib/delta_calc/dca_planner.ex", "lib/delta_calc/delta_neutral.ex", "lib/delta_calc/fees.ex", "lib/delta_calc/funding.ex", "lib/delta_calc/funding_projection.ex", "lib/delta_calc/hedging.ex", "lib/delta_calc/margin_bridge.ex", "lib/delta_calc/option_ladder.ex", "lib/delta_calc/options_risk.ex", "lib/delta_calc/pnl.ex", "lib/delta_calc/portfolio_margin.ex", "lib/delta_calc/position_calculator.ex", "lib/delta_calc/stress_scenario.ex"]
-assignee = "grok"
-model = "grok-4.5"
+assignee = "codex"
+model = "gpt-5.6-sol"
 body = """
 Calc.quantize rounds to eight places, Funding rounds to 6/4/2 depending on the field, Hedging rounds to 2/4/8, and PortfolioMargin reuses Calc.quantize. A fixed library-wide precision by value category would still be wrong for an instrument-agnostic engine because callers own tick sizes, quantity steps, and reporting precision.
 

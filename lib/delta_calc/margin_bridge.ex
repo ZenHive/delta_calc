@@ -161,6 +161,8 @@ defmodule DeltaCalc.MarginBridge do
   Compute single-scenario payback days from `remaining_debt` and `daily_funding`.
 
   Pass `from_date:` in opts to include `projected_payoff_date`.
+  `days_to_payoff` preserves Decimal precision; date projection alone rounds up
+  because a `Date` is an intrinsic whole-day boundary.
   For best/expected/worst cases under funding volatility, use
   `DeltaCalc.FundingProjection.project_payback_timeline/1`.
   """
@@ -228,6 +230,8 @@ defmodule DeltaCalc.MarginBridge do
   `negative_rate` is a decimal fraction per funding period (e.g. `-0.00025` for
   `-0.025%`), matching `Funding`/`Hedging` — not a percent number. Scale to daily
   cost with `periods_per_day`. Its default of 3 is an overridable cadence convention.
+  `kill_switch_day`, when requested, rounds up because it identifies the first
+  whole calendar day on which the threshold is crossed.
   """
   @spec stress_test_prolonged_negative(
           DecimalInput.input(),
@@ -332,7 +336,6 @@ defmodule DeltaCalc.MarginBridge do
       :gt ->
         remaining_debt
         |> Decimal.div(daily_funding)
-        |> Decimal.round(2)
 
       _ ->
         nil

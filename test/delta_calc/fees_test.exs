@@ -182,7 +182,7 @@ defmodule DeltaCalc.FeesTest do
 
     defp assert_breaks_even(side, entry, breakeven, size, open_rate, close_rate, funding) do
       net = net_pnl(side, entry, breakeven, size, open_rate, close_rate, funding)
-      # breakeven is quantized to 8 dp, so allow a sub-cent residual.
+      # Decimal division is context-bounded, so allow a sub-cent residual.
       assert Decimal.compare(Decimal.abs(net), Decimal.new("0.0001")) == :lt,
              "expected net PnL ~0 at breakeven, got #{Decimal.to_string(net)}"
     end

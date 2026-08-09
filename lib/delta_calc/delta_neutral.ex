@@ -9,7 +9,6 @@ defmodule DeltaCalc.DeltaNeutral do
 
   use Descripex, namespace: "/delta_neutral"
 
-  alias DeltaCalc.Calc
   alias DeltaCalc.Decimal, as: DecimalInput
 
   @zero Decimal.new(0)
@@ -339,7 +338,6 @@ defmodule DeltaCalc.DeltaNeutral do
     |> Enum.reduce(@zero, fn position, acc ->
       acc |> Decimal.add(position_delta(position))
     end)
-    |> Calc.quantize()
   end
 
   api(
@@ -675,8 +673,8 @@ defmodule DeltaCalc.DeltaNeutral do
   @spec hedge_leg(Decimal.t()) :: {:long | :short, Decimal.t()}
   defp hedge_leg(net) do
     case Decimal.compare(net, @zero) do
-      :gt -> {:short, Calc.quantize(net)}
-      _ -> {:long, net |> Decimal.abs() |> Calc.quantize()}
+      :gt -> {:short, net}
+      _ -> {:long, Decimal.abs(net)}
     end
   end
 

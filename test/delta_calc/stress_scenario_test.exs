@@ -1,7 +1,7 @@
 defmodule DeltaCalc.StressScenarioTest do
   use ExUnit.Case, async: true
 
-  alias DeltaCalc.{Calc, PortfolioMargin, StressScenario}
+  alias DeltaCalc.{PortfolioMargin, StressScenario}
 
   @net_long_account %{
     equity: Decimal.new("1000"),
@@ -214,7 +214,7 @@ defmodule DeltaCalc.StressScenarioTest do
 
       result = StressScenario.cascade(@net_long_account, Decimal.new("-20"))
 
-      assert Decimal.equal?(result.margin_call, Calc.quantize(shortfall))
+      assert Decimal.equal?(result.margin_call, shortfall)
     end
   end
 

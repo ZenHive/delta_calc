@@ -10,8 +10,8 @@ defmodule DeltaCalc.StressScenario do
 
   use Descripex, namespace: "/stress_scenario"
 
-  alias DeltaCalc.{Calc, PortfolioMargin}
   alias DeltaCalc.Decimal, as: DecimalInput
+  alias DeltaCalc.PortfolioMargin
 
   @zero Decimal.new(0)
   @one Decimal.new(1)
@@ -237,14 +237,12 @@ defmodule DeltaCalc.StressScenario do
     account.equity
     |> DecimalInput.cast!()
     |> Decimal.add(pnl)
-    |> Calc.quantize()
   end
 
   defp realized_equity(account, position, shock) do
     account.equity
     |> DecimalInput.cast!()
     |> Decimal.add(position_pnl(position, shock))
-    |> Calc.quantize()
   end
 
   defp position_pnl(position, shock) do
@@ -271,7 +269,6 @@ defmodule DeltaCalc.StressScenario do
       |> Decimal.div(@hundred)
       |> Decimal.add(@one)
     )
-    |> Calc.quantize()
   end
 
   defp position_margin(position, mark_price) do
@@ -280,7 +277,6 @@ defmodule DeltaCalc.StressScenario do
     |> Decimal.abs()
     |> Decimal.mult(mark_price)
     |> Decimal.mult(DecimalInput.cast!(position.mmr))
-    |> Calc.quantize()
   end
 
   defp portfolio_liquidated?(account) do
@@ -300,7 +296,7 @@ defmodule DeltaCalc.StressScenario do
     shortfall = Decimal.sub(maintenance, equity)
 
     case Decimal.compare(shortfall, @zero) do
-      :gt -> Calc.quantize(shortfall)
+      :gt -> shortfall
       _ -> @zero
     end
   end

@@ -447,9 +447,9 @@ defmodule DeltaCalc.DCAPlanner do
         %Decimal{} = leverage_to_aum ->
           step =
             Map.merge(step, %{
-              leverage_to_aum: Calc.quantize(leverage_to_aum),
+              leverage_to_aum: leverage_to_aum,
               passes_black_swan: passes_black_swan,
-              black_swan_price: Calc.quantize(black_swan_price)
+              black_swan_price: black_swan_price
             })
 
           {:cont, [step | acc]}

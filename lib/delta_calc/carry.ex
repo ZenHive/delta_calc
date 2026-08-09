@@ -23,7 +23,6 @@ defmodule DeltaCalc.Carry do
   @hundred Decimal.new(100)
   @days_per_year 365
   @default_periods_per_day 3
-  @output_precision 8
 
   @type decimal_input :: DecimalInput.input()
 
@@ -65,7 +64,7 @@ defmodule DeltaCalc.Carry do
     ],
     returns: %{
       type: :decimal,
-      description: "(perp - spot) / spot * 100, rounded to 8 places. Not annualized."
+      description: "(perp - spot) / spot * 100 at Decimal context precision. Not annualized."
     }
   )
 
@@ -80,7 +79,6 @@ defmodule DeltaCalc.Carry do
       |> Decimal.sub(spot)
       |> Decimal.div(spot)
       |> Decimal.mult(@hundred)
-      |> quantize()
     else
       @zero
     end
@@ -104,7 +102,7 @@ defmodule DeltaCalc.Carry do
     ],
     returns: %{
       type: :decimal,
-      description: "Per-period funding rate as a decimal fraction, rounded to 8 places."
+      description: "Per-period funding rate as a decimal fraction at Decimal context precision."
     }
   )
 
@@ -119,7 +117,6 @@ defmodule DeltaCalc.Carry do
       |> Decimal.negate()
       |> Decimal.div(periods)
       |> Decimal.div(@hundred)
-      |> quantize()
     else
       @zero
     end
@@ -156,7 +153,7 @@ defmodule DeltaCalc.Carry do
   def net_carry(params) do
     basis_yield = basis_yield(params)
     funding_yield = funding_yield(params)
-    net_yield = quantize(Decimal.add(basis_yield, funding_yield))
+    net_yield = Decimal.add(basis_yield, funding_yield)
 
     %{
       basis: basis(params.spot_price, params.perp_price),
@@ -181,7 +178,6 @@ defmodule DeltaCalc.Carry do
     rate
     |> Decimal.mult(periods)
     |> Decimal.mult(@hundred)
-    |> quantize()
   end
 
   @spec funding_periods(carry_params()) :: Decimal.t()
@@ -193,7 +189,4 @@ defmodule DeltaCalc.Carry do
 
     Decimal.mult(holding_days, periods_per_day)
   end
-
-  @spec quantize(Decimal.t()) :: Decimal.t()
-  defp quantize(value), do: Decimal.round(value, @output_precision)
 end

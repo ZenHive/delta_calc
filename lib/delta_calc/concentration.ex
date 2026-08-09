@@ -8,8 +8,6 @@ defmodule DeltaCalc.Concentration do
 
   use Descripex, namespace: "/concentration"
 
-  alias DeltaCalc.Calc
-
   @zero Decimal.new(0)
 
   @type weight_input :: %{optional(term()) => Decimal.t()} | [Decimal.t()]
@@ -36,7 +34,6 @@ defmodule DeltaCalc.Concentration do
       weights
       |> Enum.map(&normalized_square(&1, total))
       |> Enum.reduce(@zero, &Decimal.add/2)
-      |> Calc.quantize()
     else
       @zero
     end

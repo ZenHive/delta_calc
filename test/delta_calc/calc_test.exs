@@ -42,9 +42,26 @@ defmodule DeltaCalc.CalcTest do
       assert Decimal.equal?(result, Decimal.new("2.00000000"))
     end
 
-    test "float inputs quantize reliably" do
+    test "Decimals created from floats retain numeric value" do
       result = Calc.effective_leverage(Decimal.from_float(10_000.0), Decimal.from_float(5000.0))
       assert Decimal.equal?(result, Decimal.new("2.00000000"))
+    end
+  end
+
+  describe "caller-controlled output precision" do
+    test "preserves Decimal 3.x decimal128 precision before callers round" do
+      assert Decimal.Context.get().precision == 34
+
+      raw = Calc.effective_leverage(Decimal.new(1), Decimal.new(6))
+
+      assert raw == Decimal.new("0.1666666666666666666666666666666667")
+      assert Decimal.round(raw, 2, :half_up) == Decimal.new("0.17")
+      assert Decimal.round(raw, 4, :down) == Decimal.new("0.1666")
+      assert Calc.effective_leverage(Decimal.new(1), Decimal.new(6)) == raw
+    end
+
+    test "keeps quantize/1 as the explicit eight-place compatibility boundary" do
+      assert Calc.quantize(Decimal.new("1.234567895")) == Decimal.new("1.23456790")
     end
   end
 
@@ -84,7 +101,7 @@ defmodule DeltaCalc.CalcTest do
       assert Decimal.equal?(result, Decimal.new("0.10000000"))
     end
 
-    test "float inputs quantize reliably" do
+    test "Decimals created from floats retain numeric value" do
       result = Calc.leverage_to_aum(Decimal.from_float(10_000.0), Decimal.from_float(100_000.0))
       assert Decimal.equal?(result, Decimal.new("0.10000000"))
     end
@@ -530,7 +547,7 @@ defmodule DeltaCalc.CalcTest do
     #   init_margin = 200 × 0.3 = 60; notional = 60 × 2 = 120
     #   eff_lev = 120 / 200 = 0.6; lev_to_aum = 120 / 10000 = 0.012
     #   short liq: 0.995/0.6 = 1.658333…; 1+1.658333…=2.658333…;
-    #   50000 × 2.658333… = 132916.6666… (quantize → 132916.66666667)
+    #   50000 × 2.658333… = 132916.6666… at Decimal context precision
     test "BTC short @ $50000, 2x UI, 30% initial margin, moderate mode" do
       aum = Decimal.new(10_000)
       mode_cfg = %{pct: Decimal.new("0.03"), cap: Decimal.new("0.02")}
@@ -1362,8 +1379,8 @@ defmodule DeltaCalc.CalcTest do
 
   describe "input coercion" do
     test "accepts integer and canonical string inputs" do
-      assert Calc.effective_leverage(10_000, 5_000) == Decimal.new("2.00000000")
-      assert Calc.effective_leverage("10000", "5000") == Decimal.new("2.00000000")
+      assert Calc.effective_leverage(10_000, 5_000) == Decimal.new("2")
+      assert Calc.effective_leverage("10000", "5000") == Decimal.new("2")
     end
 
     test "rejects invalid inputs with ArgumentError" do

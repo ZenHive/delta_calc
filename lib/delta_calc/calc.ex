@@ -1,7 +1,10 @@
 defmodule DeltaCalc.Calc do
   @moduledoc """
   Pure calculation functions for leverage, liquidation, allocation, and safety analysis.
-  All functions use Decimal arithmetic exclusively for precision.
+  All functions use Decimal arithmetic exclusively and return the precision produced
+  by the active `Decimal.Context`. Callers own tick-size, quantity-step, and reporting
+  quantization; `quantize/1` exists only for the retired dashboard's eight-place
+  compatibility boundary.
 
   ## Important: Simplified Modeling
 
@@ -63,10 +66,10 @@ defmodule DeltaCalc.Calc do
   ## Examples
 
       iex> effective_leverage(Decimal.new(10000), Decimal.new(5000))
-      #Decimal<2.00000000>
+      #Decimal<2>
 
       iex> effective_leverage(Decimal.new(-10000), Decimal.new(5000))
-      #Decimal<2.00000000>
+      #Decimal<2>
 
       iex> effective_leverage(Decimal.new(10000), Decimal.new(0))
       {:error, :non_positive_wallet_equity}
@@ -81,7 +84,6 @@ defmodule DeltaCalc.Calc do
         notional
         |> Decimal.abs()
         |> Decimal.div(wallet_equity)
-        |> quantize()
 
       _ ->
         {:error, :non_positive_wallet_equity}
@@ -121,7 +123,7 @@ defmodule DeltaCalc.Calc do
   ## Examples
 
       iex> leverage_to_aum(Decimal.new(10000), Decimal.new(100000))
-      #Decimal<0.10000000>  # 10% of AUM at risk
+      #Decimal<0.1>  # 10% of AUM at risk
 
       iex> leverage_to_aum(Decimal.new(10000), Decimal.new(0))
       {:error, :non_positive_total_aum}
@@ -136,7 +138,6 @@ defmodule DeltaCalc.Calc do
         notional
         |> Decimal.abs()
         |> Decimal.div(total_aum)
-        |> quantize()
 
       _ ->
         {:error, :non_positive_total_aum}
@@ -240,7 +241,7 @@ defmodule DeltaCalc.Calc do
         {:error, :negative_effective_leverage}
 
       Decimal.compare(leff, @zero) == :eq ->
-        quantize(@zero)
+        @zero
 
       true ->
         case side do
@@ -253,7 +254,6 @@ defmodule DeltaCalc.Calc do
               @one
               |> Decimal.sub(factor)
               |> Decimal.mult(entry)
-              |> quantize()
 
             # Clamp long liquidation to non-negative values
             Decimal.max(liq, @zero)
@@ -266,7 +266,6 @@ defmodule DeltaCalc.Calc do
             @one
             |> Decimal.add(factor)
             |> Decimal.mult(entry)
-            |> quantize()
         end
     end
   end
@@ -361,10 +360,10 @@ defmodule DeltaCalc.Calc do
     leftover = Decimal.sub(aum, sub_eq)
 
     %{
-      sub_eq: quantize(sub_eq),
-      init_margin: quantize(init_margin),
-      reserve: quantize(reserve),
-      leftover: quantize(leftover)
+      sub_eq: sub_eq,
+      init_margin: init_margin,
+      reserve: reserve,
+      leftover: leftover
     }
   end
 
@@ -452,8 +451,8 @@ defmodule DeltaCalc.Calc do
 
     # For both long and short, return notional and effective leverage
     %{
-      notional: quantize(notional),
-      eff_lev: quantize(eff_lev)
+      notional: notional,
+      eff_lev: eff_lev
     }
   end
 
@@ -547,11 +546,11 @@ defmodule DeltaCalc.Calc do
     eff_lev = calculate_effective_leverage(total_notional, current_equity)
 
     %{
-      total_notional: quantize(total_notional),
-      avg_entry: quantize(avg_entry),
-      unrealized_pnl: quantize(total_pnl),
-      current_equity: quantize(current_equity),
-      effective_leverage: quantize(eff_lev)
+      total_notional: total_notional,
+      avg_entry: avg_entry,
+      unrealized_pnl: total_pnl,
+      current_equity: current_equity,
+      effective_leverage: eff_lev
     }
   end
 
@@ -725,11 +724,11 @@ defmodule DeltaCalc.Calc do
 
     %{
       verdict: verdict,
-      distance_to_liq_pct: quantize(distance_pct),
-      distance_to_liq_usd: quantize(distance_usd),
-      distance_to_swan_pct: quantize(swan_distance_pct),
-      distance_to_swan_usd: quantize(swan_distance_usd),
-      composite_score: quantize(score)
+      distance_to_liq_pct: distance_pct,
+      distance_to_liq_usd: distance_usd,
+      distance_to_swan_pct: swan_distance_pct,
+      distance_to_swan_usd: swan_distance_usd,
+      composite_score: score
     }
   end
 
@@ -947,8 +946,8 @@ defmodule DeltaCalc.Calc do
       %{
         pre_dca: pre_dca_safety,
         post_dca: post_dca_safety,
-        leverage_change: quantize(leverage_change),
-        liquidation_change: quantize(liquidation_change)
+        leverage_change: leverage_change,
+        liquidation_change: liquidation_change
       }
     end
   end
@@ -1279,13 +1278,13 @@ defmodule DeltaCalc.Calc do
 
     %{
       step_num: step_num,
-      dca_price: quantize(dca_price),
-      spend: quantize(actual_spend),
-      new_notional: quantize(new_notional),
-      new_avg_entry: quantize(new_avg_entry),
-      new_liq: quantize(new_liq),
-      new_eff_lev: quantize(new_eff_lev),
-      cumulative_notional: quantize(cumulative_notional),
+      dca_price: dca_price,
+      spend: actual_spend,
+      new_notional: new_notional,
+      new_avg_entry: new_avg_entry,
+      new_liq: new_liq,
+      new_eff_lev: new_eff_lev,
+      cumulative_notional: cumulative_notional,
       # Internal fields for state tracking
       _cumulative_tokens: cumulative_tokens,
       _new_wallet_equity: new_wallet_equity
@@ -1387,7 +1386,7 @@ defmodule DeltaCalc.Calc do
     end
   end
 
-  api(:quantize, "Round a Decimal to standard output precision (8 places).",
+  api(:quantize, "Round a Decimal to the retired dashboard's eight-place compatibility format.",
     params: [
       value: [
         kind: :value,
@@ -1396,13 +1395,14 @@ defmodule DeltaCalc.Calc do
         schema: String.t()
       ]
     ],
-    returns: %{type: :decimal, description: "Value rounded to 8 decimal places"}
+    returns: %{type: :decimal, description: "Value rounded to the legacy 8-place format"}
   )
 
   @doc """
-  Quantizes a Decimal value to the standard output precision.
+  Quantizes a Decimal value to the retired dashboard's eight-place output format.
 
-  All financial outputs should be quantized to 8 decimal places for consistency.
+  Generic calculations do not call this function. New callers should apply their
+  instrument step or reporting precision at their own output boundary.
   """
   @spec quantize(Decimal.t()) :: Decimal.t()
   def quantize(value) do

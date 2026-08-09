@@ -92,8 +92,7 @@ defmodule DeltaCalc.HedgingTest do
       assert Decimal.equal?(target, Decimal.new("60"))
     end
 
-    test "coverage percent is rounded to 2 decimal places" do
-      # 1/3 of 100 = 33.333... → 33.33
+    test "coverage percent preserves Decimal context precision" do
       assert {:needs_rebalancing, cov, _} =
                Hedging.check_hedge_coverage(
                  Decimal.new("1"),
@@ -101,7 +100,7 @@ defmodule DeltaCalc.HedgingTest do
                  Decimal.new("60")
                )
 
-      assert Decimal.equal?(cov, Decimal.new("33.33"))
+      assert Decimal.equal?(cov, Decimal.div(Decimal.new(100), Decimal.new(3)))
     end
 
     test "120% target passes when CEX covers full spot and more" do
@@ -248,14 +247,13 @@ defmodule DeltaCalc.HedgingTest do
       assert_in_delta pct_result.duration_hours, abs_result.duration_hours, 0.001
     end
 
-    test "percentage is rounded to 2 decimal places" do
+    test "percentage preserves Decimal context precision" do
       prior = snap("3", "3", "3", "3", @t0)
       current = snap("4", "4", "4", "4", @t1)
 
       result = Hedging.calculate_percentage_change(prior, current)
 
-      # 1/3 * 100 = 33.33...
-      assert Decimal.equal?(result.total_pct, Decimal.new("33.33"))
+      assert Decimal.equal?(result.total_pct, Decimal.div(Decimal.new(100), Decimal.new(3)))
     end
   end
 
@@ -380,7 +378,7 @@ defmodule DeltaCalc.HedgingTest do
       result = Hedging.get_basis_spread(Decimal.new("45000"), Decimal.new("45100"))
 
       assert Decimal.equal?(result.spread, Decimal.new("100"))
-      assert Decimal.equal?(result.spread_pct, Decimal.new("0.2222"))
+      assert result.spread_pct == Decimal.new("0.2222222222222222222222222222222222")
       assert result.direction == :contango
     end
 

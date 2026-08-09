@@ -164,12 +164,12 @@ defmodule DeltaCalc.FundingTest do
       assert result == %{
                binance: Decimal.new("0.003"),
                bybit: Decimal.new("0.001"),
-               delta: Decimal.new("0.002000"),
+               delta: Decimal.new("0.002"),
                delta_unit: :raw_per_period,
                max_exchange: :binance,
                min_exchange: :bybit,
                arbitrage_opportunity: true,
-               annual_apr_delta: Decimal.new("219.00"),
+               annual_apr_delta: Decimal.new("219.000"),
                ranked: [
                  {:binance, Decimal.new("0.003")},
                  {:bybit, Decimal.new("0.001")}

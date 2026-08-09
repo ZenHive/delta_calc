@@ -140,8 +140,8 @@ defmodule DeltaCalc.PositionCalculator do
             leftover
           ),
         position: build_position_result(position_size, effective_leverage, entry_price, side),
-        effective_leverage: Calc.quantize(effective_leverage),
-        leverage_to_aum: Calc.quantize(leverage_to_aum),
+        effective_leverage: effective_leverage,
+        leverage_to_aum: leverage_to_aum,
         safety:
           build_safety_result(
             is_safe,
@@ -208,27 +208,25 @@ defmodule DeltaCalc.PositionCalculator do
          leftover
        ) do
     %{
-      sub_eq: Calc.quantize(subaccount_equity),
-      init_position: Calc.quantize(initial_position_allocation),
-      reserve: Calc.quantize(dca_reserve),
+      sub_eq: subaccount_equity,
+      init_position: initial_position_allocation,
+      reserve: dca_reserve,
       reserve_pct:
-        Calc.quantize(
-          Decimal.mult(Decimal.sub(@default_one, initial_position_pct), @default_hundred)
-        ),
-      leftover: Calc.quantize(leftover)
+        Decimal.mult(Decimal.sub(@default_one, initial_position_pct), @default_hundred),
+      leftover: leftover
     }
   end
 
   @spec build_position_result(Decimal.t(), Decimal.t(), Decimal.t(), :long | :short) :: map()
   defp build_position_result(position_size, effective_leverage, entry_price, side) do
     position = %{
-      notional: Calc.quantize(position_size),
-      eff_lev: Calc.quantize(effective_leverage)
+      notional: position_size,
+      eff_lev: effective_leverage
     }
 
     if side == :long do
       tokens = Decimal.div(position_size, entry_price)
-      Map.put(position, :tokens, Calc.quantize(tokens))
+      Map.put(position, :tokens, tokens)
     else
       position
     end
@@ -250,9 +248,9 @@ defmodule DeltaCalc.PositionCalculator do
        ) do
     %{
       is_safe: is_safe,
-      liquidation_price: Calc.quantize(liquidation_price),
-      black_swan_price: Calc.quantize(black_swan_price),
-      distance_to_liq_pct: Calc.quantize(Decimal.mult(distance_to_liq, @default_hundred)),
+      liquidation_price: liquidation_price,
+      black_swan_price: black_swan_price,
+      distance_to_liq_pct: Decimal.mult(distance_to_liq, @default_hundred),
       black_swan_pct: Decimal.mult(black_swan_pct, @default_hundred)
     }
   end
@@ -260,8 +258,8 @@ defmodule DeltaCalc.PositionCalculator do
   @spec build_mmr_info(Decimal.t()) :: map()
   defp build_mmr_info(mmr_rate) do
     %{
-      mmr: Calc.quantize(mmr_rate),
-      rate_display: Calc.quantize(Decimal.mult(mmr_rate, @default_hundred))
+      mmr: mmr_rate,
+      rate_display: Decimal.mult(mmr_rate, @default_hundred)
     }
   end
 end

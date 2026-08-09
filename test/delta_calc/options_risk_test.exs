@@ -184,7 +184,7 @@ defmodule DeltaCalc.OptionsRiskTest do
       assert Decimal.equal?(low.rate, Decimal.new("-0.0002"))
       assert Decimal.equal?(low.daily, Decimal.new("36"))
       assert Decimal.equal?(low["total_90d"], Decimal.new("3240"))
-      assert Decimal.equal?(low.margin_impact, Decimal.new("0.07"))
+      assert Decimal.equal?(low.margin_impact, Decimal.new("0.072"))
 
       assert Decimal.equal?(mid.rate, Decimal.new("-0.00025"))
       assert Decimal.equal?(mid.daily, Decimal.new("45"))
@@ -194,7 +194,7 @@ defmodule DeltaCalc.OptionsRiskTest do
       assert Decimal.equal?(high.rate, Decimal.new("-0.0003"))
       assert Decimal.equal?(high.daily, Decimal.new("54"))
       assert Decimal.equal?(high["total_90d"], Decimal.new("4860"))
-      assert Decimal.equal?(high.margin_impact, Decimal.new("0.11"))
+      assert Decimal.equal?(high.margin_impact, Decimal.new("0.108"))
 
       assert result.kill_switch_day_min == 117
       assert result.kill_switch_day_max == 175
@@ -208,7 +208,7 @@ defmodule DeltaCalc.OptionsRiskTest do
         })
 
       assert result.scenario == :bear_market_90d
-      assert Decimal.equal?(hd(result.scenarios).margin_impact, Decimal.new("0.07"))
+      assert Decimal.equal?(hd(result.scenarios).margin_impact, Decimal.new("0.072"))
       assert result.kill_switch_day_min == nil
       assert result.kill_switch_day_max == nil
     end
@@ -269,7 +269,7 @@ defmodule DeltaCalc.OptionsRiskTest do
           margin_threshold: Decimal.new("1")
         )
 
-      assert Decimal.equal?(hd(result.scenarios).margin_impact, Decimal.new("0.07"))
+      assert Decimal.equal?(hd(result.scenarios).margin_impact, Decimal.new("0.072"))
     end
 
     test "zero capital uses neutral margin impact denominator" do

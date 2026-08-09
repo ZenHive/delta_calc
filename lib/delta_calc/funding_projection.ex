@@ -60,6 +60,8 @@ defmodule DeltaCalc.FundingProjection do
 
   Returns `nil` for scenarios where effective daily income is zero or negative.
   Zero remaining debt yields `0` for all cases.
+  Day counts are an intrinsic whole-day boundary, so positive fractional days
+  round up to the next integer day.
 
   ## Examples
 

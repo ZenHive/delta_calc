@@ -125,7 +125,10 @@ defmodule DeltaCalc.AccountMetrics do
         schema: String.t()
       ]
     ],
-    returns: %{type: :decimal, description: "Margin usage percentage, rounded to 8 places."}
+    returns: %{
+      type: :decimal,
+      description: "Margin usage percentage at Decimal context precision."
+    }
   )
 
   @doc "Return `margin_used / equity * 100`, or zero when equity is not positive."
@@ -136,7 +139,6 @@ defmodule DeltaCalc.AccountMetrics do
       |> Decimal.abs()
       |> Decimal.div(equity)
       |> Decimal.mult(@hundred)
-      |> Calc.quantize()
     else
       @zero
     end

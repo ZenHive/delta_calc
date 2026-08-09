@@ -37,7 +37,8 @@ defmodule DeltaCalc.CcxtDifferentialTest do
         daily_cost =
           Hedging.calculate_funding_cost(notional, rate, Decimal.to_integer(periods_per_day))
 
-        annual_cost = Decimal.mult(daily_cost, @days_per_year)
+        # The recorded annual fixture uses an eight-place daily reporting boundary.
+        annual_cost = daily_cost |> Decimal.round(8) |> Decimal.mult(@days_per_year)
 
         assert_decimal_close(
           daily_cost,
@@ -58,13 +59,13 @@ defmodule DeltaCalc.CcxtDifferentialTest do
                  )
 
         assert_decimal_close(
-          apr.daily,
+          Decimal.round(apr.daily, 4),
           decimal_at!(row, "venue_daily_rate_pct"),
           "daily rate pct"
         )
 
         assert_decimal_close(
-          apr.annual,
+          Decimal.round(apr.annual, 2),
           decimal_at!(row, "venue_annual_rate_pct"),
           "annual rate pct"
         )

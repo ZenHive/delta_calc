@@ -134,7 +134,6 @@ defmodule DeltaCalc.PropertyTest do
   defp shocked_mark_formula(mark, shock_pct) do
     mark
     |> D.mult(shock_pct |> D.div(@hundred) |> D.add(@one))
-    |> Calc.quantize()
   end
 
   @spec position_shock_pnl_formula(map(), D.t()) :: D.t()
@@ -157,7 +156,7 @@ defmodule DeltaCalc.PropertyTest do
       |> Enum.map(&position_shock_pnl_formula(&1, shock_pct))
       |> Enum.reduce(@zero, &D.add/2)
 
-    account.equity |> D.add(unrealized) |> Calc.quantize()
+    D.add(account.equity, unrealized)
   end
 
   @spec annualized_basis_formula(D.t(), pos_integer()) :: D.t()
@@ -214,9 +213,9 @@ defmodule DeltaCalc.PropertyTest do
         total_notional = D.add(single.notional, dca.notional)
         pnl = multi_leg_pnl_formula(legs, current, position_side)
 
-        pre_eff = Calc.quantize(effective_leverage_formula(single.notional, equity))
-        post_eff = Calc.quantize(effective_leverage_formula(total_notional, D.add(equity, pnl)))
-        expected_change = Calc.quantize(D.sub(post_eff, pre_eff))
+        pre_eff = effective_leverage_formula(single.notional, equity)
+        post_eff = effective_leverage_formula(total_notional, D.add(equity, pnl))
+        expected_change = D.sub(post_eff, pre_eff)
 
         diff = result.leverage_change |> D.sub(expected_change) |> D.abs()
         assert D.compare(diff, D.new("0.00000002")) != :gt
@@ -410,7 +409,7 @@ defmodule DeltaCalc.PropertyTest do
           |> D.div(spot)
           |> D.mult(@hundred)
 
-        assert D.equal?(Carry.basis(spot, perp), Calc.quantize(raw))
+        assert D.equal?(Carry.basis(spot, perp), raw)
       end
     end
 
@@ -487,7 +486,6 @@ defmodule DeltaCalc.PropertyTest do
           rate_frac
           |> D.mult(D.new(horizon * base_ppd * multiplier))
           |> D.mult(@hundred)
-          |> Calc.quantize()
 
         assert D.equal?(scaled, expected)
         assert D.equal?(scaled, D.mult(base, D.new(multiplier)))
@@ -550,7 +548,6 @@ defmodule DeltaCalc.PropertyTest do
         |> D.abs()
         |> D.mult(shocked_mark)
         |> D.mult(position.mmr)
-        |> Calc.quantize()
 
       {margin, index}
     end)

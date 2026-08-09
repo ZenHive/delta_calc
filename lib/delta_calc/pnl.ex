@@ -8,7 +8,6 @@ defmodule DeltaCalc.Pnl do
 
   use Descripex, namespace: "/pnl"
 
-  alias DeltaCalc.Calc
   alias DeltaCalc.Decimal, as: DecimalInput
   alias DeltaCalc.Fees
 
@@ -90,7 +89,6 @@ defmodule DeltaCalc.Pnl do
 
     if position_active?(entry, size) do
       gross_pnl(entry, mark, size, params.side)
-      |> Calc.quantize()
     else
       @zero
     end
@@ -151,7 +149,6 @@ defmodule DeltaCalc.Pnl do
       gross
       |> Decimal.sub(fees)
       |> Decimal.add(funding)
-      |> Calc.quantize()
     else
       @zero
     end
@@ -187,7 +184,6 @@ defmodule DeltaCalc.Pnl do
       pnl
       |> Decimal.div(margin)
       |> Decimal.mult(@hundred)
-      |> Calc.quantize()
     else
       @zero
     end

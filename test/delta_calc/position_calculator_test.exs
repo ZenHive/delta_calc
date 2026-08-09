@@ -101,7 +101,7 @@ defmodule DeltaCalc.PositionCalculatorTest do
       result = PositionCalculator.calculate_position(base_params(side: :long))
 
       assert Map.has_key?(result.position, :tokens)
-      assert D.equal?(result.position.tokens, D.new("0.03333333"))
+      assert result.position.tokens == D.new("0.03333333333333333333333333333333333")
     end
 
     test "short positions omit token count" do
@@ -166,7 +166,7 @@ defmodule DeltaCalc.PositionCalculatorTest do
     # Provenance: hand calc from the public PositionCalculator.calculate_position/1
     # and Calc.liquidation/4 contracts.
     #   notional = 200×0.3×2 = 120; eff_lev = 120/200 = 0.6
-    #   short liq: 50000×(1 + 0.995/0.6) = 132916.6666… (quantize → 132916.66666667)
+    #   short liq: 50000×(1 + 0.995/0.6) = 132916.6666… at Decimal context precision
     test "moderate short at 50k entry matches expected leverage and liquidation" do
       params = %{
         aum: D.new("10000"),

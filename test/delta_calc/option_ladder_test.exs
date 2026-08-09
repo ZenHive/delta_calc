@@ -145,6 +145,26 @@ defmodule DeltaCalc.OptionLadderTest do
                Decimal.new("63000")
              ]
     end
+
+    test "uses caller-selected strike precision and rounding mode" do
+      params = %{spot_price: "100.05", iv_percentile: 55, risk_profile: :conservative}
+
+      coarse =
+        OptionLadder.select_strikes(params,
+          strike_increment: "0.1",
+          rounding_mode: :half_up
+        )
+
+      fine =
+        OptionLadder.select_strikes(params,
+          strike_increment: "0.01",
+          rounding_mode: :down
+        )
+
+      assert hd(coarse.strikes).strike == Decimal.new("100.1")
+      assert hd(fine.strikes).strike == Decimal.new("100.05")
+      assert coarse.spot_price == fine.spot_price
+    end
   end
 
   describe "sync_with_funding/2" do

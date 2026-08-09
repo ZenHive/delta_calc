@@ -8,7 +8,6 @@ defmodule DeltaCalc.Fees do
 
   use Descripex, namespace: "/fees"
 
-  alias DeltaCalc.Calc
   alias DeltaCalc.Decimal, as: DecimalInput
 
   @zero Decimal.new(0)
@@ -83,7 +82,6 @@ defmodule DeltaCalc.Fees do
     fill_price
     |> DecimalInput.cast!()
     |> apply_entry_adjustment(params)
-    |> Calc.quantize()
   end
 
   api(
@@ -124,7 +122,6 @@ defmodule DeltaCalc.Fees do
     fill_price
     |> DecimalInput.cast!()
     |> apply_exit_adjustment(params)
-    |> Calc.quantize()
   end
 
   api(
@@ -169,7 +166,6 @@ defmodule DeltaCalc.Fees do
     open_notional
     |> Decimal.mult(open_rate)
     |> Decimal.add(Decimal.mult(close_notional, close_rate))
-    |> Calc.quantize()
   end
 
   api(
@@ -231,7 +227,6 @@ defmodule DeltaCalc.Fees do
       close_rate = DecimalInput.cast!(params.close_fee_rate)
 
       breakeven_price(entry, size, open_rate, close_rate, funding, side)
-      |> Calc.quantize()
     end
   end
 

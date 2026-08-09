@@ -125,7 +125,7 @@ defmodule DeltaCalc.PortfolioMarginTest do
 
       result = PortfolioMargin.portfolio_liquidation_price(account)
 
-      assert Decimal.equal?(result, Decimal.new("2512.56281407"))
+      assert result == Decimal.new("2512.562814070351758793969849246231")
     end
 
     test "returns liquidation price for a netted short book" do
@@ -149,7 +149,7 @@ defmodule DeltaCalc.PortfolioMarginTest do
 
       result = PortfolioMargin.portfolio_liquidation_price(account)
 
-      assert Decimal.equal?(result, Decimal.new("396.03960396"))
+      assert result == Decimal.new("396.0396039603960396039603960396040")
     end
 
     test "returns nil for a flat netted book" do
@@ -211,8 +211,8 @@ defmodule DeltaCalc.PortfolioMarginTest do
 
       result = PortfolioMargin.portfolio_liquidation_price(account)
 
-      # Net long 2 @ 2950: (2×2950 − 1000) / (2×0.995) = 2462.31155779…
-      assert Decimal.equal?(result, Decimal.new("2462.31155779"))
+      # Net long 2 @ 2950: (2×2950 − 1000) / (2×0.995) = 2462.3115577889…
+      assert result == Decimal.new("2462.311557788944723618090452261307")
     end
   end
 

@@ -97,9 +97,9 @@ defmodule DeltaCalc.Funding do
 
       {:ok,
        %{
-         hourly: pct(hourly_rate, 4),
-         daily: pct(daily_rate, 4),
-         annual: pct(annual_rate, 2)
+         hourly: pct(hourly_rate),
+         daily: pct(daily_rate),
+         annual: pct(annual_rate)
        }}
     else
       {:error, :invalid_decimal} -> {:error, :invalid_rate}
@@ -249,12 +249,12 @@ defmodule DeltaCalc.Funding do
 
     {:ok,
      %{
-       avg_rate: Decimal.round(avg_rate, 6),
-       max_rate: Decimal.round(max_rate, 6),
-       min_rate: Decimal.round(min_rate, 6),
+       avg_rate: avg_rate,
+       max_rate: max_rate,
+       min_rate: min_rate,
        trend: trend,
-       slope: Decimal.round(slope, 8),
-       volatility: Decimal.round(Decimal.sub(max_rate, min_rate), 6),
+       slope: slope,
+       volatility: Decimal.sub(max_rate, min_rate),
        data_points: data_points
      }}
   end
@@ -286,7 +286,7 @@ defmodule DeltaCalc.Funding do
     base =
       decimal_rates
       |> Map.merge(%{
-        delta: Decimal.round(delta, 6),
+        delta: delta,
         delta_unit: @delta_unit_daily_normalized,
         max_exchange: max_exchange,
         min_exchange: min_exchange,
@@ -317,7 +317,7 @@ defmodule DeltaCalc.Funding do
     base =
       decimal_rates
       |> Map.merge(%{
-        delta: Decimal.round(delta, 6),
+        delta: delta,
         delta_unit: @delta_unit_raw_per_period,
         max_exchange: max_exchange,
         min_exchange: min_exchange,
@@ -347,7 +347,6 @@ defmodule DeltaCalc.Funding do
     daily_delta
     |> Decimal.mult(Decimal.new(@days_per_year))
     |> Decimal.mult(@hundred)
-    |> Decimal.round(2)
   end
 
   @spec annual_apr_delta(
@@ -363,7 +362,6 @@ defmodule DeltaCalc.Funding do
 
     max_annual_apr
     |> Decimal.sub(min_annual_apr)
-    |> Decimal.round(2)
   end
 
   @spec annual_apr(Decimal.t(), Decimal.t()) :: Decimal.t()
@@ -478,6 +476,6 @@ defmodule DeltaCalc.Funding do
   defp extract_rate(%{rate: rate}), do: DecimalInput.cast!(rate)
   defp extract_rate(rate), do: DecimalInput.cast!(rate)
 
-  @spec pct(Decimal.t(), non_neg_integer()) :: Decimal.t()
-  defp pct(rate, precision), do: rate |> Decimal.mult(@hundred) |> Decimal.round(precision)
+  @spec pct(Decimal.t()) :: Decimal.t()
+  defp pct(rate), do: Decimal.mult(rate, @hundred)
 end

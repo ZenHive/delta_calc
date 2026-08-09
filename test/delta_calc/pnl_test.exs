@@ -131,7 +131,7 @@ defmodule DeltaCalc.PnlTest do
           close_fee_rate: @close_rate
         })
 
-      expected = gross |> Decimal.sub(fees) |> Decimal.add(funding) |> Decimal.round(8)
+      expected = gross |> Decimal.sub(fees) |> Decimal.add(funding)
 
       assert Decimal.equal?(result, expected)
     end
@@ -162,7 +162,7 @@ defmodule DeltaCalc.PnlTest do
           close_fee_rate: @close_rate
         })
 
-      expected = gross |> Decimal.sub(fees) |> Decimal.add(funding) |> Decimal.round(8)
+      expected = gross |> Decimal.sub(fees) |> Decimal.add(funding)
 
       assert Decimal.equal?(result, expected)
     end

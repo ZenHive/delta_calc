@@ -4,6 +4,8 @@ defmodule DeltaCalc.GoldenCalcTest do
 
   alias DeltaCalc.Calc
 
+  @decimal128_accumulation_tolerance Decimal.new("1e-28")
+
   # Compare Decimals within an absolute tolerance (never via to_float).
   defp assert_close(actual, expected, tolerance) do
     diff = actual |> Decimal.sub(expected) |> Decimal.abs()
@@ -66,7 +68,7 @@ defmodule DeltaCalc.GoldenCalcTest do
     #   init_margin = 200 × 0.3 = 60; notional = 60 × 2 = 120
     #   eff_lev = 120 / 200 = 0.6
     #   short liq: 0.995/0.6 = 1.658333…; 1+1.658333…=2.658333…;
-    #   50000 × 2.658333… = 132916.6666… (quantize → 132916.66666667)
+    #   50000 × 2.658333… = 132916.6666… at Decimal context precision
     test "calculates expected values correctly" do
       entry_price = Decimal.new(50_000)
       ui_leverage = Decimal.new(2)
@@ -202,15 +204,11 @@ defmodule DeltaCalc.GoldenCalcTest do
             Decimal.add(acc, step.spend)
           end)
 
-        # Total spend should never exceed reserve
-        # Account for quantization: each spend is rounded to 8 decimals
-        # Maximum rounding error per step is 0.000000005
-        # With max 5 steps, total error could be 0.000000025
-        max_rounding_error =
-          Decimal.mult(Decimal.new("0.000000005"), Decimal.new(length(result.steps)))
-
-        max_allowed = Decimal.add(reserve, max_rounding_error)
-        assert Decimal.compare(total_spend, max_allowed) in [:lt, :eq]
+        # Decimal128 accumulation may differ by one final-place unit.
+        assert Decimal.compare(total_spend, reserve, @decimal128_accumulation_tolerance) in [
+                 :lt,
+                 :eq
+               ]
       end
     end
 

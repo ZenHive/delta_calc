@@ -9,7 +9,6 @@ defmodule DeltaCalc.PortfolioMargin do
 
   use Descripex, namespace: "/portfolio_margin"
 
-  alias DeltaCalc.Calc
   alias DeltaCalc.Decimal, as: DecimalInput
 
   @zero Decimal.new(0)
@@ -62,7 +61,7 @@ defmodule DeltaCalc.PortfolioMargin do
     ],
     returns: %{
       type: :decimal,
-      description: "Maintenance margin for the net position, rounded to 8 places."
+      description: "Maintenance margin for the net position at Decimal context precision."
     }
   )
 
@@ -75,7 +74,6 @@ defmodule DeltaCalc.PortfolioMargin do
     |> Decimal.abs()
     |> Decimal.mult(exposure.mark_price)
     |> Decimal.mult(exposure.mmr)
-    |> Calc.quantize()
   end
 
   api(
@@ -150,7 +148,7 @@ defmodule DeltaCalc.PortfolioMargin do
   def margin_usage(account) do
     equity = DecimalInput.cast!(account.equity)
     used = combined_maintenance_margin(account)
-    available = equity |> Decimal.sub(used) |> Decimal.max(@zero) |> Calc.quantize()
+    available = equity |> Decimal.sub(used) |> Decimal.max(@zero)
 
     %{
       used: used,
@@ -188,7 +186,6 @@ defmodule DeltaCalc.PortfolioMargin do
       :gt ->
         numerator
         |> Decimal.div(denominator)
-        |> Calc.quantize()
         |> Decimal.max(@zero)
 
       _ ->
@@ -202,7 +199,6 @@ defmodule DeltaCalc.PortfolioMargin do
         used
         |> Decimal.div(equity)
         |> Decimal.mult(@hundred)
-        |> Calc.quantize()
 
       _ ->
         @zero

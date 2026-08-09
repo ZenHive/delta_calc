@@ -14,8 +14,8 @@ defmodule DeltaCalc.CarryTest do
     test "returns backwardation as a negative percentage discount to spot" do
       basis = Carry.basis(Decimal.new("60000"), Decimal.new("59500"))
 
-      # (59500 - 60000) / 60000 * 100 = -500/600 = -0.83333333...%
-      assert Decimal.equal?(basis, Decimal.new("-0.83333333"))
+      # (59500 - 60000) / 60000 * 100 = -500/600 = -0.833333...%
+      assert basis == Decimal.new("-0.8333333333333333333333333333333333")
     end
 
     test "returns zero when spot price is not positive" do
@@ -35,7 +35,7 @@ defmodule DeltaCalc.CarryTest do
         })
 
       # basis = 1%, periods = 30 * 3 = 90 → -1 / 90 / 100
-      assert Decimal.equal?(rate, Decimal.new("-0.00011111"))
+      assert rate == Decimal.new("-0.0001111111111111111111111111111111111")
     end
   end
 
@@ -53,7 +53,10 @@ defmodule DeltaCalc.CarryTest do
       assert Decimal.equal?(result.basis_yield, Decimal.new("1.00000000"))
       assert Decimal.equal?(result.funding_yield, Decimal.new("0.90000000"))
       assert Decimal.equal?(result.net_yield, Decimal.new("1.90000000"))
-      assert Decimal.equal?(result.breakeven_funding, Decimal.new("-0.00011111"))
+
+      assert result.breakeven_funding ==
+               Decimal.new("-0.0001111111111111111111111111111111111")
+
       assert result.profitable? == true
     end
 

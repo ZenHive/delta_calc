@@ -435,7 +435,6 @@ defmodule DeltaCalc.OptionsRisk do
     total_cost
     |> Decimal.div(denominator)
     |> Decimal.mult(@hundred)
-    |> Decimal.round(0)
     |> Decimal.div(@hundred)
   end
 

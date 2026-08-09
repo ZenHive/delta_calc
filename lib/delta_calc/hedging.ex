@@ -134,7 +134,6 @@ defmodule DeltaCalc.Hedging do
         cex_value
         |> Decimal.div(total_spot)
         |> Decimal.mult(Decimal.new(100))
-        |> Decimal.round(2)
       else
         Decimal.new(0)
       end
@@ -323,7 +322,6 @@ defmodule DeltaCalc.Hedging do
     position_size
     |> Decimal.mult(funding_rate)
     |> Decimal.mult(Decimal.new(periods_per_day))
-    |> Decimal.round(8)
   end
 
   api(
@@ -386,7 +384,6 @@ defmodule DeltaCalc.Hedging do
         spread
         |> Decimal.div(spot_price)
         |> Decimal.mult(Decimal.new(100))
-        |> Decimal.round(4)
       else
         Decimal.new(0)
       end
@@ -592,7 +589,6 @@ defmodule DeltaCalc.Hedging do
       |> Decimal.sub(old_val)
       |> Decimal.div(old_val)
       |> Decimal.mult(Decimal.new(100))
-      |> Decimal.round(2)
     else
       Decimal.new(0)
     end

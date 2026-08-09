@@ -198,18 +198,20 @@ defmodule DeltaCalc.OptionLadder do
         kind: :value,
         default: [],
         description:
-          "Optional :option_type (:call or :put) and :strike_increment as a canonical decimal string; native Elixir callers may also pass Decimal or integer for the exact increment."
+          "Optional :option_type (:call or :put), :strike_increment as a canonical decimal string, " <>
+            "and Decimal :rounding_mode (default :half_up); native Elixir callers may also pass Decimal or integer for the exact increment."
       ]
     ],
     returns: %{type: :map, description: "Map with selected strikes and IV size adjustment."}
   )
 
-  @doc "Return an IV-aware strike ladder for the requested risk profile."
+  @doc "Return an IV-aware strike ladder quantized to the caller's increment and rounding mode."
   @spec select_strikes(map(), keyword()) :: strike_result()
   def select_strikes(params, opts \\ []) do
     spot_price = DecimalInput.cast!(params.spot_price)
     risk_profile = params.risk_profile
     option_type = Keyword.get(opts, :option_type, :call)
+    rounding_mode = Keyword.get(opts, :rounding_mode, :half_up)
 
     increment =
       opts
@@ -221,7 +223,7 @@ defmodule DeltaCalc.OptionLadder do
     strikes =
       risk_profile
       |> profile_steps()
-      |> Enum.map(&build_strike(spot_price, &1, option_type, increment))
+      |> Enum.map(&build_strike(spot_price, &1, option_type, increment, rounding_mode))
 
     %{
       risk_profile: risk_profile,
@@ -307,7 +309,7 @@ defmodule DeltaCalc.OptionLadder do
 
     %{
       base_size: base_size,
-      adjusted_size: base_size |> Decimal.mult(multiplier) |> Decimal.round(2),
+      adjusted_size: Decimal.mult(base_size, multiplier),
       multiplier: multiplier,
       action: action,
       reason: reason
@@ -357,7 +359,7 @@ defmodule DeltaCalc.OptionLadder do
     base_total = Enum.reduce(buckets, @zero, &Decimal.add(&1.allocation, &2))
 
     Enum.map(buckets, fn bucket ->
-      %{bucket | allocation: bucket.allocation |> Decimal.div(base_total) |> Decimal.round(4)}
+      %{bucket | allocation: Decimal.div(bucket.allocation, base_total)}
     end)
   end
 
@@ -369,9 +371,11 @@ defmodule DeltaCalc.OptionLadder do
     Map.fetch!(@strike_profiles, risk_profile)
   end
 
-  defp build_strike(spot_price, otm_pct, option_type, increment) do
+  defp build_strike(spot_price, otm_pct, option_type, increment, rounding_mode) do
     multiplier = strike_multiplier(otm_pct, option_type)
-    strike = spot_price |> Decimal.mult(multiplier) |> round_to_increment(increment)
+
+    strike =
+      spot_price |> Decimal.mult(multiplier) |> round_to_increment(increment, rounding_mode)
 
     %{
       strike: strike,
@@ -458,10 +462,10 @@ defmodule DeltaCalc.OptionLadder do
     {:normal_size, @normal_iv_multiplier, "Vol normal, keep base size"}
   end
 
-  defp round_to_increment(value, increment) do
+  defp round_to_increment(value, increment, rounding_mode) do
     value
     |> Decimal.div(increment)
-    |> Decimal.round(0)
+    |> Decimal.round(0, rounding_mode)
     |> Decimal.mult(increment)
   end
 

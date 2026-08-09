@@ -2207,7 +2207,7 @@
       "phase": 3,
       "bundle": "contract_hardening",
       "milestone": "v0_3",
-      "status": "in_progress",
+      "status": "done",
       "title": "Advertise exact Decimal inputs as canonical JSON strings in Descripex",
       "scores": {
         "d": 6,
@@ -2279,10 +2279,17 @@
         "test/delta_calc/manifest_test.exs",
         "test/delta_calc/manifest_consistency_test.exs"
       ],
+      "shipped_in": "4f7df1fa47df26f71ef3ac90ba622894326e5a24",
       "body": "The library computes exact values with Decimal, but its agent contract alternates between schema: float() and no schema. Verified on 2026-07-25 against the pinned descripex 0.11.0 and json_spec 1.1.1: Descripex compiles schema annotations through JSONSpec; String.t() maps to JSON Schema string, while Decimal.t() and mixed number|string unions are not supported. Therefore use canonical decimal strings for agent transport rather than claiming that a Decimal struct itself is JSON-serializable.\n\nTask 39 defines the runtime policy: Decimal, integers, and canonical decimal strings are exact inputs; raw floats and malformed strings are rejected. Make the manifest, MCP tools, and examples express that same contract without claiming Decimal structs are JSON-serializable.\n\nDispatch trigger: repo-wide public agent contract change across every calculation module.\n",
       "created_at": "2026-06-19",
       "started_at": "2026-08-09",
+      "done_at": "2026-08-09",
       "scored_at": "2026-07-25",
+      "implemented": "Landed by codex via merge-train; reviewer-approved (run run-1786277294200-79e0291f, 4f7df1fa47df26f71ef3ac90ba622894326e5a24).",
+      "delivered_by": "codex",
+      "verified": true,
+      "verified_by": "claude",
+      "verification_ref": "harness-run:run-1786277294200-79e0291f",
       "cross_repo": []
     },
     {

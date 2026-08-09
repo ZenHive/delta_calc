@@ -179,17 +179,17 @@ defmodule DeltaCalc.OptionsRiskTest do
 
       assert Decimal.equal?(low.rate, Decimal.new("-0.0002"))
       assert Decimal.equal?(low.daily, Decimal.new("36"))
-      assert Decimal.equal?(low.total_90d, Decimal.new("3240"))
+      assert Decimal.equal?(low["total_90d"], Decimal.new("3240"))
       assert Decimal.equal?(low.margin_impact, Decimal.new("0.07"))
 
       assert Decimal.equal?(mid.rate, Decimal.new("-0.00025"))
       assert Decimal.equal?(mid.daily, Decimal.new("45"))
-      assert Decimal.equal?(mid.total_90d, Decimal.new("4050"))
+      assert Decimal.equal?(mid["total_90d"], Decimal.new("4050"))
       assert Decimal.equal?(mid.margin_impact, Decimal.new("0.09"))
 
       assert Decimal.equal?(high.rate, Decimal.new("-0.0003"))
       assert Decimal.equal?(high.daily, Decimal.new("54"))
-      assert Decimal.equal?(high.total_90d, Decimal.new("4860"))
+      assert Decimal.equal?(high["total_90d"], Decimal.new("4860"))
       assert Decimal.equal?(high.margin_impact, Decimal.new("0.11"))
 
       assert result.kill_switch_day_min == 117
@@ -220,7 +220,8 @@ defmodule DeltaCalc.OptionsRiskTest do
         )
 
       scenario = hd(result.scenarios)
-      assert Decimal.equal?(scenario.total_30d, Decimal.new("1080"))
+      assert Decimal.equal?(scenario["total_30d"], Decimal.new("1080"))
+      refute Map.has_key?(scenario, :total_30d)
     end
 
     test "Deribit hourly cadence (24 periods/day) flows through to per-row daily and total figures" do
@@ -235,7 +236,7 @@ defmodule DeltaCalc.OptionsRiskTest do
 
       scenario = hd(result.scenarios)
       assert Decimal.equal?(scenario.daily, Decimal.new("288"))
-      assert Decimal.equal?(scenario.total_90d, Decimal.new("25920"))
+      assert Decimal.equal?(scenario["total_90d"], Decimal.new("25920"))
     end
 
     test "single kill-switch day sets min and max to the same value" do

@@ -215,7 +215,8 @@ defmodule DeltaCalc.OptionsRisk do
     returns: %{
       type: :map,
       description:
-        "Map with scenario, per-rate rows (rate, daily, total_{duration_days}d, margin_impact ratio), " <>
+        "Map with scenario, per-rate rows (rate, daily, string-keyed total_{duration_days}d, " <>
+          "margin_impact ratio), " <>
           "kill_switch_day_min, and kill_switch_day_max."
     }
   )
@@ -334,8 +335,8 @@ defmodule DeltaCalc.OptionsRisk do
     }
   end
 
-  @spec total_duration_key(pos_integer()) :: atom()
-  defp total_duration_key(duration_days), do: :"total_#{duration_days}d"
+  @spec total_duration_key(pos_integer()) :: String.t()
+  defp total_duration_key(duration_days), do: "total_#{duration_days}d"
 
   @spec prolonged_negative_opts(Decimal.t(), term(), pos_integer()) :: keyword()
   defp prolonged_negative_opts(capital, initial_margin_ratio, periods_per_day) do

@@ -11,7 +11,7 @@ Source of truth: `roadmap/tasks.toml` (managed by [`rmap`](https://hex.pm/)). Th
 - **target_version:** 0.3.0
 - **status:** 🔄 active
 - **hypothesis:** Proves TradingDashboard can consume DeltaCalc as the unit-consistent, independently checked source for everyday leveraged-trading decisions without compensating for hidden venue constants or ambiguous contracts.
-- **pinned tasks:** 17/25 done
+- **pinned tasks:** 18/25 done
 
 ### v0_4 — Base-numeraire covered-call math
 
@@ -85,7 +85,7 @@ Complete the cross-module correctness work and the pure decision primitives used
 | Task 42 | ⬜ | 🎁 **consumer_math** · 🚀 **v0_3** · Expose side-aware public multi_leg_position (shorts) [D:3/B:6/U:6 → Eff:2.0] 🎯 |
 | Task 43 | ✅ | 🎁 **contract_hardening** · Fix PortfolioMargin netted mark price for offsetting legs [D:4/B:7/U:6 → Eff:1.62?] 🚀 |
 | Task 44 | ⬜ | 🎁 **contract_hardening** · 🚀 **v0_3** · 🐛 Make DCA and position-sizing inputs behaviorally truthful [D:5/B:6/U:6 → Eff:1.2] 📋 |
-| Task 45 | 🔄 | 🎁 **contract_hardening** · 🚀 **v0_3** · Replace formula-derived golden values with independent fixtures [D:7/B:9/U:8 → Eff:1.21] 📋 |
+| Task 45 | ✅ | 🎁 **contract_hardening** · 🚀 **v0_3** · Replace formula-derived golden values with independent fixtures [D:7/B:9/U:8 → Eff:1.21] 📋 |
 | Task 46 | ⬜ | 🎁 **contract_hardening** · 🚀 **v0_3** · Advertise exact Decimal inputs as canonical JSON strings in Descripex [D:6/B:7/U:7 → Eff:1.17] 📋 |
 | Task 47 | ✅ | 🎁 **contract_hardening** · Move presentation strings out of pure-calc results [D:2/B:5/U:5 → Eff:2.5?] 🎯 |
 | Task 48 | ⬜ | 🎁 **contract_hardening** · 🚀 **v0_3** · Move rounding to explicit caller-controlled output boundaries [D:7/B:6/U:4 → Eff:0.71] ⚠️ |

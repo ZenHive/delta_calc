@@ -20,6 +20,36 @@ defmodule DeltaCalc.OptionsRisk do
   @default_margin_impact_denominator Decimal.new("0.75")
 
   @type health_status :: :healthy | :warning | :critical
+  @type decimal_input :: Decimal.t() | number() | String.t()
+
+  @type exposure_inputs :: %{
+          required(:spot_notional) => decimal_input(),
+          required(:perp_notional) => decimal_input(),
+          required(:options_notional) => decimal_input(),
+          required(:margin_debt) => decimal_input()
+        }
+
+  @type negative_funding_inputs :: %{
+          required(:negative_rate) => decimal_input(),
+          required(:position_size) => decimal_input(),
+          optional(:market_context) => atom(),
+          optional(:capital_protected) => boolean(),
+          optional(:periods_per_day) => pos_integer()
+        }
+
+  @type extended_stress_inputs :: %{
+          required(:funding_rates) => [decimal_input()],
+          required(:position_size) => decimal_input(),
+          optional(:scenario) => atom()
+        }
+
+  @type margin_health_inputs :: %{
+          required(:initial_margin) => decimal_input(),
+          required(:option_premium) => decimal_input(),
+          required(:capital) => decimal_input(),
+          required(:available_margin) => decimal_input(),
+          required(:daily_burn) => decimal_input()
+        }
 
   @type max_loss_result :: %{
           max_loss: Decimal.t(),
@@ -120,7 +150,7 @@ defmodule DeltaCalc.OptionsRisk do
   )
 
   @doc "Return per-leg notionals and `total_exposure` as the sum of absolute leg values."
-  @spec calculate_total_exposure(map()) :: exposure_result()
+  @spec calculate_total_exposure(exposure_inputs()) :: exposure_result()
   def calculate_total_exposure(legs) do
     spot = legs |> Map.fetch!(:spot_notional) |> to_decimal() |> Decimal.abs()
     perp = legs |> Map.fetch!(:perp_notional) |> to_decimal() |> Decimal.abs()
@@ -167,7 +197,7 @@ defmodule DeltaCalc.OptionsRisk do
   `:capital_protected` defaults to true (price risk hedged). `:market_context` adjusts
   qualitative setup/opportunity fields (`:post_crash`, `:bear_market`, etc.).
   """
-  @spec calculate_negative_funding_impact(map()) :: negative_funding_impact()
+  @spec calculate_negative_funding_impact(negative_funding_inputs()) :: negative_funding_impact()
   def calculate_negative_funding_impact(params) do
     negative_rate = params |> Map.fetch!(:negative_rate) |> to_decimal()
     position_size = params |> Map.fetch!(:position_size) |> to_decimal()
@@ -229,7 +259,8 @@ defmodule DeltaCalc.OptionsRisk do
   drain as a ratio of free capital headroom below the kill-switch threshold
   (e.g. `0.07` for 7% of headroom).
   """
-  @spec stress_test_extended_negative(map(), keyword()) :: extended_stress_result()
+  @spec stress_test_extended_negative(extended_stress_inputs(), keyword()) ::
+          extended_stress_result()
   def stress_test_extended_negative(params, opts \\ []) do
     funding_rates = Map.fetch!(params, :funding_rates)
     position_size = params |> Map.fetch!(:position_size) |> to_decimal()
@@ -314,7 +345,7 @@ defmodule DeltaCalc.OptionsRisk do
   phase7 thresholds: healthy at or below 25%, warning above 25% through 35%, critical above
   the `:reduce` threshold (default 35%).
   """
-  @spec monitor_margin_bridge_health(map(), keyword()) :: margin_health()
+  @spec monitor_margin_bridge_health(margin_health_inputs(), keyword()) :: margin_health()
   def monitor_margin_bridge_health(params, opts \\ []) do
     initial_margin = params |> Map.fetch!(:initial_margin) |> to_decimal()
     option_premium = params |> Map.fetch!(:option_premium) |> to_decimal()

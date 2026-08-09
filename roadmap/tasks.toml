@@ -1080,7 +1080,7 @@ id = 39
 phase = 3
 bundle = "contract_hardening"
 milestone = "v0_3"
-status = "pending"
+status = "in_progress"
 title = "Centralize Decimal coercion and eliminate silent input fallbacks"
 scores = { d = 7, b = 8, u = 8 }
 markers = ["bug"]
@@ -1098,6 +1098,7 @@ Centralize the accepted-type rules and delete the copies. Exact financial inputs
 Dispatch trigger: repo-wide public input contract and critical money-math error semantics across twelve modules.
 """
 created_at = "2026-06-19"
+started_at = "2026-08-09"
 scored_at = "2026-07-25"
 
 [[task]]

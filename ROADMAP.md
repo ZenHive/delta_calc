@@ -78,7 +78,7 @@ Complete the cross-module correctness work and the pure decision primitives used
 | Task 35 | ✅ | 🎁 **contract_hardening** · Fix Funding.compare_funding_rates cross-cadence ranking: max/min and arbitrage from raw rates, annualized at per-venue cadence [D:4/B:6/U:6 → Eff:1.5?] 🚀 |
 | Task 36 | ✅ | 🎁 **contract_hardening** · Reconcile Funding :delta units across scalar vs venue-map cadence paths (find_arbitrage_opportunities min_delta scale) [D:3/B:5/U:5 → Eff:1.67?] 🚀 |
 | Task 37 | ✅ | 🎁 **contract_hardening** · Fix inverted min_delta raw→daily scaling in Funding.find_arbitrage_opportunities (divide vs multiply) [D:3/B:5/U:5 → Eff:1.67?] 🚀 |
-| Task 38 | ⬜ | 🎁 **contract_hardening** · 🚀 **v0_3** · 🐛 Standardize funding-rate unit (fraction) across all DeltaCalc modules [D:4/B:8/U:7 → Eff:1.88] 🚀 |
+| Task 38 | 🔄 | 🎁 **contract_hardening** · 🚀 **v0_3** · 🐛 Standardize funding-rate unit (fraction) across all DeltaCalc modules [D:4/B:8/U:7 → Eff:1.88] 🚀 |
 | Task 39 | ⬜ | 🎁 **contract_hardening** · 🚀 **v0_3** · 🐛 Centralize Decimal coercion and eliminate silent input fallbacks [D:7/B:8/U:8 → Eff:1.14] 📋 |
 | Task 40 | ✅ | 🎁 **contract_hardening** · Manifest consistency test must cover unannotated public functions [D:2/B:6/U:6 → Eff:3.0?] 🎯 |
 | Task 41 | ⬜ | 🎁 **contract_hardening** · 🚀 **v0_3** · 🐛 Remove baked-in venue risk constants from generic margin/liquidation math [D:5/B:8/U:7 → Eff:1.5] 🚀 |

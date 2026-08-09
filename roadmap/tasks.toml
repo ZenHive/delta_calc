@@ -1228,7 +1228,7 @@ id = 45
 phase = 3
 bundle = "contract_hardening"
 milestone = "v0_3"
-status = "pending"
+status = "in_progress"
 title = "Replace formula-derived golden values with independent fixtures"
 scores = { d = 7, b = 9, u = 8 }
 acceptance_criteria = ["Liquidation, position sizing, DCA, fees, and funding each have at least one golden fixture whose expected value is derived independently of the implementation under test", "Every fixture names its provenance and derivation; claims about a venue use that provider's official contract, while generic formulas may use a documented hand calculation from the public domain contract", "No expected value imports, calls, or algebraically reuses the implementation formula or its internal constants", "Decimal results are compared directly with explicit Decimal tolerances rather than converted to floats", "Replace the task-45 flunk placeholder and remove its @tag :domain_pending in test/delta_calc/domain_invariants_test.exs so the liquidation invariant runs under mix ci", "mix ci clean; affected money-math modules stay >= 95% coverage"]
@@ -1245,6 +1245,7 @@ Replace formula-derived goldens with one independently derived fixture for each 
 Dispatch trigger: independent verification of critical money formulas across five calculation families.
 """
 created_at = "2026-06-19"
+started_at = "2026-08-09"
 scored_at = "2026-07-25"
 
 [[task]]

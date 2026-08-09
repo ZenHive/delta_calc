@@ -1427,7 +1427,7 @@ id = 51
 phase = 3
 bundle = "contract_hardening"
 milestone = "v0_3"
-status = "in_progress"
+status = "done"
 title = "Split Calc god-module along cohesion seams"
 scores = { d = 7, b = 5, u = 4 }
 depends_on = [42, 44, 48]
@@ -1442,9 +1442,16 @@ Current audit: Calc exceeds 1,100 lines and mixes leverage, liquidation, allocat
 
 Dispatch trigger: multi-module public API-preserving refactor of a central money-math surface.
 """
+implemented = "Landed by codex via merge-train; reviewer-approved (run run-1786281080703-15305139, df0ceb278a6cd7e77db971e4fdbbf2542773d0cf)."
+delivered_by = "codex"
+verified = true
+verified_by = "claude"
+verification_ref = "harness-run:run-1786281080703-15305139"
 created_at = "2026-06-19"
 started_at = "2026-08-09"
 scored_at = "2026-07-25"
+done_at = "2026-08-09"
+shipped_in = "df0ceb278a6cd7e77db971e4fdbbf2542773d0cf"
 
 [[task]]
 id = 53

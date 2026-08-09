@@ -11,7 +11,7 @@ Source of truth: `roadmap/tasks.toml` (managed by [`rmap`](https://hex.pm/)). Th
 - **target_version:** 0.3.0
 - **status:** 🔄 active
 - **hypothesis:** Proves TradingDashboard can consume DeltaCalc as the unit-consistent, independently checked source for everyday leveraged-trading decisions without compensating for hidden venue constants or ambiguous contracts.
-- **pinned tasks:** 24/25 done
+- **pinned tasks:** 25/25 done
 
 ### v0_4 — Base-numeraire covered-call math
 
@@ -91,6 +91,6 @@ Complete the cross-module correctness work and the pure decision primitives used
 | Task 48 | ✅ | 🎁 **contract_hardening** · 🚀 **v0_3** · Move rounding to explicit caller-controlled output boundaries [D:7/B:6/U:4 → Eff:0.71] ⚠️ |
 | Task 49 | ✅ | 🎁 **contract_hardening** · Disambiguate zero-as-sentinel vs legitimate zero in Calc returns [D:3/B:4/U:4 → Eff:1.33?] 📋 |
 | Task 50 | ✅ | 🎁 **contract_hardening** · Fix per-position liquidated? semantics in StressScenario.apply_shock [D:2/B:4/U:4 → Eff:2.0?] 🎯 |
-| Task 51 | 🔄 | 🎁 **contract_hardening** · 🚀 **v0_3** · Split Calc god-module along cohesion seams [D:7/B:5/U:4 → Eff:0.64] ⚠️ |
+| Task 51 | ✅ | 🎁 **contract_hardening** · 🚀 **v0_3** · Split Calc god-module along cohesion seams [D:7/B:5/U:4 → Eff:0.64] ⚠️ |
 | Task 53 | ✅ | 🎁 **consumer_math** · 🚀 **v0_4** · Add base-numeraire inverse exposure and covered-call coverage math [D:6/B:8/U:7 → Eff:1.25] 📋 |
 <!-- TASKS:END -->

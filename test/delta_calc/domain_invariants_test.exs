@@ -49,7 +49,6 @@ defmodule DeltaCalc.DomainInvariantsTest do
     #
     # Hand calc (rate = 0.0001 fraction, position = 10_000, periods = 3, 1 day):
     #   daily funding magnitude = 0.0001 * 10_000 * 3 = 3.0
-    @tag :domain_pending
     test "Hedging and MarginBridge agree on the funding-rate unit" do
       position = Decimal.new("10000")
       rate_fraction = Decimal.new("0.0001")

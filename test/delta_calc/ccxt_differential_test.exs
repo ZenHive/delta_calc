@@ -75,12 +75,13 @@ defmodule DeltaCalc.CcxtDifferentialTest do
       row = funding_row!("hyperliquid", "BTC/USDC:USDC")
       periods_per_day = row |> periods_per_day() |> Decimal.to_integer()
       notional = decimal_at!(row, "notional")
-      rate_pct = row |> decimal_at!("funding_rate") |> Decimal.mult(@hundred)
+      # Fraction unit — same as Hedging.calculate_funding_cost / Funding (no *100).
+      rate = decimal_at!(row, "funding_rate")
       expected_daily_cost = row |> decimal_at!("venue_daily_funding_cost") |> Decimal.abs()
 
       margin_bridge =
         MarginBridge.stress_test_prolonged_negative(
-          rate_pct,
+          rate,
           notional,
           1,
           periods_per_day: periods_per_day
@@ -88,7 +89,7 @@ defmodule DeltaCalc.CcxtDifferentialTest do
 
       options_risk =
         OptionsRisk.calculate_negative_funding_impact(%{
-          negative_rate: rate_pct,
+          negative_rate: rate,
           position_size: notional,
           periods_per_day: periods_per_day
         })
@@ -106,7 +107,7 @@ defmodule DeltaCalc.CcxtDifferentialTest do
       )
 
       old_implicit_8h =
-        MarginBridge.stress_test_prolonged_negative(rate_pct, notional, 1, periods_per_day: 3)
+        MarginBridge.stress_test_prolonged_negative(rate, notional, 1, periods_per_day: 3)
 
       refute Decimal.equal?(old_implicit_8h.daily_cost, expected_daily_cost)
     end

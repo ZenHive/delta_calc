@@ -147,8 +147,9 @@ defmodule DeltaCalc.OptionsRisk do
       params: [
         kind: :value,
         description:
-          "Map with :negative_rate, :position_size, optional :market_context, :capital_protected, " <>
-            "and :periods_per_day (default 3 for 8h funding; use 24 for Deribit hourly)."
+          "Map with :negative_rate (decimal fraction, e.g. -0.0003 for -0.03%), :position_size, " <>
+            "optional :market_context, :capital_protected, and :periods_per_day " <>
+            "(default 3 for 8h funding; use 24 for Deribit hourly)."
       ]
     ],
     returns: %{
@@ -161,6 +162,8 @@ defmodule DeltaCalc.OptionsRisk do
   @doc """
   Compute negative-funding cash-flow impact for a delta-neutral margin bridge.
 
+  `:negative_rate` is a decimal fraction per funding period (e.g. `-0.0003` for
+  `-0.03%`), matching `Funding`/`Hedging`/`MarginBridge` — not a percent number.
   `:capital_protected` defaults to true (price risk hedged). `:market_context` adjusts
   qualitative setup/opportunity fields (`:post_crash`, `:bear_market`, etc.).
   """
@@ -197,7 +200,9 @@ defmodule DeltaCalc.OptionsRisk do
     params: [
       params: [
         kind: :value,
-        description: "Map with :funding_rates list, :position_size, optional :scenario atom."
+        description:
+          "Map with :funding_rates (decimal fractions, e.g. -0.0002 for -0.02%), " <>
+            ":position_size, optional :scenario atom."
       ],
       opts: [
         kind: :value,
@@ -218,8 +223,10 @@ defmodule DeltaCalc.OptionsRisk do
   @doc """
   Run extended negative-funding scenarios (default 90 days) across multiple rates.
 
-  `margin_impact` is the funding drain as a ratio of free capital headroom below the
-  kill-switch threshold (e.g. `0.07` for 7% of headroom).
+  Each rate in `:funding_rates` is a decimal fraction per period (e.g. `-0.0002` for
+  `-0.02%`), matching `Funding`/`Hedging`/`MarginBridge`. `margin_impact` is the funding
+  drain as a ratio of free capital headroom below the kill-switch threshold
+  (e.g. `0.07` for 7% of headroom).
   """
   @spec stress_test_extended_negative(map(), keyword()) :: extended_stress_result()
   def stress_test_extended_negative(params, opts \\ []) do

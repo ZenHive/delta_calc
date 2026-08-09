@@ -139,10 +139,11 @@ defmodule DeltaCalc.MarginBridgeTest do
   end
 
   describe "stress_test_prolonged_negative/3" do
+    # Rates are decimal fractions (e.g. -0.00025 = -0.025%), matching Funding/Hedging.
     test "matches phase7 prolonged negative example at -0.025% for 90 days" do
       result =
         MarginBridge.stress_test_prolonged_negative(
-          Decimal.new("-0.025"),
+          Decimal.new("-0.00025"),
           Decimal.new("60000"),
           90
         )
@@ -155,7 +156,7 @@ defmodule DeltaCalc.MarginBridgeTest do
     test "matches -0.02% daily cost of 36 on 60k position" do
       result =
         MarginBridge.stress_test_prolonged_negative(
-          Decimal.new("-0.02"),
+          Decimal.new("-0.0002"),
           Decimal.new("60000"),
           30
         )
@@ -167,7 +168,7 @@ defmodule DeltaCalc.MarginBridgeTest do
     test "matches -0.03% daily cost of 54 on 60k position" do
       result =
         MarginBridge.stress_test_prolonged_negative(
-          Decimal.new("-0.03"),
+          Decimal.new("-0.0003"),
           Decimal.new("60000"),
           90
         )
@@ -179,7 +180,7 @@ defmodule DeltaCalc.MarginBridgeTest do
     test "computes kill_switch_day when capital and initial margin ratio supplied" do
       result =
         MarginBridge.stress_test_prolonged_negative(
-          Decimal.new("-0.025"),
+          Decimal.new("-0.00025"),
           Decimal.new("60000"),
           90,
           capital: Decimal.new("60000"),
@@ -192,7 +193,7 @@ defmodule DeltaCalc.MarginBridgeTest do
     test "kill_switch_day is nil without optional margin context" do
       result =
         MarginBridge.stress_test_prolonged_negative(
-          Decimal.new("-0.025"),
+          Decimal.new("-0.00025"),
           Decimal.new("60000"),
           90
         )
@@ -203,7 +204,7 @@ defmodule DeltaCalc.MarginBridgeTest do
     test "kill_switch_day is nil when already above kill-switch margin threshold" do
       result =
         MarginBridge.stress_test_prolonged_negative(
-          Decimal.new("-0.025"),
+          Decimal.new("-0.00025"),
           Decimal.new("60000"),
           90,
           capital: Decimal.new("60000"),
@@ -216,14 +217,14 @@ defmodule DeltaCalc.MarginBridgeTest do
     test "default periods_per_day is 3 (8h funding cadence)" do
       default =
         MarginBridge.stress_test_prolonged_negative(
-          Decimal.new("-0.025"),
+          Decimal.new("-0.00025"),
           Decimal.new("60000"),
           1
         )
 
       explicit =
         MarginBridge.stress_test_prolonged_negative(
-          Decimal.new("-0.025"),
+          Decimal.new("-0.00025"),
           Decimal.new("60000"),
           1,
           periods_per_day: 3
@@ -236,7 +237,7 @@ defmodule DeltaCalc.MarginBridgeTest do
     test "Deribit hourly cadence (24 periods/day) scales daily cost 8x vs 8h default" do
       result =
         MarginBridge.stress_test_prolonged_negative(
-          Decimal.new("-0.025"),
+          Decimal.new("-0.00025"),
           Decimal.new("60000"),
           90,
           periods_per_day: 24
@@ -249,7 +250,7 @@ defmodule DeltaCalc.MarginBridgeTest do
     test "kill_switch_day shrinks with higher Deribit funding frequency" do
       eight_hour =
         MarginBridge.stress_test_prolonged_negative(
-          Decimal.new("-0.025"),
+          Decimal.new("-0.00025"),
           Decimal.new("60000"),
           90,
           periods_per_day: 3,
@@ -259,7 +260,7 @@ defmodule DeltaCalc.MarginBridgeTest do
 
       deribit =
         MarginBridge.stress_test_prolonged_negative(
-          Decimal.new("-0.025"),
+          Decimal.new("-0.00025"),
           Decimal.new("60000"),
           90,
           periods_per_day: 24,
@@ -276,21 +277,21 @@ defmodule DeltaCalc.MarginBridgeTest do
     test "triggers when avg funding below -0.02% and margin above 25%" do
       result =
         MarginBridge.check_kill_switch(
-          Decimal.new("-0.022"),
+          Decimal.new("-0.00022"),
           Decimal.new("0.26")
         )
 
       assert result.kill_switch_triggered
-      assert Decimal.equal?(result.avg_funding_24h, Decimal.new("-0.022"))
+      assert Decimal.equal?(result.avg_funding_24h, Decimal.new("-0.00022"))
       assert Decimal.equal?(result.margin_ratio, Decimal.new("0.26"))
-      assert Decimal.equal?(result.funding_threshold, Decimal.new("-0.02"))
+      assert Decimal.equal?(result.funding_threshold, Decimal.new("-0.0002"))
       assert Decimal.equal?(result.margin_threshold, Decimal.new("0.25"))
     end
 
     test "does not trigger when margin is at or below 25%" do
       result =
         MarginBridge.check_kill_switch(
-          Decimal.new("-0.022"),
+          Decimal.new("-0.00022"),
           Decimal.new("0.25")
         )
 
@@ -300,7 +301,7 @@ defmodule DeltaCalc.MarginBridgeTest do
     test "does not trigger when funding is above threshold even with high margin" do
       result =
         MarginBridge.check_kill_switch(
-          Decimal.new("-0.015"),
+          Decimal.new("-0.00015"),
           Decimal.new("0.30")
         )
 
@@ -310,7 +311,7 @@ defmodule DeltaCalc.MarginBridgeTest do
     test "does not trigger under healthy conditions" do
       result =
         MarginBridge.check_kill_switch(
-          Decimal.new("0.015"),
+          Decimal.new("0.00015"),
           Decimal.new("0.145")
         )
 
@@ -320,18 +321,18 @@ defmodule DeltaCalc.MarginBridgeTest do
     test "respects custom funding threshold" do
       result =
         MarginBridge.check_kill_switch(
-          Decimal.new("-0.015"),
+          Decimal.new("-0.00015"),
           Decimal.new("0.30"),
-          funding_threshold: Decimal.new("-0.02")
+          funding_threshold: Decimal.new("-0.0002")
         )
 
       refute result.kill_switch_triggered
 
       strict =
         MarginBridge.check_kill_switch(
-          Decimal.new("-0.015"),
+          Decimal.new("-0.00015"),
           Decimal.new("0.30"),
-          funding_threshold: Decimal.new("-0.01")
+          funding_threshold: Decimal.new("-0.0001")
         )
 
       assert strict.kill_switch_triggered

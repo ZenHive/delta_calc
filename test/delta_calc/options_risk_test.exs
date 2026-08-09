@@ -63,10 +63,11 @@ defmodule DeltaCalc.OptionsRiskTest do
   end
 
   describe "calculate_negative_funding_impact/1" do
+    # Rates are decimal fractions (e.g. -0.0003 = -0.03%), matching Funding/Hedging.
     test "matches phase7 post-crash example at -0.03% on 60k" do
       result =
         OptionsRisk.calculate_negative_funding_impact(%{
-          negative_rate: Decimal.new("-0.03"),
+          negative_rate: Decimal.new("-0.0003"),
           position_size: Decimal.new("60000"),
           market_context: :post_crash,
           capital_protected: true
@@ -82,7 +83,7 @@ defmodule DeltaCalc.OptionsRiskTest do
     test "defaults to capital protected with neutral market context" do
       result =
         OptionsRisk.calculate_negative_funding_impact(%{
-          negative_rate: Decimal.new("-0.02"),
+          negative_rate: Decimal.new("-0.0002"),
           position_size: Decimal.new("60000")
         })
 
@@ -96,7 +97,7 @@ defmodule DeltaCalc.OptionsRiskTest do
     test "marks capital at risk when not delta neutral" do
       result =
         OptionsRisk.calculate_negative_funding_impact(%{
-          negative_rate: Decimal.new("-0.02"),
+          negative_rate: Decimal.new("-0.0002"),
           position_size: Decimal.new("60000"),
           capital_protected: false
         })
@@ -107,7 +108,7 @@ defmodule DeltaCalc.OptionsRiskTest do
     test "bull market context maps to bearish setup and low opportunity" do
       result =
         OptionsRisk.calculate_negative_funding_impact(%{
-          negative_rate: Decimal.new("-0.02"),
+          negative_rate: Decimal.new("-0.0002"),
           position_size: Decimal.new("60000"),
           market_context: :bull_market
         })
@@ -120,7 +121,7 @@ defmodule DeltaCalc.OptionsRiskTest do
       for context <- [:bear_market, :negative_funding] do
         result =
           OptionsRisk.calculate_negative_funding_impact(%{
-            negative_rate: Decimal.new("-0.02"),
+            negative_rate: Decimal.new("-0.0002"),
             position_size: Decimal.new("60000"),
             market_context: context
           })
@@ -144,7 +145,7 @@ defmodule DeltaCalc.OptionsRiskTest do
     test "Deribit hourly cadence (24 periods/day) scales daily cost 8x vs 8h default" do
       result =
         OptionsRisk.calculate_negative_funding_impact(%{
-          negative_rate: Decimal.new("-0.03"),
+          negative_rate: Decimal.new("-0.0003"),
           position_size: Decimal.new("60000"),
           periods_per_day: 24
         })
@@ -160,7 +161,11 @@ defmodule DeltaCalc.OptionsRiskTest do
         OptionsRisk.stress_test_extended_negative(
           %{
             scenario: :bear_market_90d,
-            funding_rates: [Decimal.new("-0.02"), Decimal.new("-0.025"), Decimal.new("-0.03")],
+            funding_rates: [
+              Decimal.new("-0.0002"),
+              Decimal.new("-0.00025"),
+              Decimal.new("-0.0003")
+            ],
             position_size: Decimal.new("60000")
           },
           capital: Decimal.new("60000"),
@@ -172,17 +177,17 @@ defmodule DeltaCalc.OptionsRiskTest do
 
       [low, mid, high] = result.scenarios
 
-      assert Decimal.equal?(low.rate, Decimal.new("-0.02"))
+      assert Decimal.equal?(low.rate, Decimal.new("-0.0002"))
       assert Decimal.equal?(low.daily, Decimal.new("36"))
       assert Decimal.equal?(low.total_90d, Decimal.new("3240"))
       assert Decimal.equal?(low.margin_impact, Decimal.new("0.07"))
 
-      assert Decimal.equal?(mid.rate, Decimal.new("-0.025"))
+      assert Decimal.equal?(mid.rate, Decimal.new("-0.00025"))
       assert Decimal.equal?(mid.daily, Decimal.new("45"))
       assert Decimal.equal?(mid.total_90d, Decimal.new("4050"))
       assert Decimal.equal?(mid.margin_impact, Decimal.new("0.09"))
 
-      assert Decimal.equal?(high.rate, Decimal.new("-0.03"))
+      assert Decimal.equal?(high.rate, Decimal.new("-0.0003"))
       assert Decimal.equal?(high.daily, Decimal.new("54"))
       assert Decimal.equal?(high.total_90d, Decimal.new("4860"))
       assert Decimal.equal?(high.margin_impact, Decimal.new("0.11"))
@@ -194,7 +199,7 @@ defmodule DeltaCalc.OptionsRiskTest do
     test "defaults scenario atom and capital to position size" do
       result =
         OptionsRisk.stress_test_extended_negative(%{
-          funding_rates: [Decimal.new("-0.02")],
+          funding_rates: [Decimal.new("-0.0002")],
           position_size: Decimal.new("60000")
         })
 
@@ -208,7 +213,7 @@ defmodule DeltaCalc.OptionsRiskTest do
       result =
         OptionsRisk.stress_test_extended_negative(
           %{
-            funding_rates: [Decimal.new("-0.02")],
+            funding_rates: [Decimal.new("-0.0002")],
             position_size: Decimal.new("60000")
           },
           duration_days: 30
@@ -222,7 +227,7 @@ defmodule DeltaCalc.OptionsRiskTest do
       result =
         OptionsRisk.stress_test_extended_negative(
           %{
-            funding_rates: [Decimal.new("-0.02")],
+            funding_rates: [Decimal.new("-0.0002")],
             position_size: Decimal.new("60000")
           },
           periods_per_day: 24
@@ -237,7 +242,7 @@ defmodule DeltaCalc.OptionsRiskTest do
       result =
         OptionsRisk.stress_test_extended_negative(
           %{
-            funding_rates: [Decimal.new("-0.025")],
+            funding_rates: [Decimal.new("-0.00025")],
             position_size: Decimal.new("60000")
           },
           capital: Decimal.new("60000"),
@@ -252,7 +257,7 @@ defmodule DeltaCalc.OptionsRiskTest do
       result =
         OptionsRisk.stress_test_extended_negative(
           %{
-            funding_rates: [Decimal.new("-0.02")],
+            funding_rates: [Decimal.new("-0.0002")],
             position_size: Decimal.new("60000")
           },
           capital: Decimal.new("60000"),
@@ -266,7 +271,7 @@ defmodule DeltaCalc.OptionsRiskTest do
       result =
         OptionsRisk.stress_test_extended_negative(
           %{
-            funding_rates: [Decimal.new("-0.02")],
+            funding_rates: [Decimal.new("-0.0002")],
             position_size: Decimal.new("60000")
           },
           capital: Decimal.new("0"),

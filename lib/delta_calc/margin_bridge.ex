@@ -9,10 +9,10 @@ defmodule DeltaCalc.MarginBridge do
   use Descripex, namespace: "/margin_bridge"
 
   @zero Decimal.new(0)
-  @hundred Decimal.new(100)
   @default_periods_per_day 3
   @kill_switch_margin_threshold Decimal.new("0.25")
-  @default_kill_switch_funding_threshold Decimal.new("-0.02")
+  # Fraction unit (0.0002 = 0.02%), matching Funding/Carry/Hedging.
+  @default_kill_switch_funding_threshold Decimal.new("-0.0002")
 
   @typedoc "Payback projection from remaining debt and daily funding income."
   @type payback_timeline :: %{
@@ -176,8 +176,8 @@ defmodule DeltaCalc.MarginBridge do
       negative_rate: [
         kind: :value,
         description:
-          "Negative funding rate as percent per funding period (e.g. -0.025); " <>
-            "scale to daily cost via `:periods_per_day` in opts.",
+          "Negative funding rate as a decimal fraction per funding period " <>
+            "(e.g. -0.00025 for -0.025%); scale to daily cost via `:periods_per_day` in opts.",
         schema: float()
       ],
       position_size: [
@@ -210,8 +210,9 @@ defmodule DeltaCalc.MarginBridge do
   @doc """
   Compute daily and total funding cost under prolonged negative rates.
 
-  `negative_rate` is percent per funding period. Scale to daily cost with
-  `periods_per_day` (default 3 for 8h funding; use 24 for Deribit hourly).
+  `negative_rate` is a decimal fraction per funding period (e.g. `-0.00025` for
+  `-0.025%`), matching `Funding`/`Hedging` — not a percent number. Scale to daily
+  cost with `periods_per_day` (default 3 for 8h funding; use 24 for Deribit hourly).
   """
   @spec stress_test_prolonged_negative(Decimal.t(), Decimal.t(), pos_integer(), keyword()) ::
           stress_test_result()
@@ -245,7 +246,8 @@ defmodule DeltaCalc.MarginBridge do
     params: [
       avg_funding_24h: [
         kind: :value,
-        description: "24h average funding rate as percent per 8h period.",
+        description:
+          "24h average funding rate as a decimal fraction per period (e.g. -0.00022 for -0.022%).",
         schema: float()
       ],
       margin_ratio: [
@@ -256,7 +258,8 @@ defmodule DeltaCalc.MarginBridge do
       opts: [
         kind: :value,
         default: [],
-        description: "Optional `:funding_threshold` (default -0.02 percent per 8h)."
+        description:
+          "Optional `:funding_threshold` (default -0.0002 fraction = -0.02% per period)."
       ]
     ],
     returns: %{
@@ -324,9 +327,9 @@ defmodule DeltaCalc.MarginBridge do
   end
 
   defp negative_funding_daily_cost(negative_rate, position_size, periods_per_day) do
+    # Fraction unit: abs(rate) * position * periods_per_day (no /100).
     negative_rate
     |> Decimal.abs()
-    |> Decimal.div(@hundred)
     |> Decimal.mult(position_size)
     |> Decimal.mult(periods_per_day)
   end

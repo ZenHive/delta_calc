@@ -166,10 +166,10 @@ defmodule DeltaCalc.PropertyTest do
   end
 
   @spec funding_daily_cost_formula(D.t(), D.t(), pos_integer()) :: D.t()
-  defp funding_daily_cost_formula(rate_pct, position_size, ppd) do
-    rate_pct
+  defp funding_daily_cost_formula(rate_fraction, position_size, ppd) do
+    # Fraction unit (matches Funding/Hedging/MarginBridge): abs(rate) * size * periods.
+    rate_fraction
     |> D.abs()
-    |> D.div(@hundred)
     |> D.mult(position_size)
     |> D.mult(D.new(ppd))
   end

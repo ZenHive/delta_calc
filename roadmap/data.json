@@ -1811,7 +1811,7 @@
       "phase": 3,
       "bundle": "contract_hardening",
       "milestone": "v0_3",
-      "status": "in_progress",
+      "status": "done",
       "title": "Centralize Decimal coercion and eliminate silent input fallbacks",
       "scores": {
         "d": 7,
@@ -1870,10 +1870,17 @@
         "lib/delta_calc/portfolio_margin.ex",
         "lib/delta_calc/stress_scenario.ex"
       ],
+      "shipped_in": "b19f407a2aa8498dbdcf7dddec0b5ded1c665255",
       "body": "Decimal coercion is reimplemented in ~13 modules with three divergent error policies: explicit clauses with no fallback (Calc -> FunctionClauseError on nil), Decimal.cast + {:ok,_}= match (PnL/Fees/etc -> MatchError), and silent-zero (Funding.ensure_decimal returns Decimal.new(0) on garbage, which then ranks as a venue's funding rate and corrupts comparison/arbitrage output). Two modules carry # ex_dna:disable-for-lines to suppress the clone detector.\n\nCentralize the accepted-type rules and delete the copies. Exact financial inputs are Decimal, integer, or canonical decimal strings; raw floats are rejected because their binary approximation contradicts the library's exact-Decimal contract. Provide tagged and raising entry points over that one rule set so existing public success/error shapes remain stable while every invalid input fails deliberately. The silent-zero path is the priority: a money library must not fabricate 0 from bad input.\n\nDispatch trigger: repo-wide public input contract and critical money-math error semantics across twelve modules.\n",
       "created_at": "2026-06-19",
       "started_at": "2026-08-09",
+      "done_at": "2026-08-09",
       "scored_at": "2026-07-25",
+      "implemented": "Landed by codex via merge-train; reviewer-approved (run run-1786273766979-808a3006, b19f407a2aa8498dbdcf7dddec0b5ded1c665255).",
+      "delivered_by": "codex",
+      "verified": true,
+      "verified_by": "claude",
+      "verification_ref": "harness-run:run-1786273766979-808a3006",
       "cross_repo": []
     },
     {

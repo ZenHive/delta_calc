@@ -67,7 +67,7 @@ defmodule DeltaCalc.DCAPlanner do
     - `ui_leverage`: UI leverage setting (Decimal)
     - `side`: Position side (:long or :short)
     - `mmr_rate`: Minimum margin requirement rate (Decimal)
-    - `mark_buffer`: Mark price buffer (Decimal)
+    - `mark_buffer`: Buffer added to the MMR used for liquidation calculations (Decimal)
     - `aum`: Total Assets Under Management (Decimal)
     - `black_swan_pct`: Black swan threshold as decimal (0-1)
 
@@ -129,7 +129,7 @@ defmodule DeltaCalc.DCAPlanner do
           defensive_preset,
           dca_params.side,
           dca_params.mmr_rate,
-          dca_params.mark_buffer
+          mark_buffer: dca_params.mark_buffer
         )
 
       aggressive_result =
@@ -141,7 +141,7 @@ defmodule DeltaCalc.DCAPlanner do
           aggressive_preset,
           dca_params.side,
           dca_params.mmr_rate,
-          dca_params.mark_buffer
+          mark_buffer: dca_params.mark_buffer
         )
 
       build_strategy_results(

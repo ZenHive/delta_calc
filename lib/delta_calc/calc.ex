@@ -849,15 +849,20 @@ defmodule DeltaCalc.Calc do
       ui_lev: [kind: :value, description: "UI leverage for new positions"],
       ladder_preset: [
         kind: :value,
-        description: "List of {price_mult, reserve_pct} tuples"
+        description:
+          "List of side-specific {price_mult, reserve_pct} tuples; multipliers are used as supplied"
       ],
-      side: [kind: :value, description: "Position side (:long or :short)"],
+      side: [
+        kind: :value,
+        description: "Position side (:long or :short) used for liquidation math"
+      ],
       mmr_rate: [kind: :value, description: "Minimum margin requirement rate"],
       opts: [
         kind: :value,
         default: [],
         description:
-          "Optional `:mmr_schedule` list of {minimum_notional, mmr_rate} tiers; " <>
+          "Optional `:mark_buffer` added to the applicable MMR and `:mmr_schedule` list " <>
+            "of {minimum_notional, mmr_rate} tiers; " <>
             "the highest applicable threshold wins"
       ]
     ],
@@ -879,13 +884,14 @@ defmodule DeltaCalc.Calc do
     - reserve: Reserve amount available for DCA
     - entry_price: Initial entry price
     - ui_lev: UI leverage for new positions
-    - ladder_preset: List of {price_mult, reserve_pct} tuples
-    - side: :long or :short
+    - ladder_preset: List of side-specific {price_mult, reserve_pct} tuples. Multipliers
+      are used as supplied rather than transformed from `side`.
+    - side: :long or :short; drives liquidation math
     - mmr_rate: Minimum margin requirement rate
-    - opts: Optional keyword list. `:mmr_schedule` accepts
-      `{minimum_notional, mmr_rate}` tiers. The highest
-      threshold not exceeding cumulative notional applies. The empty-list
-      convention keeps `mmr_rate` flat and can be overridden by any caller schedule.
+    - opts: Optional keyword list. `:mark_buffer` is added to the MMR used by
+      liquidation calculations. `:mmr_schedule` accepts `{minimum_notional, mmr_rate}`
+      tiers; the highest threshold not exceeding cumulative notional applies.
+      Passing a Decimal directly remains supported as shorthand for `:mark_buffer`.
 
   ## Returns
     Map with:
@@ -935,7 +941,7 @@ defmodule DeltaCalc.Calc do
     entry_price = DecimalInput.cast!(entry_price)
     ui_lev = DecimalInput.cast!(ui_lev)
     mmr_rate = DecimalInput.cast!(mmr_rate)
-    mmr_schedule = mmr_schedule(opts)
+    {mark_buffer, mmr_schedule} = dca_options(opts)
 
     initial_notional = DecimalInput.cast!(position.notional)
     initial_eff_lev = DecimalInput.cast!(position.eff_lev)
@@ -952,7 +958,7 @@ defmodule DeltaCalc.Calc do
         process_single_dca_step(
           {steps_acc, state},
           {price_mult, reserve_pct, step_num},
-          {entry_price, ui_lev, reserve, mmr_rate, mmr_schedule, side}
+          {entry_price, ui_lev, reserve, mmr_rate, mark_buffer, mmr_schedule, side}
         )
       end)
 
@@ -965,6 +971,7 @@ defmodule DeltaCalc.Calc do
       initial_notional,
       initial_eff_lev,
       mmr_rate,
+      mark_buffer,
       mmr_schedule,
       side
     })
@@ -995,18 +1002,18 @@ defmodule DeltaCalc.Calc do
   @spec process_single_dca_step(
           {list(), map()},
           {Decimal.t(), Decimal.t(), integer()},
-          {Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), mmr_schedule(), :long | :short}
+          {Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), mmr_schedule(),
+           :long | :short}
         ) :: {list(), map()}
   defp process_single_dca_step(
          {steps_acc, state},
          {price_mult, reserve_pct, step_num},
-         {entry_price, ui_lev, reserve, mmr_rate, mmr_schedule, side}
+         {entry_price, ui_lev, reserve, mmr_rate, mark_buffer, mmr_schedule, side}
        ) do
     price_mult = DecimalInput.cast!(price_mult)
     reserve_pct = DecimalInput.cast!(reserve_pct)
 
-    # Calculate DCA price based on side
-    dca_price = calculate_dca_price(entry_price, price_mult, side)
+    dca_price = calculate_dca_price(entry_price, price_mult)
 
     # Calculate spend amount (percentage of original reserve, clamped to remaining)
     # Using original reserve for predictable behavior - each step gets its configured % of initial reserve
@@ -1020,7 +1027,7 @@ defmodule DeltaCalc.Calc do
       step_result =
         calculate_dca_step(
           state,
-          {actual_spend, ui_lev, dca_price, mmr_rate, mmr_schedule, side, step_num}
+          {actual_spend, ui_lev, dca_price, mmr_rate, mark_buffer, mmr_schedule, side, step_num}
         )
 
       # Update state for next iteration
@@ -1030,21 +1037,19 @@ defmodule DeltaCalc.Calc do
     end
   end
 
-  @spec calculate_dca_price(Decimal.t(), Decimal.t(), :long | :short) :: Decimal.t()
-  defp calculate_dca_price(entry_price, price_mult, _side) do
-    # For both long and short, multiply entry by price_mult
-    # Caller is responsible for providing correct multipliers
+  @spec calculate_dca_price(Decimal.t(), Decimal.t()) :: Decimal.t()
+  defp calculate_dca_price(entry_price, price_mult) do
     Decimal.mult(entry_price, price_mult)
   end
 
   @spec calculate_dca_step(
           map(),
-          {Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), mmr_schedule(), :long | :short,
-           integer()}
+          {Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), mmr_schedule(),
+           :long | :short, integer()}
         ) :: map()
   defp calculate_dca_step(
          state,
-         {actual_spend, ui_lev, dca_price, mmr_rate, mmr_schedule, side, step_num}
+         {actual_spend, ui_lev, dca_price, mmr_rate, mark_buffer, mmr_schedule, side, step_num}
        ) do
     # Calculate new position metrics
     new_notional = Decimal.mult(actual_spend, ui_lev)
@@ -1072,7 +1077,8 @@ defmodule DeltaCalc.Calc do
       |> effective_leverage(new_wallet_equity)
       |> decimal_result_or_zero()
 
-    adjusted_mmr_rate = calculate_tiered_mmr(cumulative_notional, mmr_rate, mmr_schedule)
+    adjusted_mmr_rate =
+      calculate_adjusted_mmr(cumulative_notional, mmr_rate, mark_buffer, mmr_schedule)
 
     new_liq =
       new_avg_entry
@@ -1131,17 +1137,35 @@ defmodule DeltaCalc.Calc do
       (is_nil(selected_threshold) or Decimal.compare(threshold, selected_threshold) == :gt)
   end
 
-  @spec mmr_schedule(keyword() | Decimal.t()) :: mmr_schedule()
-  defp mmr_schedule(opts) when is_list(opts), do: Keyword.get(opts, :mmr_schedule, [])
-  defp mmr_schedule(_mark_buffer), do: []
+  @spec calculate_adjusted_mmr(
+          Decimal.t(),
+          Decimal.t(),
+          Decimal.t(),
+          mmr_schedule()
+        ) :: Decimal.t()
+  defp calculate_adjusted_mmr(notional, base_mmr, mark_buffer, mmr_schedule) do
+    notional
+    |> calculate_tiered_mmr(base_mmr, mmr_schedule)
+    |> Decimal.add(mark_buffer)
+  end
+
+  @spec dca_options(keyword() | Decimal.t()) :: {Decimal.t(), mmr_schedule()}
+  defp dca_options(opts) when is_list(opts) do
+    mark_buffer = opts |> Keyword.get(:mark_buffer, @zero) |> DecimalInput.cast!()
+    {mark_buffer, Keyword.get(opts, :mmr_schedule, [])}
+  end
+
+  defp dca_options(mark_buffer), do: {DecimalInput.cast!(mark_buffer), []}
 
   @spec calculate_final_metrics(
           list(),
-          {Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), mmr_schedule(), :long | :short}
+          {Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), mmr_schedule(),
+           :long | :short}
         ) :: map()
   defp calculate_final_metrics(
          steps,
-         {entry_price, initial_notional, initial_eff_lev, mmr_rate, mmr_schedule, side}
+         {entry_price, initial_notional, initial_eff_lev, mmr_rate, mark_buffer, mmr_schedule,
+          side}
        ) do
     if Enum.empty?(steps) do
       %{
@@ -1152,7 +1176,7 @@ defmodule DeltaCalc.Calc do
           entry_price
           |> liquidation(
             initial_eff_lev,
-            calculate_tiered_mmr(initial_notional, mmr_rate, mmr_schedule),
+            calculate_adjusted_mmr(initial_notional, mmr_rate, mark_buffer, mmr_schedule),
             side
           )
           |> decimal_result_or_zero(),

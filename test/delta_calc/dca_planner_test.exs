@@ -2,16 +2,13 @@ defmodule DeltaCalc.DCAPlannerTest do
   use ExUnit.Case, async: true
 
   alias Decimal, as: D
-  alias DeltaCalc.{DCAPlanner, PositionCalculator, Presets}
-
-  @config %{risk_modes: Presets.load_modes()}
+  alias DeltaCalc.{DCAPlanner, PositionCalculator}
 
   defp position_setup(overrides \\ []) do
     params =
       Map.merge(
         %{
           aum: D.new("10000"),
-          mode: :conservative,
           side: :long,
           entry_price: D.new("3000"),
           subaccount_allocation: D.new("100"),
@@ -19,13 +16,12 @@ defmodule DeltaCalc.DCAPlannerTest do
           black_swan_pct: D.new("0.15"),
           ui_leverage: D.new("2"),
           mmr_rate: D.new("0.005"),
-          mark_buffer: D.new("0.001"),
-          fee_rate: D.new("0.0004")
+          mark_buffer: D.new("0.001")
         },
         Map.new(overrides)
       )
 
-    pos = PositionCalculator.calculate_position(params, @config)
+    pos = PositionCalculator.calculate_position(params)
 
     dca_params = %{
       params: %{
@@ -99,6 +95,29 @@ defmodule DeltaCalc.DCAPlannerTest do
 
       assert D.equal?(Enum.at(result.defensive.steps, 0).dca_price, D.new("3150.00000000"))
       assert D.equal?(Enum.at(result.aggressive.steps, 0).dca_price, D.new("2850.00000000"))
+    end
+
+    test "mark buffer changes every step and final liquidation" do
+      {dca_params, _} = position_setup(mark_buffer: D.new("0"))
+
+      unbuffered = DCAPlanner.calculate_dca_ladder(dca_params)
+
+      buffered =
+        dca_params
+        |> Map.put(:mark_buffer, D.new("0.01"))
+        |> DCAPlanner.calculate_dca_ladder()
+
+      for strategy <- [:defensive, :aggressive] do
+        unbuffered_strategy = Map.fetch!(unbuffered, strategy)
+        buffered_strategy = Map.fetch!(buffered, strategy)
+
+        for {plain_step, buffered_step} <-
+              Enum.zip(unbuffered_strategy.steps, buffered_strategy.steps) do
+          assert D.compare(buffered_step.new_liq, plain_step.new_liq) == :gt
+        end
+
+        assert D.compare(buffered_strategy.final_liq, unbuffered_strategy.final_liq) == :gt
+      end
     end
   end
 

@@ -105,6 +105,25 @@ defmodule DeltaCalc.ManifestConsistencyTest do
       assert MapSet.member?(arities, {:funding_apr, 2})
       refute MapSet.member?(arities, {:funding_apr, 3})
     end
+
+    test "position sizing advertises only its behavior-driving input map" do
+      [api] = DeltaCalc.PositionCalculator.__api__()
+
+      assert api.arity == 1
+      assert api.param_order == [:params]
+      assert Map.keys(api.hints.params) == [:params]
+      refute api.hints.params.params.description =~ "fee_rate"
+      refute api.hints.params.params.description =~ "mode"
+      refute api.hints.params.params.description =~ "config"
+    end
+
+    test "DCA metadata distinguishes side-specific prices from side-driven liquidation" do
+      api = DeltaCalc.Calc.__api__(:dca_ladder)
+
+      assert api.hints.params.ladder_preset.description =~ "side-specific"
+      assert api.hints.params.side.description =~ "liquidation"
+      assert api.hints.params.opts.description =~ ":mark_buffer"
+    end
   end
 
   defp api_modules_from_lib do

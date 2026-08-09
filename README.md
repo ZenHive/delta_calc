@@ -131,12 +131,11 @@ DCAPlanner.calculate_dca_ladder(dca_params).defensive
 
 ## `DeltaCalc.PositionCalculator`
 
-Full position-sizing pipeline from a plain `params` map and `config` map.
+Full position-sizing pipeline from a plain `params` map.
 
 ```elixir
 params = %{
   aum: Decimal.new("10000"),
-  mode: :conservative,
   side: :long,
   entry_price: Decimal.new("3000"),
   subaccount_allocation: Decimal.new("100"),
@@ -144,13 +143,10 @@ params = %{
   black_swan_pct: Decimal.new("0.15"),
   ui_leverage: Decimal.new("2"),
   mmr_rate: Decimal.new("0.005"),
-  mark_buffer: Decimal.new("0.001"),
-  fee_rate: Decimal.new("0.0004")
+  mark_buffer: Decimal.new("0.001")
 }
 
-config = %{risk_modes: Presets.load_modes()}
-
-result = PositionCalculator.calculate_position(params, config)
+result = PositionCalculator.calculate_position(params)
 #=> %{
 #     effective_leverage: #Decimal<1.00000000>,
 #     leverage_to_aum: #Decimal<0.01000000>,

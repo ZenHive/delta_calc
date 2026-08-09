@@ -36,7 +36,7 @@ defmodule DeltaCalc.DCAPropertyTest do
             ladder_preset,
             side,
             D.new(to_string(mmr_rate)),
-            D.new(to_string(mark_buffer))
+            mark_buffer: D.new(to_string(mark_buffer))
           )
 
         # Property assertions
@@ -86,7 +86,7 @@ defmodule DeltaCalc.DCAPropertyTest do
             ladder_preset,
             :long,
             D.new("0.005"),
-            D.new("0.001")
+            mark_buffer: D.new("0.001")
           )
 
         # Check that cumulative notional increases monotonically
@@ -123,7 +123,7 @@ defmodule DeltaCalc.DCAPropertyTest do
             ladder_preset,
             :long,
             D.new("0.005"),
-            D.new("0.001")
+            mark_buffer: D.new("0.001")
           )
 
         # Total spent should not exceed reserve
@@ -158,7 +158,7 @@ defmodule DeltaCalc.DCAPropertyTest do
             ladder_preset,
             :long,
             D.new("0.005"),
-            D.new("0.001")
+            mark_buffer: D.new("0.001")
           )
 
         # For defensive long, prices should be below entry
@@ -201,7 +201,7 @@ defmodule DeltaCalc.DCAPropertyTest do
             ladder_preset,
             :long,
             D.new("0.005"),
-            D.new("0.001")
+            mark_buffer: D.new("0.001")
           )
 
         if result.steps != [] do
@@ -229,7 +229,7 @@ defmodule DeltaCalc.DCAPropertyTest do
             [{D.new("0.95"), D.new("0.30")}],
             :long,
             D.new("0.005"),
-            D.new("0.001")
+            mark_buffer: D.new("0.001")
           )
 
         # Should have no steps with zero reserve
@@ -254,7 +254,7 @@ defmodule DeltaCalc.DCAPropertyTest do
             [{D.new("0.95"), D.new("0.30")}],
             :long,
             D.new("0.005"),
-            D.new("0.001")
+            mark_buffer: D.new("0.001")
           )
 
         # Should always produce valid results
@@ -289,7 +289,7 @@ defmodule DeltaCalc.DCAPropertyTest do
               ladder_preset,
               :long,
               D.new("0.005"),
-              D.new("0.001")
+              mark_buffer: D.new("0.001")
             )
 
           assert result.final_notional

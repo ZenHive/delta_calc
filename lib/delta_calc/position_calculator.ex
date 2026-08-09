@@ -15,7 +15,6 @@ defmodule DeltaCalc.PositionCalculator do
 
   @type params :: %{
           aum: Decimal.t(),
-          mode: atom(),
           side: :long | :short,
           entry_price: Decimal.t(),
           subaccount_allocation: Decimal.t(),
@@ -23,8 +22,7 @@ defmodule DeltaCalc.PositionCalculator do
           black_swan_pct: Decimal.t(),
           ui_leverage: Decimal.t(),
           mmr_rate: Decimal.t(),
-          mark_buffer: Decimal.t(),
-          fee_rate: Decimal.t()
+          mark_buffer: Decimal.t()
         }
 
   @type calculation_result :: %{
@@ -41,12 +39,7 @@ defmodule DeltaCalc.PositionCalculator do
       params: [
         kind: :value,
         description:
-          "Position inputs: aum, mode, side, entry_price, subaccount_allocation, initial_position_pct, black_swan_pct, ui_leverage, mmr_rate, mark_buffer, fee_rate"
-      ],
-      config: [
-        kind: :value,
-        description:
-          "Plain map with :risk_modes keyed by mode atom (e.g. %{conservative: %{pct: ..., cap: ...}})"
+          "Position inputs: aum, side, entry_price, subaccount_allocation, initial_position_pct, black_swan_pct, ui_leverage, mmr_rate, mark_buffer"
       ]
     ],
     returns: %{
@@ -62,7 +55,6 @@ defmodule DeltaCalc.PositionCalculator do
   ## Parameters
   - `params`: Map containing validated parameters including:
     - `:aum` - Assets Under Management (Decimal)
-    - `:mode` - Risk mode atom (:conservative, :moderate, :aggressive)
     - `:side` - Position side atom (:long, :short)
     - `:entry_price` - Entry price (Decimal)
     - `:subaccount_allocation` - Subaccount allocation amount (Decimal)
@@ -71,8 +63,6 @@ defmodule DeltaCalc.PositionCalculator do
     - `:ui_leverage` - UI leverage setting (Decimal)
     - `:mmr_rate` - Minimum margin requirement rate (Decimal)
     - `:mark_buffer` - Mark price buffer (Decimal)
-    - `:fee_rate` - Trading fee rate (Decimal, currently unused)
-  - `config`: Plain map with `:risk_modes` — `%{risk_modes: %{conservative: %{...}, ...}}`
 
   ## Returns
   A map containing:
@@ -87,7 +77,6 @@ defmodule DeltaCalc.PositionCalculator do
 
       params = %{
         aum: Decimal.new("10000"),
-        mode: :conservative,
         side: :long,
         entry_price: Decimal.new("3000"),
         subaccount_allocation: Decimal.new("100"),
@@ -95,19 +84,15 @@ defmodule DeltaCalc.PositionCalculator do
         black_swan_pct: Decimal.new("0.15"),
         ui_leverage: Decimal.new("2"),
         mmr_rate: Decimal.new("0.005"),
-        mark_buffer: Decimal.new("0.001"),
-        fee_rate: Decimal.new("0.0004")
+        mark_buffer: Decimal.new("0.001")
       }
 
-      config = %{risk_modes: DeltaCalc.Presets.load_modes()}
-
-      calculate_position(params, config)
+      calculate_position(params)
   """
-  @spec calculate_position(params(), map()) :: calculation_result() | {:error, atom()}
-  def calculate_position(params, config) do
+  @spec calculate_position(params()) :: calculation_result() | {:error, atom()}
+  def calculate_position(params) do
     %{
       aum: _aum,
-      mode: mode,
       side: side,
       entry_price: entry_price,
       subaccount_allocation: subaccount_allocation,
@@ -115,13 +100,10 @@ defmodule DeltaCalc.PositionCalculator do
       black_swan_pct: black_swan_pct,
       ui_leverage: ui_leverage,
       mmr_rate: mmr_rate,
-      mark_buffer: mark_buffer,
-      fee_rate: _fee_rate
+      mark_buffer: mark_buffer
     } = params
 
-    mode_config = config.risk_modes[mode]
-
-    subaccount_equity = calculate_subaccount_equity(subaccount_allocation, mode_config)
+    subaccount_equity = subaccount_allocation
     initial_position_allocation = Decimal.mult(subaccount_equity, initial_position_pct)
     position_size = Decimal.mult(initial_position_allocation, ui_leverage)
     dca_reserve = Decimal.sub(subaccount_equity, initial_position_allocation)
@@ -144,8 +126,7 @@ defmodule DeltaCalc.PositionCalculator do
             initial_position_allocation,
             dca_reserve,
             initial_position_pct,
-            leftover,
-            mode_config
+            leftover
           ),
         position: build_position_result(position_size, effective_leverage, entry_price, side),
         effective_leverage: Calc.quantize(effective_leverage),
@@ -161,11 +142,6 @@ defmodule DeltaCalc.PositionCalculator do
         mmr_info: build_mmr_info(mmr_rate)
       }
     end
-  end
-
-  @spec calculate_subaccount_equity(Decimal.t(), map()) :: Decimal.t()
-  defp calculate_subaccount_equity(subaccount_allocation, _mode_config) do
-    subaccount_allocation
   end
 
   @spec calculate_leftover(Decimal.t(), Decimal.t()) :: Decimal.t()
@@ -211,16 +187,14 @@ defmodule DeltaCalc.PositionCalculator do
           Decimal.t(),
           Decimal.t(),
           Decimal.t(),
-          Decimal.t(),
-          map()
+          Decimal.t()
         ) :: map()
   defp build_allocation_result(
          subaccount_equity,
          initial_position_allocation,
          dca_reserve,
          initial_position_pct,
-         leftover,
-         mode_config
+         leftover
        ) do
     %{
       sub_eq: Calc.quantize(subaccount_equity),
@@ -230,8 +204,7 @@ defmodule DeltaCalc.PositionCalculator do
         Calc.quantize(
           Decimal.mult(Decimal.sub(@default_one, initial_position_pct), @default_hundred)
         ),
-      leftover: Calc.quantize(leftover),
-      mode_config: mode_config
+      leftover: Calc.quantize(leftover)
     }
   end
 

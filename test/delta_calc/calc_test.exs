@@ -842,6 +842,70 @@ defmodule DeltaCalc.CalcTest do
       assert Decimal.compare(tiered.final_liq, flat.final_liq) == :gt
     end
 
+    test "mark buffer changes every step and final liquidation while zero preserves results" do
+      position = %{notional: Decimal.new(1500), eff_lev: Decimal.new("1.5")}
+
+      ladder_preset = [
+        {Decimal.new("0.95"), Decimal.new("0.3")},
+        {Decimal.new("0.90"), Decimal.new("0.3")}
+      ]
+
+      args = [
+        position,
+        Decimal.new(500),
+        Decimal.new(3000),
+        Decimal.new(3),
+        ladder_preset,
+        :long,
+        Decimal.new("0.005")
+      ]
+
+      unbuffered = apply(Calc, :dca_ladder, args)
+      zero_buffer = apply(Calc, :dca_ladder, args ++ [[mark_buffer: Decimal.new("0")]])
+      buffered = apply(Calc, :dca_ladder, args ++ [[mark_buffer: Decimal.new("0.01")]])
+
+      assert Decimal.equal?(zero_buffer.final_liq, unbuffered.final_liq)
+
+      for {{plain_step, zero_step}, buffered_step} <-
+            Enum.zip(Enum.zip(unbuffered.steps, zero_buffer.steps), buffered.steps) do
+        assert Decimal.equal?(zero_step.new_liq, plain_step.new_liq)
+        assert Decimal.compare(buffered_step.new_liq, plain_step.new_liq) == :gt
+      end
+
+      assert Decimal.compare(buffered.final_liq, unbuffered.final_liq) == :gt
+    end
+
+    test "Decimal mark-buffer shorthand matches the advertised option" do
+      position = %{notional: Decimal.new(1500), eff_lev: Decimal.new("1.5")}
+      ladder_preset = [{Decimal.new("0.95"), Decimal.new("0.3")}]
+
+      shorthand =
+        Calc.dca_ladder(
+          position,
+          Decimal.new(500),
+          Decimal.new(3000),
+          Decimal.new(3),
+          ladder_preset,
+          :long,
+          Decimal.new("0.005"),
+          Decimal.new("0.01")
+        )
+
+      options =
+        Calc.dca_ladder(
+          position,
+          Decimal.new(500),
+          Decimal.new(3000),
+          Decimal.new(3),
+          ladder_preset,
+          :long,
+          Decimal.new("0.005"),
+          mark_buffer: Decimal.new("0.01")
+        )
+
+      assert Decimal.equal?(shorthand.final_liq, options.final_liq)
+    end
+
     test "calculates multi-step DCA ladder for long position" do
       position = %{notional: Decimal.new(1500), eff_lev: Decimal.new("1.5")}
       reserve = Decimal.new(500)
@@ -909,6 +973,25 @@ defmodule DeltaCalc.CalcTest do
       assert Decimal.compare(result.final_avg_entry, entry_price) == :gt
     end
 
+    test "side-specific multipliers are used unchanged while side drives liquidation" do
+      position = %{notional: Decimal.new(1500), eff_lev: Decimal.new("1.5")}
+      ladder_preset = [{Decimal.new("0.95"), Decimal.new("0.3")}]
+
+      common_args = [
+        position,
+        Decimal.new(500),
+        Decimal.new(3000),
+        Decimal.new(3),
+        ladder_preset
+      ]
+
+      long = apply(Calc, :dca_ladder, common_args ++ [:long, Decimal.new("0.005")])
+      short = apply(Calc, :dca_ladder, common_args ++ [:short, Decimal.new("0.005")])
+
+      assert Decimal.equal?(hd(long.steps).dca_price, hd(short.steps).dca_price)
+      refute Decimal.equal?(hd(long.steps).new_liq, hd(short.steps).new_liq)
+    end
+
     test "never overspends reserve" do
       position = %{notional: Decimal.new(1500), eff_lev: Decimal.new("1.5")}
       # Small reserve
@@ -955,6 +1038,20 @@ defmodule DeltaCalc.CalcTest do
       assert Decimal.equal?(result.final_notional, position.notional)
       assert Decimal.equal?(result.final_avg_entry, entry_price)
       assert Decimal.equal?(result.final_eff_lev, position.eff_lev)
+
+      buffered =
+        Calc.dca_ladder(
+          position,
+          reserve,
+          entry_price,
+          ui_lev,
+          ladder_preset,
+          :long,
+          mmr_rate,
+          mark_buffer: Decimal.new("0.01")
+        )
+
+      assert Decimal.compare(buffered.final_liq, result.final_liq) == :gt
     end
 
     test "handles zero reserve" do

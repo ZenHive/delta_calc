@@ -5,6 +5,12 @@ Release-level history for completed roadmap phases. The per-task delivery ledger
 
 ## Unreleased
 
+- **Breaking:** moved rounding to explicit caller-controlled output boundaries — generic
+  price/rate/percentage/ratio math no longer quantizes internally and returns full active
+  `Decimal.Context` precision (34 under decimal 3.x). `OptionLadder` strike rounding takes
+  caller `:strike_increment` + `:rounding_mode`; whole-day rounding in `FundingProjection`/
+  `MarginBridge` is documented as intrinsic. `Calc.quantize/1` remains only as the documented
+  eight-place legacy compatibility boundary.
 - Advertised every exact Decimal money/price/rate `:value` input as a canonical JSON-string
   contract across all calculation modules (matching the `DeltaCalc.Decimal` coercion boundary);
   a manifest-wide CI invariant now rejects any MCP input schema advertising `{"type": "number"}`.

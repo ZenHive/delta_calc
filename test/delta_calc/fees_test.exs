@@ -55,12 +55,18 @@ defmodule DeltaCalc.FeesTest do
       assert Decimal.equal?(result, Decimal.new("50010.00000000"))
     end
 
-    test "accepts numeric and string inputs" do
+    test "accepts integer and string inputs" do
       from_int = Fees.effective_entry(50_000, %{fee_rate: "0.0004"})
-      from_float = Fees.effective_entry(50_000.0, %{fee_rate: 0.0004})
+      from_string = Fees.effective_entry("50000", %{fee_rate: "0.0004"})
 
       assert Decimal.equal?(from_int, Decimal.new("50020.00000000"))
-      assert Decimal.equal?(from_int, from_float)
+      assert Decimal.equal?(from_int, from_string)
+    end
+
+    test "rejects raw float inputs" do
+      assert_raise ArgumentError, fn ->
+        Fees.effective_entry(50_000.0, %{fee_rate: "0.0004"})
+      end
     end
   end
 

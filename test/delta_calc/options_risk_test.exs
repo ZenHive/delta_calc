@@ -18,10 +18,14 @@ defmodule DeltaCalc.OptionsRiskTest do
       assert Decimal.equal?(result.max_loss, Decimal.new("2000"))
     end
 
-    test "accepts string and float premiums" do
-      result = OptionsRisk.max_loss(["260", 100.0])
+    test "accepts string and integer premiums" do
+      result = OptionsRisk.max_loss(["260", 100])
 
-      assert Decimal.equal?(result.max_loss, Decimal.new("360.0"))
+      assert Decimal.equal?(result.max_loss, Decimal.new("360"))
+    end
+
+    test "rejects raw float premiums" do
+      assert_raise ArgumentError, fn -> OptionsRisk.max_loss(["260", 100.0]) end
     end
 
     test "empty premium list yields zero max loss" do

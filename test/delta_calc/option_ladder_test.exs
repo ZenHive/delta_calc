@@ -188,7 +188,7 @@ defmodule DeltaCalc.OptionLadderTest do
         OptionLadder.sync_with_funding(%{
           funding_received: 20,
           positions_to_roll: 1,
-          roll_cost: 25.0,
+          roll_cost: "25.0",
           spread_cost: 3
         })
 

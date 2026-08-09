@@ -8,6 +8,8 @@ defmodule DeltaCalc.MarginBridge do
 
   use Descripex, namespace: "/margin_bridge"
 
+  alias DeltaCalc.Decimal, as: DecimalInput
+
   @zero Decimal.new(0)
   @default_periods_per_day 3
   @kill_switch_margin_threshold Decimal.new("0.25")
@@ -68,11 +70,12 @@ defmodule DeltaCalc.MarginBridge do
   )
 
   @doc "Return `(initial_margin + option_premium) / capital`, or zero when capital is non-positive."
-  @spec margin_ratio(Decimal.t(), Decimal.t(), Decimal.t()) :: Decimal.t()
+  @spec margin_ratio(DecimalInput.input(), DecimalInput.input(), DecimalInput.input()) ::
+          Decimal.t()
   def margin_ratio(initial_margin, option_premium, capital) do
-    initial_margin = to_decimal(initial_margin)
-    option_premium = to_decimal(option_premium)
-    capital = to_decimal(capital)
+    initial_margin = DecimalInput.cast!(initial_margin)
+    option_premium = DecimalInput.cast!(option_premium)
+    capital = DecimalInput.cast!(capital)
 
     case Decimal.compare(capital, @zero) do
       :gt ->
@@ -107,10 +110,10 @@ defmodule DeltaCalc.MarginBridge do
   )
 
   @doc "Return `available_margin / daily_burn`, or nil when burn is non-positive."
-  @spec margin_runway_days(Decimal.t(), Decimal.t()) :: Decimal.t() | nil
+  @spec margin_runway_days(DecimalInput.input(), DecimalInput.input()) :: Decimal.t() | nil
   def margin_runway_days(available_margin, daily_burn) do
-    available_margin = to_decimal(available_margin)
-    daily_burn = to_decimal(daily_burn)
+    available_margin = DecimalInput.cast!(available_margin)
+    daily_burn = DecimalInput.cast!(daily_burn)
 
     case Decimal.compare(daily_burn, @zero) do
       :gt -> Decimal.div(available_margin, daily_burn)
@@ -153,10 +156,11 @@ defmodule DeltaCalc.MarginBridge do
   For best/expected/worst cases under funding volatility, use
   `DeltaCalc.FundingProjection.project_payback_timeline/1`.
   """
-  @spec payback_timeline(Decimal.t(), Decimal.t(), keyword()) :: payback_timeline()
+  @spec payback_timeline(DecimalInput.input(), DecimalInput.input(), keyword()) ::
+          payback_timeline()
   def payback_timeline(remaining_debt, daily_funding, opts \\ []) do
-    remaining_debt = to_decimal(remaining_debt)
-    daily_funding = to_decimal(daily_funding)
+    remaining_debt = DecimalInput.cast!(remaining_debt)
+    daily_funding = DecimalInput.cast!(daily_funding)
     from_date = Keyword.get(opts, :from_date)
 
     days_to_payoff = payoff_days(remaining_debt, daily_funding)
@@ -214,12 +218,17 @@ defmodule DeltaCalc.MarginBridge do
   `-0.025%`), matching `Funding`/`Hedging` — not a percent number. Scale to daily
   cost with `periods_per_day` (default 3 for 8h funding; use 24 for Deribit hourly).
   """
-  @spec stress_test_prolonged_negative(Decimal.t(), Decimal.t(), pos_integer(), keyword()) ::
+  @spec stress_test_prolonged_negative(
+          DecimalInput.input(),
+          DecimalInput.input(),
+          pos_integer(),
+          keyword()
+        ) ::
           stress_test_result()
   def stress_test_prolonged_negative(negative_rate, position_size, duration_days, opts \\ [])
       when is_integer(duration_days) and duration_days > 0 do
-    negative_rate = to_decimal(negative_rate)
-    position_size = to_decimal(position_size)
+    negative_rate = DecimalInput.cast!(negative_rate)
+    position_size = DecimalInput.cast!(position_size)
     periods_per_day = periods_per_day(opts)
 
     daily_cost = negative_funding_daily_cost(negative_rate, position_size, periods_per_day)
@@ -275,15 +284,16 @@ defmodule DeltaCalc.MarginBridge do
 
   The funding rate and optional `:funding_threshold` are per-period decimal fractions.
   """
-  @spec check_kill_switch(Decimal.t(), Decimal.t(), keyword()) :: kill_switch_result()
+  @spec check_kill_switch(DecimalInput.input(), DecimalInput.input(), keyword()) ::
+          kill_switch_result()
   def check_kill_switch(avg_funding_24h, margin_ratio, opts \\ []) do
-    avg_funding_24h = to_decimal(avg_funding_24h)
-    margin_ratio = to_decimal(margin_ratio)
+    avg_funding_24h = DecimalInput.cast!(avg_funding_24h)
+    margin_ratio = DecimalInput.cast!(margin_ratio)
 
     funding_threshold =
       opts
       |> Keyword.get(:funding_threshold, @default_kill_switch_funding_threshold)
-      |> to_decimal()
+      |> DecimalInput.cast!()
 
     kill_switch_triggered =
       Decimal.compare(avg_funding_24h, funding_threshold) == :lt and
@@ -325,7 +335,7 @@ defmodule DeltaCalc.MarginBridge do
   defp periods_per_day(opts) do
     opts
     |> Keyword.get(:periods_per_day, @default_periods_per_day)
-    |> to_decimal()
+    |> DecimalInput.cast!()
   end
 
   defp negative_funding_daily_cost(negative_rate, position_size, periods_per_day) do
@@ -341,8 +351,8 @@ defmodule DeltaCalc.MarginBridge do
        do: nil
 
   defp kill_switch_day(daily_cost, capital, initial_margin_ratio) do
-    capital = to_decimal(capital)
-    initial_margin_ratio = to_decimal(initial_margin_ratio)
+    capital = DecimalInput.cast!(capital)
+    initial_margin_ratio = DecimalInput.cast!(initial_margin_ratio)
 
     margin_headroom =
       @kill_switch_margin_threshold
@@ -361,9 +371,4 @@ defmodule DeltaCalc.MarginBridge do
         nil
     end
   end
-
-  defp to_decimal(%Decimal{} = value), do: value
-  defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
-  defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)
-  defp to_decimal(value) when is_binary(value), do: Decimal.new(value)
 end

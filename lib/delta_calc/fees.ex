@@ -9,6 +9,7 @@ defmodule DeltaCalc.Fees do
   use Descripex, namespace: "/fees"
 
   alias DeltaCalc.Calc
+  alias DeltaCalc.Decimal, as: DecimalInput
 
   @zero Decimal.new(0)
   @one Decimal.new(1)
@@ -16,30 +17,31 @@ defmodule DeltaCalc.Fees do
 
   @typedoc "Side for entry/exit price adjustments and breakeven."
   @type side :: :long | :short
+  @type decimal_input :: DecimalInput.input()
 
   @typedoc "Fee and slippage inputs for effective fill prices."
   @type fill_params :: %{
-          required(:fee_rate) => Decimal.t() | number() | String.t(),
-          optional(:slippage_bps) => Decimal.t() | number() | String.t(),
+          required(:fee_rate) => decimal_input(),
+          optional(:slippage_bps) => decimal_input(),
           optional(:side) => side()
         }
 
   @typedoc "Inputs for roundtrip fee cost."
   @type roundtrip_params :: %{
-          optional(:notional) => Decimal.t() | number() | String.t(),
-          optional(:entry_price) => Decimal.t() | number() | String.t(),
-          optional(:size) => Decimal.t() | number() | String.t(),
-          optional(:exit_price) => Decimal.t() | number() | String.t(),
-          required(:open_fee_rate) => Decimal.t() | number() | String.t(),
-          required(:close_fee_rate) => Decimal.t() | number() | String.t()
+          optional(:notional) => decimal_input(),
+          optional(:entry_price) => decimal_input(),
+          optional(:size) => decimal_input(),
+          optional(:exit_price) => decimal_input(),
+          required(:open_fee_rate) => decimal_input(),
+          required(:close_fee_rate) => decimal_input()
         }
 
   @typedoc "Inputs for funding-adjusted breakeven (extends roundtrip with size and side)."
   @type breakeven_params :: %{
-          required(:size) => Decimal.t() | number() | String.t(),
-          required(:open_fee_rate) => Decimal.t() | number() | String.t(),
-          required(:close_fee_rate) => Decimal.t() | number() | String.t(),
-          optional(:exit_price) => Decimal.t() | number() | String.t(),
+          required(:size) => decimal_input(),
+          required(:open_fee_rate) => decimal_input(),
+          required(:close_fee_rate) => decimal_input(),
+          optional(:exit_price) => decimal_input(),
           optional(:side) => side()
         }
 
@@ -70,10 +72,10 @@ defmodule DeltaCalc.Fees do
 
   Long entries (buys) increase; short entries (sells) decrease.
   """
-  @spec effective_entry(Decimal.t() | number() | String.t(), fill_params()) :: Decimal.t()
+  @spec effective_entry(decimal_input(), fill_params()) :: Decimal.t()
   def effective_entry(fill_price, params) do
     fill_price
-    |> to_decimal()
+    |> DecimalInput.cast!()
     |> apply_entry_adjustment(params)
     |> Calc.quantize()
   end
@@ -105,10 +107,10 @@ defmodule DeltaCalc.Fees do
 
   Long exits (sells) decrease; short exits (buys) increase.
   """
-  @spec effective_exit(Decimal.t() | number() | String.t(), fill_params()) :: Decimal.t()
+  @spec effective_exit(decimal_input(), fill_params()) :: Decimal.t()
   def effective_exit(fill_price, params) do
     fill_price
-    |> to_decimal()
+    |> DecimalInput.cast!()
     |> apply_exit_adjustment(params)
     |> Calc.quantize()
   end
@@ -137,8 +139,8 @@ defmodule DeltaCalc.Fees do
   """
   @spec roundtrip_cost(roundtrip_params()) :: Decimal.t()
   def roundtrip_cost(params) do
-    open_rate = to_decimal(params.open_fee_rate)
-    close_rate = to_decimal(params.close_fee_rate)
+    open_rate = DecimalInput.cast!(params.open_fee_rate)
+    close_rate = DecimalInput.cast!(params.close_fee_rate)
     {entry_price, size, exit_price} = notional_inputs(params)
 
     open_notional = Decimal.mult(entry_price, size)
@@ -184,21 +186,21 @@ defmodule DeltaCalc.Fees do
   Returns `entry_price` unchanged when `size` is zero.
   """
   @spec funding_adjusted_breakeven(
-          Decimal.t() | number() | String.t(),
+          decimal_input(),
           breakeven_params(),
-          Decimal.t() | number() | String.t()
+          decimal_input()
         ) :: Decimal.t()
   def funding_adjusted_breakeven(entry_price, params, accrued_funding) do
-    entry = to_decimal(entry_price)
-    size = to_decimal(params.size)
-    funding = to_decimal(accrued_funding)
+    entry = DecimalInput.cast!(entry_price)
+    size = DecimalInput.cast!(params.size)
+    funding = DecimalInput.cast!(accrued_funding)
     side = Map.get(params, :side, :long)
 
     if Decimal.compare(size, @zero) != :gt do
       entry
     else
-      open_rate = to_decimal(params.open_fee_rate)
-      close_rate = to_decimal(params.close_fee_rate)
+      open_rate = DecimalInput.cast!(params.open_fee_rate)
+      close_rate = DecimalInput.cast!(params.close_fee_rate)
 
       breakeven_price(entry, size, open_rate, close_rate, funding, side)
       |> Calc.quantize()
@@ -227,8 +229,11 @@ defmodule DeltaCalc.Fees do
 
   @spec total_adjustment(fill_params()) :: Decimal.t()
   defp total_adjustment(params) do
-    fee = to_decimal(params.fee_rate)
-    slippage = params |> Map.get(:slippage_bps, @zero) |> to_decimal() |> bps_to_rate()
+    fee = DecimalInput.cast!(params.fee_rate)
+
+    slippage =
+      params |> Map.get(:slippage_bps, @zero) |> DecimalInput.cast!() |> bps_to_rate()
+
     Decimal.add(fee, slippage)
   end
 
@@ -238,14 +243,14 @@ defmodule DeltaCalc.Fees do
   @spec notional_inputs(roundtrip_params()) ::
           {Decimal.t(), Decimal.t(), Decimal.t()}
   defp notional_inputs(%{notional: notional}) do
-    entry = to_decimal(notional)
+    entry = DecimalInput.cast!(notional)
     {entry, @one, entry}
   end
 
   defp notional_inputs(params) do
-    entry = to_decimal(params.entry_price)
-    size = to_decimal(params.size)
-    exit = params |> Map.get(:exit_price, entry) |> to_decimal()
+    entry = DecimalInput.cast!(params.entry_price)
+    size = DecimalInput.cast!(params.size)
+    exit = params |> Map.get(:exit_price, entry) |> DecimalInput.cast!()
     {entry, size, exit}
   end
 
@@ -271,13 +276,5 @@ defmodule DeltaCalc.Fees do
 
     denominator = Decimal.mult(size, Decimal.add(@one, close_rate))
     Decimal.div(numerator, denominator)
-  end
-
-  @spec to_decimal(Decimal.t() | number() | String.t()) :: Decimal.t()
-  defp to_decimal(%Decimal{} = value), do: value
-
-  defp to_decimal(value) do
-    {:ok, decimal} = Decimal.cast(value)
-    decimal
   end
 end

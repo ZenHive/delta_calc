@@ -9,6 +9,7 @@ defmodule DeltaCalc.DeltaNeutral do
   use Descripex, namespace: "/delta_neutral"
 
   alias DeltaCalc.Calc
+  alias DeltaCalc.Decimal, as: DecimalInput
 
   @zero Decimal.new(0)
   @default_tolerance Decimal.new("0.0001")
@@ -19,15 +20,15 @@ defmodule DeltaCalc.DeltaNeutral do
 
   @type position :: %{
           required(:kind) => position_kind(),
-          optional(:size) => Decimal.t() | number() | String.t(),
-          optional(:notional) => Decimal.t() | number() | String.t(),
+          optional(:size) => DecimalInput.input(),
+          optional(:notional) => DecimalInput.input(),
           optional(:side) => position_side(),
-          optional(:delta) => Decimal.t() | number() | String.t()
+          optional(:delta) => DecimalInput.input()
         }
 
   @type rebalance_params :: %{
           required(:positions) => [position()],
-          optional(:tolerance) => Decimal.t() | number() | String.t(),
+          optional(:tolerance) => DecimalInput.input(),
           optional(:instrument) => :spot | :perp
         }
 
@@ -105,7 +106,9 @@ defmodule DeltaCalc.DeltaNeutral do
   end
 
   def rebalance_to_neutral(%{positions: positions} = params) do
-    tolerance = params |> Map.get(:tolerance, @default_tolerance) |> to_decimal() |> Decimal.abs()
+    tolerance =
+      params |> Map.get(:tolerance, @default_tolerance) |> DecimalInput.cast!() |> Decimal.abs()
+
     instrument = Map.get(params, :instrument, @default_instrument)
     net = net_delta(positions)
 
@@ -134,13 +137,13 @@ defmodule DeltaCalc.DeltaNeutral do
 
   @spec position_delta(position()) :: Decimal.t()
   defp position_delta(%{kind: :option} = position) do
-    position |> Map.fetch!(:delta) |> to_decimal()
+    position |> Map.fetch!(:delta) |> DecimalInput.cast!()
   end
 
   defp position_delta(%{kind: kind} = position) when kind in [:spot, :perp] do
     case Map.get(position, :delta) do
       nil -> signed_size(position)
-      delta -> to_decimal(delta)
+      delta -> DecimalInput.cast!(delta)
     end
   end
 
@@ -148,7 +151,7 @@ defmodule DeltaCalc.DeltaNeutral do
   defp signed_size(position) do
     position
     |> position_size()
-    |> to_decimal()
+    |> DecimalInput.cast!()
     |> Decimal.abs()
     |> apply_side(Map.get(position, :side, :long))
   end
@@ -183,12 +186,4 @@ defmodule DeltaCalc.DeltaNeutral do
   defp signed_hedge(:short, size), do: Decimal.negate(size)
   defp signed_hedge(:long, size), do: size
   defp signed_hedge(:none, _size), do: @zero
-
-  @spec to_decimal(Decimal.t() | number() | String.t()) :: Decimal.t()
-  defp to_decimal(%Decimal{} = value), do: value
-
-  defp to_decimal(value) do
-    {:ok, decimal} = Decimal.cast(value)
-    decimal
-  end
 end

@@ -9,7 +9,7 @@ defmodule DeltaCalc.FundingProjectionTest do
         FundingProjection.project_payback_timeline(%{
           remaining_debt: 2700,
           daily_funding: 90,
-          funding_volatility: 0.2
+          funding_volatility: "0.2"
         })
 
       assert result == %{best_case: 25, expected: 30, worst_case: 38}
@@ -31,7 +31,7 @@ defmodule DeltaCalc.FundingProjectionTest do
         FundingProjection.project_payback_timeline(%{
           remaining_debt: 0,
           daily_funding: 90,
-          funding_volatility: 0.2
+          funding_volatility: "0.2"
         })
 
       assert result == %{best_case: 0, expected: 0, worst_case: 0}
@@ -42,7 +42,7 @@ defmodule DeltaCalc.FundingProjectionTest do
         FundingProjection.project_payback_timeline(%{
           remaining_debt: -100,
           daily_funding: 90,
-          funding_volatility: 0.2
+          funding_volatility: "0.2"
         })
 
       assert result == %{best_case: 0, expected: 0, worst_case: 0}
@@ -53,7 +53,7 @@ defmodule DeltaCalc.FundingProjectionTest do
         FundingProjection.project_payback_timeline(%{
           remaining_debt: 1000,
           daily_funding: 0,
-          funding_volatility: 0.2
+          funding_volatility: "0.2"
         })
 
       assert result == %{best_case: nil, expected: nil, worst_case: nil}
@@ -64,7 +64,7 @@ defmodule DeltaCalc.FundingProjectionTest do
         FundingProjection.project_payback_timeline(%{
           remaining_debt: 1000,
           daily_funding: -10,
-          funding_volatility: 0.2
+          funding_volatility: "0.2"
         })
 
       assert result == %{best_case: nil, expected: nil, worst_case: nil}

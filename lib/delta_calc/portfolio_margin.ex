@@ -10,6 +10,7 @@ defmodule DeltaCalc.PortfolioMargin do
   use Descripex, namespace: "/portfolio_margin"
 
   alias DeltaCalc.Calc
+  alias DeltaCalc.Decimal, as: DecimalInput
 
   @zero Decimal.new(0)
   @one Decimal.new(1)
@@ -21,15 +22,15 @@ defmodule DeltaCalc.PortfolioMargin do
   @typedoc "Portfolio-margin position input."
   @type position :: %{
           side: side(),
-          quantity: Decimal.t() | integer() | float() | String.t(),
-          mark_price: Decimal.t() | integer() | float() | String.t(),
-          mmr: Decimal.t() | integer() | float() | String.t()
+          quantity: DecimalInput.input(),
+          mark_price: DecimalInput.input(),
+          mmr: DecimalInput.input()
         }
 
   @typedoc "Portfolio-margin account input."
   @type account :: %{
           :positions => [position()],
-          optional(:equity) => Decimal.t() | integer() | float() | String.t()
+          optional(:equity) => DecimalInput.input()
         }
 
   @typedoc "Margin usage under the portfolio model."
@@ -86,7 +87,7 @@ defmodule DeltaCalc.PortfolioMargin do
   @spec portfolio_liquidation_price(account()) :: Decimal.t() | nil
   def portfolio_liquidation_price(account) do
     exposure = net_exposure(account.positions)
-    equity = to_decimal(account.equity)
+    equity = DecimalInput.cast!(account.equity)
 
     case Decimal.compare(exposure.net_quantity, @zero) do
       :gt -> net_long_liquidation_price(equity, exposure)
@@ -114,7 +115,7 @@ defmodule DeltaCalc.PortfolioMargin do
   @doc "Return used maintenance margin, available equity, and usage percentage."
   @spec margin_usage(account()) :: usage()
   def margin_usage(account) do
-    equity = to_decimal(account.equity)
+    equity = DecimalInput.cast!(account.equity)
     used = combined_maintenance_margin(account)
     available = equity |> Decimal.sub(used) |> Decimal.max(@zero) |> Calc.quantize()
 
@@ -178,9 +179,9 @@ defmodule DeltaCalc.PortfolioMargin do
   defp net_exposure(positions) do
     positions
     |> Enum.reduce(%{net_quantity: @zero, signed_notional: @zero, mmr: @zero}, fn position, acc ->
-      quantity = to_decimal(position.quantity)
-      mark_price = to_decimal(position.mark_price)
-      mmr = to_decimal(position.mmr)
+      quantity = DecimalInput.cast!(position.quantity)
+      mark_price = DecimalInput.cast!(position.mark_price)
+      mmr = DecimalInput.cast!(position.mmr)
       signed_quantity = signed_quantity(position.side, quantity)
 
       %{
@@ -205,12 +206,4 @@ defmodule DeltaCalc.PortfolioMargin do
 
   defp signed_quantity(:long, quantity), do: quantity
   defp signed_quantity(:short, quantity), do: Decimal.negate(quantity)
-
-  @spec to_decimal(Decimal.t() | number() | String.t()) :: Decimal.t()
-  defp to_decimal(%Decimal{} = value), do: value
-
-  defp to_decimal(value) do
-    {:ok, decimal} = Decimal.cast(value)
-    decimal
-  end
 end

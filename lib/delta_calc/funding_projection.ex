@@ -9,15 +9,17 @@ defmodule DeltaCalc.FundingProjection do
 
   use Descripex, namespace: "/funding_projection"
 
+  alias DeltaCalc.Decimal, as: DecimalInput
+
   @zero Decimal.new(0)
   @one Decimal.new(1)
 
   @type payback_days :: non_neg_integer() | nil
 
   @type payback_params :: %{
-          required(:remaining_debt) => Decimal.t() | number() | String.t(),
-          required(:daily_funding) => Decimal.t() | number() | String.t(),
-          required(:funding_volatility) => Decimal.t() | number() | String.t()
+          required(:remaining_debt) => DecimalInput.input(),
+          required(:daily_funding) => DecimalInput.input(),
+          required(:funding_volatility) => DecimalInput.input()
         }
 
   @type payback_timeline :: %{
@@ -59,22 +61,22 @@ defmodule DeltaCalc.FundingProjection do
       iex> DeltaCalc.FundingProjection.project_payback_timeline(%{
       ...>   remaining_debt: 2700,
       ...>   daily_funding: 90,
-      ...>   funding_volatility: 0.2
+      ...>   funding_volatility: "0.2"
       ...> })
       %{best_case: 25, expected: 30, worst_case: 38}
 
       iex> DeltaCalc.FundingProjection.project_payback_timeline(%{
       ...>   remaining_debt: 0,
       ...>   daily_funding: 90,
-      ...>   funding_volatility: 0.2
+      ...>   funding_volatility: "0.2"
       ...> })
       %{best_case: 0, expected: 0, worst_case: 0}
   """
   @spec project_payback_timeline(payback_params()) :: payback_timeline()
   def project_payback_timeline(params) do
-    debt = to_decimal(params.remaining_debt)
-    daily_funding = to_decimal(params.daily_funding)
-    volatility = to_decimal(params.funding_volatility)
+    debt = DecimalInput.cast!(params.remaining_debt)
+    daily_funding = DecimalInput.cast!(params.daily_funding)
+    volatility = DecimalInput.cast!(params.funding_volatility)
 
     if Decimal.compare(debt, @zero) != :gt do
       %{best_case: 0, expected: 0, worst_case: 0}
@@ -119,13 +121,5 @@ defmodule DeltaCalc.FundingProjection do
     ratio
     |> Decimal.round(0, :up)
     |> Decimal.to_integer()
-  end
-
-  @spec to_decimal(Decimal.t() | number() | String.t()) :: Decimal.t()
-  defp to_decimal(%Decimal{} = value), do: value
-
-  defp to_decimal(value) do
-    {:ok, decimal} = Decimal.cast(value)
-    decimal
   end
 end

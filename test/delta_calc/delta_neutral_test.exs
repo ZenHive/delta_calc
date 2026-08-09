@@ -168,17 +168,33 @@ defmodule DeltaCalc.DeltaNeutralTest do
       assert Decimal.equal?(total_allocated, rebalance.signed_hedge)
     end
 
-    test "accepts float tolerance and delta inputs" do
-      positions = [%{kind: :option, delta: 0.05}]
+    test "accepts canonical string tolerance and delta inputs" do
+      positions = [%{kind: :option, delta: "0.05"}]
 
       result =
         DeltaNeutral.rebalance_to_neutral(%{
           positions: positions,
-          tolerance: 0.1
+          tolerance: "0.1"
         })
 
       assert result.within_tolerance == true
       assert Decimal.equal?(result.net_delta, Decimal.new("0.05000000"))
+    end
+
+    test "rejects raw float tolerance and delta inputs" do
+      assert_raise ArgumentError, fn ->
+        DeltaNeutral.rebalance_to_neutral(%{
+          positions: [%{kind: :option, delta: 0.05}],
+          tolerance: "0.1"
+        })
+      end
+
+      assert_raise ArgumentError, fn ->
+        DeltaNeutral.rebalance_to_neutral(%{
+          positions: [%{kind: :option, delta: "0.05"}],
+          tolerance: 0.1
+        })
+      end
     end
   end
 

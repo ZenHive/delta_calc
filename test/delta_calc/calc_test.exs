@@ -1215,10 +1215,14 @@ defmodule DeltaCalc.CalcTest do
   end
 
   describe "input coercion" do
-    test "accepts integer, binary, and float inputs via to_decimal" do
+    test "accepts integer and canonical string inputs" do
       assert Calc.effective_leverage(10_000, 5_000) == Decimal.new("2.00000000")
       assert Calc.effective_leverage("10000", "5000") == Decimal.new("2.00000000")
-      assert Calc.effective_leverage(10_000.0, 5_000.0) == Decimal.new("2.00000000")
+    end
+
+    test "rejects invalid inputs with ArgumentError" do
+      assert_raise ArgumentError, fn -> Calc.effective_leverage(10_000.0, 5_000) end
+      assert_raise ArgumentError, fn -> Calc.effective_leverage(nil, 5_000) end
     end
 
     test "safety/4 uses default cfg" do

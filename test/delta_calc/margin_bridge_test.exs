@@ -119,12 +119,16 @@ defmodule DeltaCalc.MarginBridgeTest do
       assert timeline.projected_payoff_date == nil
     end
 
-    test "accepts numeric inputs via Decimal coercion" do
-      timeline = MarginBridge.payback_timeline(2700, 90.0, from_date: ~D[2025-01-01])
+    test "accepts integer and string inputs" do
+      timeline = MarginBridge.payback_timeline(2700, "90", from_date: ~D[2025-01-01])
 
       assert Decimal.equal?(timeline.remaining_debt, Decimal.new("2700"))
-      assert Decimal.equal?(timeline.daily_funding, Decimal.new("90.0"))
+      assert Decimal.equal?(timeline.daily_funding, Decimal.new("90"))
       assert timeline.projected_payoff_date == ~D[2025-01-31]
+    end
+
+    test "rejects raw float inputs" do
+      assert_raise ArgumentError, fn -> MarginBridge.payback_timeline(2700, 90.0) end
     end
 
     test "full payback at 90/day matches phase7 high-funding scenario (~30 days)" do

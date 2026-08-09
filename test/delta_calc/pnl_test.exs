@@ -92,6 +92,17 @@ defmodule DeltaCalc.PnlTest do
       assert Decimal.equal?(from_int, Decimal.new("1000.00000000"))
       assert Decimal.equal?(from_int, from_string)
     end
+
+    test "rejects malformed values with ArgumentError" do
+      assert_raise ArgumentError, fn ->
+        Pnl.unrealized_pnl(%{
+          entry_price: "not-a-price",
+          mark_price: 51_000,
+          size: 1,
+          side: :long
+        })
+      end
+    end
   end
 
   describe "realized_pnl/1" do

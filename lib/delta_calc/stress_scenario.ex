@@ -11,6 +11,7 @@ defmodule DeltaCalc.StressScenario do
   use Descripex, namespace: "/stress_scenario"
 
   alias DeltaCalc.{Calc, PortfolioMargin}
+  alias DeltaCalc.Decimal, as: DecimalInput
 
   @zero Decimal.new(0)
   @one Decimal.new(1)
@@ -22,7 +23,7 @@ defmodule DeltaCalc.StressScenario do
 
   @typedoc "Account inputs for stress scenarios."
   @type account :: %{
-          required(:equity) => Decimal.t() | integer() | float() | String.t(),
+          required(:equity) => DecimalInput.input(),
           required(:positions) => [position()]
         }
 
@@ -77,9 +78,9 @@ defmodule DeltaCalc.StressScenario do
   )
 
   @doc "Return post-shock equity and per-position margin plus portfolio liquidation status."
-  @spec apply_shock(account(), Decimal.t() | integer() | float() | String.t()) :: shock_result()
+  @spec apply_shock(account(), DecimalInput.input()) :: shock_result()
   def apply_shock(account, shock_pct) do
-    shock = to_decimal(shock_pct)
+    shock = DecimalInput.cast!(shock_pct)
     shocked_account = shocked_account(account, shock)
     portfolio_liquidated? = portfolio_liquidated?(shocked_account)
 
@@ -92,7 +93,7 @@ defmodule DeltaCalc.StressScenario do
         %{
           id: position_id(position, index),
           side: position.side,
-          quantity: to_decimal(position.quantity),
+          quantity: DecimalInput.cast!(position.quantity),
           mark_price: shocked_mark,
           margin: position_margin(position, shocked_mark)
         }
@@ -131,9 +132,9 @@ defmodule DeltaCalc.StressScenario do
   )
 
   @doc "Liquidate positions iteratively when shocked equity is below maintenance margin."
-  @spec cascade(account(), Decimal.t() | integer() | float() | String.t()) :: cascade_result()
+  @spec cascade(account(), DecimalInput.input()) :: cascade_result()
   def cascade(account, shock_pct) do
-    shock = to_decimal(shock_pct)
+    shock = DecimalInput.cast!(shock_pct)
     initial = shocked_account(account, shock)
     margin_call = margin_call(initial)
 
@@ -204,21 +205,21 @@ defmodule DeltaCalc.StressScenario do
       end)
 
     account.equity
-    |> to_decimal()
+    |> DecimalInput.cast!()
     |> Decimal.add(pnl)
     |> Calc.quantize()
   end
 
   defp realized_equity(account, position, shock) do
     account.equity
-    |> to_decimal()
+    |> DecimalInput.cast!()
     |> Decimal.add(position_pnl(position, shock))
     |> Calc.quantize()
   end
 
   defp position_pnl(position, shock) do
-    quantity = to_decimal(position.quantity)
-    mark = to_decimal(position.mark_price)
+    quantity = DecimalInput.cast!(position.quantity)
+    mark = DecimalInput.cast!(position.mark_price)
     shocked_mark = shocked_mark_price(mark, shock)
 
     signed =
@@ -234,7 +235,7 @@ defmodule DeltaCalc.StressScenario do
 
   defp shocked_mark_price(mark_price, shock_pct) do
     mark_price
-    |> to_decimal()
+    |> DecimalInput.cast!()
     |> Decimal.mult(
       shock_pct
       |> Decimal.div(@hundred)
@@ -245,10 +246,10 @@ defmodule DeltaCalc.StressScenario do
 
   defp position_margin(position, mark_price) do
     position.quantity
-    |> to_decimal()
+    |> DecimalInput.cast!()
     |> Decimal.abs()
     |> Decimal.mult(mark_price)
-    |> Decimal.mult(to_decimal(position.mmr))
+    |> Decimal.mult(DecimalInput.cast!(position.mmr))
     |> Calc.quantize()
   end
 
@@ -257,14 +258,14 @@ defmodule DeltaCalc.StressScenario do
   end
 
   defp portfolio_survives?(account) do
-    equity = to_decimal(account.equity)
+    equity = DecimalInput.cast!(account.equity)
     maintenance = PortfolioMargin.combined_maintenance_margin(account)
 
     Decimal.compare(equity, maintenance) != :lt
   end
 
   defp margin_call(account) do
-    equity = to_decimal(account.equity)
+    equity = DecimalInput.cast!(account.equity)
     maintenance = PortfolioMargin.combined_maintenance_margin(account)
     shortfall = Decimal.sub(maintenance, equity)
 
@@ -280,13 +281,5 @@ defmodule DeltaCalc.StressScenario do
       Map.has_key?(position, :symbol) -> Map.fetch!(position, :symbol)
       true -> index
     end
-  end
-
-  @spec to_decimal(Decimal.t() | number() | String.t()) :: Decimal.t()
-  defp to_decimal(%Decimal{} = value), do: value
-
-  defp to_decimal(value) when is_number(value) or is_binary(value) do
-    {:ok, decimal} = Decimal.cast(value)
-    decimal
   end
 end

@@ -8,6 +8,8 @@ defmodule DeltaCalc.Funding do
 
   use Descripex, namespace: "/funding"
 
+  alias DeltaCalc.Decimal, as: DecimalInput
+
   @arbitrage_threshold Decimal.new("0.0005")
   @trend_threshold Decimal.new("0.00001")
   @default_period_hours 8
@@ -22,7 +24,7 @@ defmodule DeltaCalc.Funding do
                                        Decimal.new(@default_periods_per_day)
                                      )
 
-  @type decimal_input :: Decimal.t() | number() | String.t()
+  @type decimal_input :: DecimalInput.input()
   @type periods_per_day_input :: decimal_input() | %{atom() => decimal_input()}
   @type delta_unit :: :raw_per_period | :daily_normalized
 
@@ -80,10 +82,10 @@ defmodule DeltaCalc.Funding do
   )
 
   @doc "Convert a per-period funding rate into hourly, daily, and annual percentage APR."
-  @spec funding_apr(Decimal.t() | number(), pos_integer()) ::
+  @spec funding_apr(decimal_input(), pos_integer()) ::
           {:ok, apr_result()} | {:error, :invalid_rate}
   def funding_apr(rate, period_hours \\ @default_period_hours) do
-    with {:ok, rate_dec} <- cast_rate(rate),
+    with {:ok, rate_dec} <- DecimalInput.cast(rate),
          true <- period_hours > 0 do
       period = Decimal.new(period_hours)
       funding_per_day = Decimal.div(Decimal.new(@hours_per_day), period)
@@ -99,7 +101,8 @@ defmodule DeltaCalc.Funding do
          annual: pct(annual_rate, 2)
        }}
     else
-      _ -> {:error, :invalid_rate}
+      {:error, :invalid_decimal} -> {:error, :invalid_rate}
+      false -> {:error, :invalid_rate}
     end
   end
 
@@ -167,7 +170,7 @@ defmodule DeltaCalc.Funding do
       ],
       min_delta: [
         kind: :value,
-        default: 0.001,
+        default: "0.001",
         description:
           "Minimum absolute raw-period spread in decimal-fraction units. " <>
             "Daily-normalized comparison entries are scaled before filtering.",
@@ -190,9 +193,9 @@ defmodule DeltaCalc.Funding do
   periods per day so scalar- and map-cadence comparison results can be filtered
   together without scale skew.
   """
-  @spec find_arbitrage_opportunities(map(), Decimal.t() | number()) :: [map()]
+  @spec find_arbitrage_opportunities(map(), decimal_input()) :: [map()]
   def find_arbitrage_opportunities(comparison, min_delta \\ Decimal.new("0.001")) do
-    min_delta = ensure_decimal(min_delta)
+    min_delta = DecimalInput.cast!(min_delta)
 
     comparison
     |> normalize_comparison_entries()
@@ -263,7 +266,7 @@ defmodule DeltaCalc.Funding do
   end
 
   defp compare_single_symbol(rates, periods_per_day) when is_map(periods_per_day) do
-    decimal_rates = Map.new(rates, fn {venue, rate} -> {venue, ensure_decimal(rate)} end)
+    decimal_rates = Map.new(rates, fn {venue, rate} -> {venue, DecimalInput.cast!(rate)} end)
     daily_rates = daily_rates(decimal_rates, periods_per_day)
 
     {max_exchange, max_daily_rate} =
@@ -294,7 +297,7 @@ defmodule DeltaCalc.Funding do
   end
 
   defp compare_single_symbol(rates, periods_per_day) do
-    decimal_rates = Map.new(rates, fn {venue, rate} -> {venue, ensure_decimal(rate)} end)
+    decimal_rates = Map.new(rates, fn {venue, rate} -> {venue, DecimalInput.cast!(rate)} end)
     rate_values = Map.values(decimal_rates)
 
     max_rate = Enum.max_by(rate_values, & &1, Decimal)
@@ -371,22 +374,22 @@ defmodule DeltaCalc.Funding do
        when is_map(periods_per_day_by_venue) do
     periods_per_day_by_venue
     |> Map.get(venue, @default_periods_per_day)
-    |> ensure_decimal()
+    |> DecimalInput.cast!()
   end
 
-  defp periods_per_day_for(periods_per_day, _venue), do: ensure_decimal(periods_per_day)
+  defp periods_per_day_for(periods_per_day, _venue), do: DecimalInput.cast!(periods_per_day)
 
   @spec rank_venues(map()) :: [{atom(), Decimal.t()}]
   defp rank_venues(rates) do
     rates
-    |> Enum.map(fn {venue, rate} -> {venue, ensure_decimal(rate)} end)
+    |> Enum.map(fn {venue, rate} -> {venue, DecimalInput.cast!(rate)} end)
     |> Enum.sort_by(fn {_venue, rate} -> rate end, {:desc, Decimal})
   end
 
   @spec rank_venues(map(), map()) :: [{atom(), Decimal.t()}]
   defp rank_venues(rates, comparable_rates) do
     rates
-    |> Enum.map(fn {venue, rate} -> {venue, ensure_decimal(rate)} end)
+    |> Enum.map(fn {venue, rate} -> {venue, DecimalInput.cast!(rate)} end)
     |> Enum.sort_by(
       fn {venue, _rate} -> Map.fetch!(comparable_rates, venue) end,
       {:desc, Decimal}
@@ -467,37 +470,9 @@ defmodule DeltaCalc.Funding do
   end
 
   @spec extract_rate(term()) :: Decimal.t()
-  defp extract_rate(%{rate: rate}), do: ensure_decimal(rate)
-  defp extract_rate(rate), do: ensure_decimal(rate)
+  defp extract_rate(%{rate: rate}), do: DecimalInput.cast!(rate)
+  defp extract_rate(rate), do: DecimalInput.cast!(rate)
 
   @spec pct(Decimal.t(), non_neg_integer()) :: Decimal.t()
   defp pct(rate, precision), do: rate |> Decimal.mult(@hundred) |> Decimal.round(precision)
-
-  @spec cast_rate(term()) :: {:ok, Decimal.t()} | {:error, :invalid_rate}
-  defp cast_rate(%Decimal{} = rate), do: {:ok, rate}
-  defp cast_rate(rate) when is_integer(rate), do: {:ok, Decimal.new(rate)}
-  defp cast_rate(rate) when is_float(rate), do: {:ok, Decimal.from_float(rate)}
-
-  defp cast_rate(rate) when is_binary(rate) do
-    case Decimal.parse(rate) do
-      {decimal, _} -> {:ok, decimal}
-      :error -> {:error, :invalid_rate}
-    end
-  end
-
-  defp cast_rate(_), do: {:error, :invalid_rate}
-
-  @spec ensure_decimal(term()) :: Decimal.t()
-  defp ensure_decimal(%Decimal{} = value), do: value
-  defp ensure_decimal(value) when is_integer(value), do: Decimal.new(value)
-  defp ensure_decimal(value) when is_float(value), do: Decimal.from_float(value)
-
-  defp ensure_decimal(value) when is_binary(value) do
-    case Decimal.parse(value) do
-      {decimal, _} -> decimal
-      :error -> Decimal.new(0)
-    end
-  end
-
-  defp ensure_decimal(_), do: Decimal.new(0)
 end

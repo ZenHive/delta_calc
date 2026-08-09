@@ -8,6 +8,7 @@ defmodule DeltaCalc.OptionsRisk do
 
   use Descripex, namespace: "/options_risk"
 
+  alias DeltaCalc.Decimal, as: DecimalInput
   alias DeltaCalc.MarginBridge
 
   @zero Decimal.new(0)
@@ -20,7 +21,7 @@ defmodule DeltaCalc.OptionsRisk do
   @default_margin_impact_denominator Decimal.new("0.75")
 
   @type health_status :: :healthy | :warning | :critical
-  @type decimal_input :: Decimal.t() | number() | String.t()
+  @type decimal_input :: DecimalInput.input()
 
   @type exposure_inputs :: %{
           required(:spot_notional) => decimal_input(),
@@ -114,12 +115,12 @@ defmodule DeltaCalc.OptionsRisk do
 
   Accepts one premium or a list; returns the summed premium as `max_loss`.
   """
-  @spec max_loss(Decimal.t() | number() | String.t() | [Decimal.t() | number() | String.t()]) ::
+  @spec max_loss(decimal_input() | [decimal_input()]) ::
           max_loss_result()
   def max_loss(option_premiums) when is_list(option_premiums) do
     total =
       option_premiums
-      |> Enum.map(&to_decimal/1)
+      |> Enum.map(&DecimalInput.cast!/1)
       |> Enum.reduce(@zero, &Decimal.add/2)
 
     %{
@@ -152,10 +153,10 @@ defmodule DeltaCalc.OptionsRisk do
   @doc "Return per-leg notionals and `total_exposure` as the sum of absolute leg values."
   @spec calculate_total_exposure(exposure_inputs()) :: exposure_result()
   def calculate_total_exposure(legs) do
-    spot = legs |> Map.fetch!(:spot_notional) |> to_decimal() |> Decimal.abs()
-    perp = legs |> Map.fetch!(:perp_notional) |> to_decimal() |> Decimal.abs()
-    options = legs |> Map.fetch!(:options_notional) |> to_decimal() |> Decimal.abs()
-    margin_debt = legs |> Map.fetch!(:margin_debt) |> to_decimal() |> Decimal.abs()
+    spot = legs |> Map.fetch!(:spot_notional) |> DecimalInput.cast!() |> Decimal.abs()
+    perp = legs |> Map.fetch!(:perp_notional) |> DecimalInput.cast!() |> Decimal.abs()
+    options = legs |> Map.fetch!(:options_notional) |> DecimalInput.cast!() |> Decimal.abs()
+    margin_debt = legs |> Map.fetch!(:margin_debt) |> DecimalInput.cast!() |> Decimal.abs()
 
     total =
       [spot, perp, options, margin_debt]
@@ -199,8 +200,8 @@ defmodule DeltaCalc.OptionsRisk do
   """
   @spec calculate_negative_funding_impact(negative_funding_inputs()) :: negative_funding_impact()
   def calculate_negative_funding_impact(params) do
-    negative_rate = params |> Map.fetch!(:negative_rate) |> to_decimal()
-    position_size = params |> Map.fetch!(:position_size) |> to_decimal()
+    negative_rate = params |> Map.fetch!(:negative_rate) |> DecimalInput.cast!()
+    position_size = params |> Map.fetch!(:position_size) |> DecimalInput.cast!()
     capital_protected = Map.get(params, :capital_protected, true)
     market_context = Map.get(params, :market_context, :neutral)
     periods_per_day = Map.get(params, :periods_per_day, @default_periods_per_day)
@@ -263,12 +264,12 @@ defmodule DeltaCalc.OptionsRisk do
           extended_stress_result()
   def stress_test_extended_negative(params, opts \\ []) do
     funding_rates = Map.fetch!(params, :funding_rates)
-    position_size = params |> Map.fetch!(:position_size) |> to_decimal()
+    position_size = params |> Map.fetch!(:position_size) |> DecimalInput.cast!()
     scenario = Map.get(params, :scenario, :bear_market_90d)
 
     duration_days = Keyword.get(opts, :duration_days, @default_duration_days)
     periods_per_day = Keyword.get(opts, :periods_per_day, @default_periods_per_day)
-    capital = opts |> Keyword.get(:capital, position_size) |> to_decimal()
+    capital = opts |> Keyword.get(:capital, position_size) |> DecimalInput.cast!()
     initial_margin_ratio = Keyword.get(opts, :initial_margin_ratio)
     margin_threshold = margin_threshold(opts)
     total_key = total_duration_key(duration_days)
@@ -276,7 +277,7 @@ defmodule DeltaCalc.OptionsRisk do
 
     scenarios =
       Enum.map(funding_rates, fn rate ->
-        rate = to_decimal(rate)
+        rate = DecimalInput.cast!(rate)
 
         result =
           MarginBridge.stress_test_prolonged_negative(
@@ -347,17 +348,17 @@ defmodule DeltaCalc.OptionsRisk do
   """
   @spec monitor_margin_bridge_health(margin_health_inputs(), keyword()) :: margin_health()
   def monitor_margin_bridge_health(params, opts \\ []) do
-    initial_margin = params |> Map.fetch!(:initial_margin) |> to_decimal()
-    option_premium = params |> Map.fetch!(:option_premium) |> to_decimal()
-    capital = params |> Map.fetch!(:capital) |> to_decimal()
-    available_margin = params |> Map.fetch!(:available_margin) |> to_decimal()
-    daily_burn = params |> Map.fetch!(:daily_burn) |> to_decimal()
+    initial_margin = params |> Map.fetch!(:initial_margin) |> DecimalInput.cast!()
+    option_premium = params |> Map.fetch!(:option_premium) |> DecimalInput.cast!()
+    capital = params |> Map.fetch!(:capital) |> DecimalInput.cast!()
+    available_margin = params |> Map.fetch!(:available_margin) |> DecimalInput.cast!()
+    daily_burn = params |> Map.fetch!(:daily_burn) |> DecimalInput.cast!()
 
     margin_ratio = MarginBridge.margin_ratio(initial_margin, option_premium, capital)
     runway_days = MarginBridge.margin_runway_days(available_margin, daily_burn)
 
-    warning = opts |> Keyword.get(:warning, @default_warning_threshold) |> to_decimal()
-    reduce = opts |> Keyword.get(:reduce, @default_reduce_threshold) |> to_decimal()
+    warning = opts |> Keyword.get(:warning, @default_warning_threshold) |> DecimalInput.cast!()
+    reduce = opts |> Keyword.get(:reduce, @default_reduce_threshold) |> DecimalInput.cast!()
 
     %{
       margin_ratio: margin_ratio,
@@ -414,7 +415,7 @@ defmodule DeltaCalc.OptionsRisk do
   defp margin_threshold(opts) do
     opts
     |> Keyword.get(:margin_threshold, @default_warning_threshold)
-    |> to_decimal()
+    |> DecimalInput.cast!()
   end
 
   @spec kill_switch_day_range([pos_integer()]) :: {pos_integer() | nil, pos_integer() | nil}
@@ -434,11 +435,4 @@ defmodule DeltaCalc.OptionsRisk do
       true -> :healthy
     end
   end
-
-  # Shared coercion shape also lives in MarginBridge; keep module-local for now.
-  # ex_dna:disable-for-lines:4
-  defp to_decimal(%Decimal{} = value), do: value
-  defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
-  defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)
-  defp to_decimal(value) when is_binary(value), do: Decimal.new(value)
 end

@@ -22,6 +22,8 @@ defmodule DeltaCalc.Calc do
 
   use Descripex, namespace: "/calc"
 
+  alias DeltaCalc.Decimal, as: DecimalInput
+
   @output_precision 8
   @zero Decimal.new(0)
   @one Decimal.new(1)
@@ -60,8 +62,8 @@ defmodule DeltaCalc.Calc do
   """
   @spec effective_leverage(Decimal.t(), Decimal.t()) :: decimal_result()
   def effective_leverage(notional, wallet_equity) do
-    notional = to_decimal(notional)
-    wallet_equity = to_decimal(wallet_equity)
+    notional = DecimalInput.cast!(notional)
+    wallet_equity = DecimalInput.cast!(wallet_equity)
 
     case Decimal.compare(wallet_equity, @zero) do
       :gt ->
@@ -105,8 +107,8 @@ defmodule DeltaCalc.Calc do
   """
   @spec leverage_to_aum(Decimal.t(), Decimal.t()) :: decimal_result()
   def leverage_to_aum(notional, total_aum) do
-    notional = to_decimal(notional)
-    total_aum = to_decimal(total_aum)
+    notional = DecimalInput.cast!(notional)
+    total_aum = DecimalInput.cast!(total_aum)
 
     case Decimal.compare(total_aum, @zero) do
       :gt ->
@@ -180,9 +182,9 @@ defmodule DeltaCalc.Calc do
   """
   @spec liquidation(Decimal.t(), Decimal.t(), Decimal.t(), :long | :short) :: decimal_result()
   def liquidation(entry, leff, mmr_total, side) do
-    entry = to_decimal(entry)
-    leff = to_decimal(leff)
-    mmr_total = to_decimal(mmr_total)
+    entry = DecimalInput.cast!(entry)
+    leff = DecimalInput.cast!(leff)
+    mmr_total = DecimalInput.cast!(mmr_total)
 
     # Clamp mmr_total to valid range [0, 0.99999999]
     mmr_total =
@@ -276,10 +278,10 @@ defmodule DeltaCalc.Calc do
   """
   @spec allocate(Decimal.t(), map(), list(atom()), map(), Decimal.t()) :: map()
   def allocate(aum, mode_cfg, _assets, _weights, per_sub_cap_pct) do
-    aum = to_decimal(aum)
-    mode_pct = to_decimal(mode_cfg.pct)
-    mode_cap = to_decimal(mode_cfg.cap)
-    per_sub_cap_pct = to_decimal(per_sub_cap_pct)
+    aum = DecimalInput.cast!(aum)
+    mode_pct = DecimalInput.cast!(mode_cfg.pct)
+    mode_cap = DecimalInput.cast!(mode_cfg.cap)
+    per_sub_cap_pct = DecimalInput.cast!(per_sub_cap_pct)
 
     # Calculate subaccount equity
     # Use minimum of (aum * mode_pct) and (aum * mode_cap)
@@ -344,9 +346,9 @@ defmodule DeltaCalc.Calc do
   """
   @spec position(Decimal.t(), Decimal.t(), Decimal.t(), Decimal.t(), :long | :short) :: map()
   def position(sub_eq, init_margin_pct, ui_lev, _entry, _side) do
-    sub_eq = to_decimal(sub_eq)
-    init_margin_pct = to_decimal(init_margin_pct)
-    ui_lev = to_decimal(ui_lev)
+    sub_eq = DecimalInput.cast!(sub_eq)
+    init_margin_pct = DecimalInput.cast!(init_margin_pct)
+    ui_lev = DecimalInput.cast!(ui_lev)
 
     # Calculate initial margin
     init_margin = Decimal.mult(sub_eq, init_margin_pct)
@@ -423,8 +425,8 @@ defmodule DeltaCalc.Calc do
 
   @spec multi_leg_position(list(map()), Decimal.t(), Decimal.t(), :long | :short) :: map()
   defp multi_leg_position(legs, current_price, initial_equity, side) do
-    current_price = to_decimal(current_price)
-    initial_equity = to_decimal(initial_equity)
+    current_price = DecimalInput.cast!(current_price)
+    initial_equity = DecimalInput.cast!(initial_equity)
 
     # Calculate position aggregates
     {total_notional, total_pnl, total_tokens} =
@@ -453,8 +455,8 @@ defmodule DeltaCalc.Calc do
           {Decimal.t(), Decimal.t(), Decimal.t()}
   defp calculate_leg_totals(legs, current_price, side) do
     Enum.reduce(legs, {@zero, @zero, @zero}, fn leg, {notional_acc, pnl_acc, tokens_acc} ->
-      entry = to_decimal(leg.entry)
-      notional = to_decimal(leg.notional)
+      entry = DecimalInput.cast!(leg.entry)
+      notional = DecimalInput.cast!(leg.notional)
       tokens = Decimal.div(notional, entry)
 
       pnl =
@@ -556,9 +558,9 @@ defmodule DeltaCalc.Calc do
   """
   @spec safety(Decimal.t(), Decimal.t(), Decimal.t(), :long | :short, map()) :: safety_result()
   def safety(liq, entry, swan_pct, side, cfg \\ %{}) do
-    liq = to_decimal(liq)
-    entry = to_decimal(entry)
-    swan_pct = to_decimal(swan_pct)
+    liq = DecimalInput.cast!(liq)
+    entry = DecimalInput.cast!(entry)
+    swan_pct = DecimalInput.cast!(swan_pct)
 
     # Guard against zero or negative entry price
     if Decimal.compare(entry, @zero) in [:eq, :lt] do
@@ -759,8 +761,8 @@ defmodule DeltaCalc.Calc do
         swan_pct,
         safety_cfg \\ %{}
       ) do
-    single_notional = to_decimal(single_leg.notional)
-    single_entry = to_decimal(single_leg.entry)
+    single_notional = DecimalInput.cast!(single_leg.notional)
+    single_entry = DecimalInput.cast!(single_leg.entry)
     legs = [single_leg, dca_leg]
     multi_pos = multi_leg_position(legs, current_price, initial_equity, side)
 
@@ -788,11 +790,6 @@ defmodule DeltaCalc.Calc do
   @spec decimal_result_or_zero(decimal_result()) :: Decimal.t()
   defp decimal_result_or_zero(%Decimal{} = value), do: value
   defp decimal_result_or_zero({:error, _reason}), do: @zero
-
-  defp to_decimal(value) when is_binary(value), do: Decimal.new(value)
-  defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
-  defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)
-  defp to_decimal(%Decimal{} = value), do: value
 
   api(:convert_ladder_for_short, "Convert a long DCA ladder preset to a short preset.",
     params: [
@@ -829,8 +826,8 @@ defmodule DeltaCalc.Calc do
   @spec convert_ladder_for_short(list()) :: list()
   def convert_ladder_for_short(long_preset) do
     Enum.map(long_preset, fn {price_mult, reserve_pct} ->
-      price_mult = to_decimal(price_mult)
-      reserve_pct = to_decimal(reserve_pct)
+      price_mult = DecimalInput.cast!(price_mult)
+      reserve_pct = DecimalInput.cast!(reserve_pct)
 
       # Convert: if long is 0.95 (5% down), short should be 1.05 (5% up)
       # Formula: short_mult = 2 - long_mult
@@ -928,13 +925,13 @@ defmodule DeltaCalc.Calc do
         mmr_rate,
         _mark_buffer \\ Decimal.new(0)
       ) do
-    reserve = to_decimal(reserve)
-    entry_price = to_decimal(entry_price)
-    ui_lev = to_decimal(ui_lev)
-    mmr_rate = to_decimal(mmr_rate)
+    reserve = DecimalInput.cast!(reserve)
+    entry_price = DecimalInput.cast!(entry_price)
+    ui_lev = DecimalInput.cast!(ui_lev)
+    mmr_rate = DecimalInput.cast!(mmr_rate)
 
-    initial_notional = to_decimal(position.notional)
-    initial_eff_lev = to_decimal(position.eff_lev)
+    initial_notional = DecimalInput.cast!(position.notional)
+    initial_eff_lev = DecimalInput.cast!(position.eff_lev)
 
     # Initialize state
     initial_state = initialize_dca_state(position, reserve, entry_price)
@@ -967,8 +964,8 @@ defmodule DeltaCalc.Calc do
 
   @spec initialize_dca_state(map(), Decimal.t(), Decimal.t()) :: map()
   defp initialize_dca_state(position, reserve, entry_price) do
-    initial_notional = to_decimal(position.notional)
-    initial_eff_lev = to_decimal(position.eff_lev)
+    initial_notional = DecimalInput.cast!(position.notional)
+    initial_eff_lev = DecimalInput.cast!(position.eff_lev)
 
     wallet_equity =
       if Decimal.compare(initial_eff_lev, @zero) == :gt do
@@ -997,8 +994,8 @@ defmodule DeltaCalc.Calc do
          {price_mult, reserve_pct, step_num},
          {entry_price, ui_lev, reserve, mmr_rate, side}
        ) do
-    price_mult = to_decimal(price_mult)
-    reserve_pct = to_decimal(reserve_pct)
+    price_mult = DecimalInput.cast!(price_mult)
+    reserve_pct = DecimalInput.cast!(reserve_pct)
 
     # Calculate DCA price based on side
     dca_price = calculate_dca_price(entry_price, price_mult, side)

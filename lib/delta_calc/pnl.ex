@@ -9,6 +9,7 @@ defmodule DeltaCalc.Pnl do
   use Descripex, namespace: "/pnl"
 
   alias DeltaCalc.Calc
+  alias DeltaCalc.Decimal, as: DecimalInput
   alias DeltaCalc.Fees
 
   @zero Decimal.new(0)
@@ -17,7 +18,7 @@ defmodule DeltaCalc.Pnl do
   @typedoc "Position side for PnL calculations."
   @type side :: :long | :short
 
-  @type decimal_input :: Decimal.t() | number() | String.t()
+  @type decimal_input :: DecimalInput.input()
 
   @typedoc "Inputs for mark-to-market unrealized PnL."
   @type unrealized_params :: %{
@@ -76,9 +77,9 @@ defmodule DeltaCalc.Pnl do
   """
   @spec unrealized_pnl(unrealized_params()) :: Decimal.t()
   def unrealized_pnl(params) do
-    entry = to_decimal(params.entry_price)
-    mark = to_decimal(params.mark_price)
-    size = to_decimal(params.size)
+    entry = DecimalInput.cast!(params.entry_price)
+    mark = DecimalInput.cast!(params.mark_price)
+    size = DecimalInput.cast!(params.size)
 
     if position_active?(entry, size) do
       gross_pnl(entry, mark, size, params.side)
@@ -113,10 +114,10 @@ defmodule DeltaCalc.Pnl do
   """
   @spec realized_pnl(realized_params()) :: Decimal.t()
   def realized_pnl(params) do
-    entry = to_decimal(params.entry_price)
-    exit = to_decimal(params.exit_price)
-    size = to_decimal(params.size)
-    funding = params |> Map.get(:accrued_funding, @zero) |> to_decimal()
+    entry = DecimalInput.cast!(params.entry_price)
+    exit = DecimalInput.cast!(params.exit_price)
+    size = DecimalInput.cast!(params.size)
+    funding = params |> Map.get(:accrued_funding, @zero) |> DecimalInput.cast!()
 
     if position_active?(entry, size) do
       gross = gross_pnl(entry, exit, size, params.side)
@@ -160,8 +161,8 @@ defmodule DeltaCalc.Pnl do
   """
   @spec roe(roe_params()) :: Decimal.t()
   def roe(params) do
-    pnl = to_decimal(params.pnl)
-    margin = to_decimal(params.margin)
+    pnl = DecimalInput.cast!(params.pnl)
+    margin = DecimalInput.cast!(params.margin)
 
     if Decimal.compare(margin, @zero) == :gt do
       pnl
@@ -198,7 +199,7 @@ defmodule DeltaCalc.Pnl do
   """
   @spec breakeven(breakeven_params()) :: Decimal.t()
   def breakeven(params) do
-    accrued = params |> Map.get(:accrued_funding, @zero) |> to_decimal()
+    accrued = params |> Map.get(:accrued_funding, @zero) |> DecimalInput.cast!()
 
     Fees.funding_adjusted_breakeven(
       params.entry_price,
@@ -224,13 +225,5 @@ defmodule DeltaCalc.Pnl do
 
   defp gross_pnl(entry, price, size, :short) do
     entry |> Decimal.sub(price) |> Decimal.mult(size)
-  end
-
-  @spec to_decimal(decimal_input()) :: Decimal.t()
-  defp to_decimal(%Decimal{} = value), do: value
-
-  defp to_decimal(value) do
-    {:ok, decimal} = Decimal.cast(value)
-    decimal
   end
 end

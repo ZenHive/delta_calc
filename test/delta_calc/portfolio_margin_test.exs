@@ -56,10 +56,10 @@ defmodule DeltaCalc.PortfolioMarginTest do
       assert Decimal.equal?(result, Decimal.new("0.00000000"))
     end
 
-    test "accepts Decimal-compatible numeric inputs" do
+    test "accepts integer and string inputs" do
       account = %{
         positions: [
-          %{side: :long, quantity: 3.0, mark_price: 3000, mmr: "0.005"},
+          %{side: :long, quantity: 3, mark_price: 3000, mmr: "0.005"},
           %{side: :short, quantity: "1", mark_price: 3000, mmr: "0.005"}
         ]
       }
@@ -67,6 +67,14 @@ defmodule DeltaCalc.PortfolioMarginTest do
       result = PortfolioMargin.combined_maintenance_margin(account)
 
       assert Decimal.equal?(result, Decimal.new("30.00000000"))
+    end
+
+    test "rejects raw float position inputs" do
+      account = %{
+        positions: [%{side: :long, quantity: 3.0, mark_price: 3000, mmr: "0.005"}]
+      }
+
+      assert_raise ArgumentError, fn -> PortfolioMargin.combined_maintenance_margin(account) end
     end
 
     test "uses signed-notional net mark when offsetting legs have different marks" do

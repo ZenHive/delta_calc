@@ -9,6 +9,8 @@ defmodule DeltaCalc.OptionLadder do
 
   use Descripex, namespace: "/option_ladder"
 
+  alias DeltaCalc.Decimal, as: DecimalInput
+
   @zero Decimal.new("0")
   @one Decimal.new("1")
   @hundred Decimal.new("100")
@@ -44,8 +46,8 @@ defmodule DeltaCalc.OptionLadder do
   @type expiry :: %{
           expiry: String.t(),
           days_to_expiry: pos_integer(),
-          liquidity: Decimal.t(),
-          bid_ask_spread: Decimal.t()
+          liquidity: DecimalInput.input(),
+          bid_ask_spread: DecimalInput.input()
         }
 
   @type expiry_bucket :: %{
@@ -156,7 +158,7 @@ defmodule DeltaCalc.OptionLadder do
   @spec check_roll_conditions(map(), map()) :: roll_decision()
   def check_roll_conditions(position, market) do
     days = position.days_to_expiry
-    pnl = to_decimal(position.pnl_percent)
+    pnl = DecimalInput.cast!(position.pnl_percent)
     spread = to_spread_ratio(position.bid_ask_spread)
     momentum = Map.get(market, :momentum)
 
@@ -187,10 +189,15 @@ defmodule DeltaCalc.OptionLadder do
   @doc "Return an IV-aware strike ladder for the requested risk profile."
   @spec select_strikes(map(), keyword()) :: strike_result()
   def select_strikes(params, opts \\ []) do
-    spot_price = to_decimal(params.spot_price)
+    spot_price = DecimalInput.cast!(params.spot_price)
     risk_profile = params.risk_profile
     option_type = Keyword.get(opts, :option_type, :call)
-    increment = opts |> Keyword.get(:strike_increment, @default_strike_increment) |> to_decimal()
+
+    increment =
+      opts
+      |> Keyword.get(:strike_increment, @default_strike_increment)
+      |> DecimalInput.cast!()
+
     iv_adjustment = iv_adjusted_size(@one, iv_percentile: params.iv_percentile)
 
     strikes =
@@ -229,9 +236,9 @@ defmodule DeltaCalc.OptionLadder do
   @doc "Return whether funding covers the roll, whether margin is used, or whether to skip/defer."
   @spec sync_with_funding(map(), keyword()) :: funding_result()
   def sync_with_funding(roll, opts \\ []) do
-    funding_received = to_decimal(roll.funding_received)
-    roll_cost = to_decimal(roll.roll_cost)
-    spread_cost = to_decimal(roll.spread_cost)
+    funding_received = DecimalInput.cast!(roll.funding_received)
+    roll_cost = DecimalInput.cast!(roll.roll_cost)
+    spread_cost = DecimalInput.cast!(roll.spread_cost)
     total_cost = Decimal.add(roll_cost, spread_cost)
 
     funding_result(
@@ -268,9 +275,9 @@ defmodule DeltaCalc.OptionLadder do
   )
 
   @doc "Return the IV-adjusted position size and action."
-  @spec iv_adjusted_size(Decimal.t(), keyword()) :: size_result()
+  @spec iv_adjusted_size(DecimalInput.input(), keyword()) :: size_result()
   def iv_adjusted_size(base_size, opts \\ []) do
-    base_size = to_decimal(base_size)
+    base_size = DecimalInput.cast!(base_size)
     iv_percentile = Keyword.fetch!(opts, :iv_percentile)
     {action, multiplier, reason} = size_adjustment(iv_percentile)
 
@@ -287,7 +294,7 @@ defmodule DeltaCalc.OptionLadder do
     liquidity_minimum =
       opts
       |> Keyword.get(:liquidity_minimum, @default_liquidity_minimum)
-      |> to_decimal()
+      |> DecimalInput.cast!()
 
     max_spread =
       opts
@@ -295,7 +302,7 @@ defmodule DeltaCalc.OptionLadder do
       |> to_spread_ratio()
 
     Enum.filter(expiries, fn expiry ->
-      gte?(to_decimal(expiry.liquidity), liquidity_minimum) and
+      gte?(DecimalInput.cast!(expiry.liquidity), liquidity_minimum) and
         lte?(to_spread_ratio(expiry.bid_ask_spread), max_spread)
     end)
   end
@@ -315,7 +322,7 @@ defmodule DeltaCalc.OptionLadder do
       expiry: expiry.expiry,
       days_to_expiry: expiry.days_to_expiry,
       allocation: bucket.allocation,
-      liquidity: to_decimal(expiry.liquidity),
+      liquidity: DecimalInput.cast!(expiry.liquidity),
       bid_ask_spread: to_spread_ratio(expiry.bid_ask_spread)
     }
   end
@@ -435,7 +442,7 @@ defmodule DeltaCalc.OptionLadder do
   end
 
   defp to_spread_ratio(value) do
-    value = to_decimal(value)
+    value = DecimalInput.cast!(value)
 
     if gt?(value, @one), do: Decimal.div(value, @hundred), else: value
   end
@@ -444,11 +451,4 @@ defmodule DeltaCalc.OptionLadder do
   defp lte?(left, right), do: Decimal.compare(left, right) in [:lt, :eq]
   defp gt?(left, right), do: Decimal.compare(left, right) == :gt
   defp gte?(left, right), do: Decimal.compare(left, right) in [:gt, :eq]
-
-  # Shared coercion shape also lives in MarginBridge; keep module-local for now.
-  # ex_dna:disable-for-lines:4
-  defp to_decimal(%Decimal{} = value), do: value
-  defp to_decimal(value) when is_integer(value), do: Decimal.new(value)
-  defp to_decimal(value) when is_float(value), do: Decimal.from_float(value)
-  defp to_decimal(value) when is_binary(value), do: Decimal.new(value)
 end

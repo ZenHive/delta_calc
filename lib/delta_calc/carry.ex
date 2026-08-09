@@ -17,13 +17,15 @@ defmodule DeltaCalc.Carry do
 
   use Descripex, namespace: "/carry"
 
+  alias DeltaCalc.Decimal, as: DecimalInput
+
   @zero Decimal.new(0)
   @hundred Decimal.new(100)
   @days_per_year 365
   @default_periods_per_day 3
   @output_precision 8
 
-  @type decimal_input :: Decimal.t() | number() | String.t()
+  @type decimal_input :: DecimalInput.input()
 
   @typedoc "Inputs shared by carry calculations."
   @type carry_params :: %{
@@ -68,11 +70,11 @@ defmodule DeltaCalc.Carry do
   @doc "Return `(perp_price - spot_price) / spot_price * 100`, or zero when spot is not positive."
   @spec basis(decimal_input(), decimal_input()) :: Decimal.t()
   def basis(spot_price, perp_price) do
-    spot = to_decimal(spot_price)
+    spot = DecimalInput.cast!(spot_price)
 
     if Decimal.compare(spot, @zero) == :gt do
       perp_price
-      |> to_decimal()
+      |> DecimalInput.cast!()
       |> Decimal.sub(spot)
       |> Decimal.div(spot)
       |> Decimal.mult(@hundred)
@@ -159,7 +161,7 @@ defmodule DeltaCalc.Carry do
 
   @spec funding_yield(carry_params()) :: Decimal.t()
   defp funding_yield(params) do
-    rate = params |> Map.fetch!(:funding_rate) |> to_decimal()
+    rate = params |> Map.fetch!(:funding_rate) |> DecimalInput.cast!()
     periods = funding_periods(params)
 
     rate
@@ -170,22 +172,14 @@ defmodule DeltaCalc.Carry do
 
   @spec funding_periods(carry_params()) :: Decimal.t()
   defp funding_periods(params) do
-    holding_days = params |> Map.get(:holding_days, @days_per_year) |> to_decimal()
+    holding_days = params |> Map.get(:holding_days, @days_per_year) |> DecimalInput.cast!()
 
     periods_per_day =
-      params |> Map.get(:periods_per_day, @default_periods_per_day) |> to_decimal()
+      params |> Map.get(:periods_per_day, @default_periods_per_day) |> DecimalInput.cast!()
 
     Decimal.mult(holding_days, periods_per_day)
   end
 
   @spec quantize(Decimal.t()) :: Decimal.t()
   defp quantize(value), do: Decimal.round(value, @output_precision)
-
-  @spec to_decimal(decimal_input()) :: Decimal.t()
-  defp to_decimal(%Decimal{} = value), do: value
-
-  defp to_decimal(value) do
-    {:ok, decimal} = Decimal.cast(value)
-    decimal
-  end
 end

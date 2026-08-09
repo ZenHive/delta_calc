@@ -37,12 +37,11 @@ defmodule DeltaCalc.FundingTest do
       assert Decimal.eq?(apr.annual, Decimal.new("21.90"), Decimal.new("0.01"))
     end
 
-    test "accepts numeric and string rate inputs" do
-      assert {:ok, float_apr} = Funding.funding_apr(0.0001, 8)
+    test "accepts integer and string rate inputs" do
       assert {:ok, int_apr} = Funding.funding_apr(1, 8)
       assert {:ok, string_apr} = Funding.funding_apr("0.0001", 8)
 
-      assert Decimal.equal?(float_apr.annual, string_apr.annual)
+      assert Decimal.equal?(string_apr.annual, Decimal.new("10.95"))
       assert Decimal.compare(int_apr.annual, Decimal.new(0)) == :gt
     end
 
@@ -54,7 +53,9 @@ defmodule DeltaCalc.FundingTest do
 
     test "returns error for invalid rate" do
       assert {:error, :invalid_rate} = Funding.funding_apr("not-a-rate", 8)
+      assert {:error, :invalid_rate} = Funding.funding_apr("0.0001 trailing", 8)
       assert {:error, :invalid_rate} = Funding.funding_apr(:invalid, 8)
+      assert {:error, :invalid_rate} = Funding.funding_apr(0.0001, 8)
       assert {:error, :invalid_rate} = Funding.funding_apr(Decimal.new("0.0001"), 0)
     end
   end
@@ -207,18 +208,21 @@ defmodule DeltaCalc.FundingTest do
       assert result["ETHUSDT"].arbitrage_opportunity == false
     end
 
-    test "coerces numeric venue rates" do
-      result = Funding.compare_funding_rates(%{binance: 0.003, bybit: 0.001})
+    test "coerces exact venue rates" do
+      result = Funding.compare_funding_rates(%{binance: "0.003", bybit: "0.001"})
 
       assert result.arbitrage_opportunity == true
       assert Decimal.equal?(result.delta, Decimal.new("0.002"))
     end
 
-    test "treats unparseable venue rates as zero" do
-      result = Funding.compare_funding_rates(%{binance: "bad", bybit: 0.001})
+    test "rejects unparseable venue rates instead of fabricating zero" do
+      assert_raise ArgumentError, fn ->
+        Funding.compare_funding_rates(%{binance: "bad", bybit: "0.001"})
+      end
 
-      assert result.max_exchange == :bybit
-      assert result.min_exchange == :binance
+      assert_raise ArgumentError, fn ->
+        Funding.compare_funding_rates(%{binance: 0.003, bybit: "0.001"})
+      end
     end
   end
 
@@ -230,7 +234,7 @@ defmodule DeltaCalc.FundingTest do
           "ETHUSDT" => %{binance: Decimal.new("0.0001"), bybit: Decimal.new("0.00009")}
         })
 
-      [btc | _] = Funding.find_arbitrage_opportunities(comparison, 0.001)
+      [btc | _] = Funding.find_arbitrage_opportunities(comparison, "0.001")
 
       assert btc.symbol == "BTCUSDT"
       assert btc.long_exchange == :bybit
@@ -246,7 +250,7 @@ defmodule DeltaCalc.FundingTest do
           bybit: Decimal.new("0.001")
         })
 
-      assert Funding.find_arbitrage_opportunities(comparison, 0.01) == []
+      assert Funding.find_arbitrage_opportunities(comparison, "0.01") == []
     end
 
     test "works for a single-symbol comparison map" do
@@ -256,7 +260,7 @@ defmodule DeltaCalc.FundingTest do
           bybit: Decimal.new("0.001")
         })
 
-      [opp] = Funding.find_arbitrage_opportunities(comparison, 0.001)
+      [opp] = Funding.find_arbitrage_opportunities(comparison, "0.001")
 
       assert opp.symbol == :unknown
       assert opp.long_exchange == :bybit

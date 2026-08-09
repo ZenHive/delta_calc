@@ -92,5 +92,5 @@ Complete the cross-module correctness work and the pure decision primitives used
 | Task 49 | ✅ | 🎁 **contract_hardening** · Disambiguate zero-as-sentinel vs legitimate zero in Calc returns [D:3/B:4/U:4 → Eff:1.33?] 📋 |
 | Task 50 | ✅ | 🎁 **contract_hardening** · Fix per-position liquidated? semantics in StressScenario.apply_shock [D:2/B:4/U:4 → Eff:2.0?] 🎯 |
 | Task 51 | ⬜ | 🎁 **contract_hardening** · 🚀 **v0_3** · Split Calc god-module along cohesion seams [D:7/B:5/U:4 → Eff:0.64] ⚠️ |
-| Task 53 | ⬜ | 🎁 **consumer_math** · 🚀 **v0_4** · Add base-numeraire inverse exposure and covered-call coverage math [D:6/B:8/U:7 → Eff:1.25] 📋 |
+| Task 53 | 🔄 | 🎁 **consumer_math** · 🚀 **v0_4** · Add base-numeraire inverse exposure and covered-call coverage math [D:6/B:8/U:7 → Eff:1.25] 📋 |
 <!-- TASKS:END -->

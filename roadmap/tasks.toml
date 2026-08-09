@@ -1434,7 +1434,7 @@ id = 53
 phase = 3
 bundle = "consumer_math"
 milestone = "v0_4"
-status = "pending"
+status = "in_progress"
 title = "Add base-numeraire inverse exposure and covered-call coverage math"
 scores = { d = 6, b = 8, u = 7 }
 depends_on = [39, 46]
@@ -1489,4 +1489,5 @@ Dispatch trigger: critical money/risk math and a public calculation contract req
 worked examples.
 """
 created_at = "2026-07-24"
+started_at = "2026-08-09"
 scored_at = "2026-07-25"

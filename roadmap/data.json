@@ -1751,7 +1751,7 @@
       "phase": 3,
       "bundle": "contract_hardening",
       "milestone": "v0_3",
-      "status": "in_progress",
+      "status": "done",
       "title": "Standardize funding-rate unit (fraction) across all DeltaCalc modules",
       "scores": {
         "d": 4,
@@ -1793,10 +1793,17 @@
         "test/delta_calc/options_risk_test.exs",
         "test/delta_calc/domain_invariants_test.exs"
       ],
+      "shipped_in": "dfe655c2351e8358f8b355b582720e06a6e74537",
       "body": "The library uses two incompatible funding-rate units. Funding.*, Carry.funding_yield, and Hedging.calculate_funding_cost/3 treat the rate as a FRACTION (0.0001 = 0.01%, no /100). MarginBridge.stress_test_prolonged_negative / check_kill_switch and OptionsRisk (which delegates to MarginBridge) treat it as a PERCENT number and divide by 100 internally. A consumer who derives one funding rate and passes it to both a Hedging function and a MarginBridge function is off by 100x, silently.\n\nPick the fraction convention (it matches Funding, the canonical funding module) and make every funding-rate input across the surface use it: update MarginBridge's internal /100, its api() descriptions and examples, and OptionsRisk's pass-through. This is a cross-module domain invariant that no per-task reviewer caught because each module is internally consistent — encode the chosen unit in a consistency test so it can't drift again.\n\nDispatch trigger: critical money-math unit correction spanning multiple modules and a repo-wide domain invariant.\n",
       "created_at": "2026-06-19",
       "started_at": "2026-08-09",
+      "done_at": "2026-08-09",
       "scored_at": "2026-07-25",
+      "implemented": "Landed by grok via merge-train; reviewer-approved (run run-1786272717592-460fca25, dfe655c2351e8358f8b355b582720e06a6e74537).",
+      "delivered_by": "grok",
+      "verified": true,
+      "verified_by": "codex",
+      "verification_ref": "harness-run:run-1786272717592-460fca25",
       "cross_repo": []
     },
     {

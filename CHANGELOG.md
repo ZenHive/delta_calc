@@ -5,6 +5,15 @@ Release-level history for completed roadmap phases. The per-task delivery ledger
 
 ## Unreleased
 
+- **Breaking:** `DeltaCalc.PositionCalculator.calculate_position/2` is now `calculate_position/1` —
+  the unused `fee_rate` input (fee modeling belongs to `DeltaCalc.Fees`) and the echoed risk-mode
+  config were removed, so the API no longer advertises inputs that don't affect the calculation.
+  `Calc.dca_ladder` now actually applies the advertised `mark_buffer` to every intermediate and
+  final liquidation MMR (zero preserves prior results).
+- Removed baked-in venue risk constants from generic margin/liquidation math: `Calc` takes a
+  caller-supplied MMR tier schedule (`:mmr_schedule`), and `MarginBridge.check_kill_switch`
+  compares a per-period funding rate scaled by caller-supplied cadence against an overridable
+  daily threshold. Defaults are documented conventions, not venue truths.
 - Registered `DeltaCalc.Decimal` (the shared input-coercion boundary from task 39) in the
   agent manifest with `api()` annotations for `cast/1` and `cast!/1`, and hardened the
   manifest-consistency suite: every publicly documented `lib/delta_calc/` module must now be

@@ -11,7 +11,7 @@ Source of truth: `roadmap/tasks.toml` (managed by [`rmap`](https://hex.pm/)). Th
 - **target_version:** 0.3.0
 - **status:** 🔄 active
 - **hypothesis:** Proves TradingDashboard can consume DeltaCalc as the unit-consistent, independently checked source for everyday leveraged-trading decisions without compensating for hidden venue constants or ambiguous contracts.
-- **pinned tasks:** 19/25 done
+- **pinned tasks:** 20/25 done
 
 ### v0_4 — Base-numeraire covered-call math
 
@@ -81,7 +81,7 @@ Complete the cross-module correctness work and the pure decision primitives used
 | Task 38 | ✅ | 🎁 **contract_hardening** · 🚀 **v0_3** · 🐛 Standardize funding-rate unit (fraction) across all DeltaCalc modules [D:4/B:8/U:7 → Eff:1.88] 🚀 |
 | Task 39 | ✅ | 🎁 **contract_hardening** · 🚀 **v0_3** · 🐛 Centralize Decimal coercion and eliminate silent input fallbacks [D:7/B:8/U:8 → Eff:1.14] 📋 |
 | Task 40 | ✅ | 🎁 **contract_hardening** · Manifest consistency test must cover unannotated public functions [D:2/B:6/U:6 → Eff:3.0?] 🎯 |
-| Task 41 | 🔄 | 🎁 **contract_hardening** · 🚀 **v0_3** · 🐛 Remove baked-in venue risk constants from generic margin/liquidation math [D:5/B:8/U:7 → Eff:1.5] 🚀 |
+| Task 41 | ✅ | 🎁 **contract_hardening** · 🚀 **v0_3** · 🐛 Remove baked-in venue risk constants from generic margin/liquidation math [D:5/B:8/U:7 → Eff:1.5] 🚀 |
 | Task 42 | ⬜ | 🎁 **consumer_math** · 🚀 **v0_3** · Expose side-aware public multi_leg_position (shorts) [D:3/B:6/U:6 → Eff:2.0] 🎯 |
 | Task 43 | ✅ | 🎁 **contract_hardening** · Fix PortfolioMargin netted mark price for offsetting legs [D:4/B:7/U:6 → Eff:1.62?] 🚀 |
 | Task 44 | ⬜ | 🎁 **contract_hardening** · 🚀 **v0_3** · 🐛 Make DCA and position-sizing inputs behaviorally truthful [D:5/B:6/U:6 → Eff:1.2] 📋 |

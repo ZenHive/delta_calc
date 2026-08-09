@@ -30,7 +30,14 @@ defmodule DeltaCalc.MixProject do
   end
 
   def cli do
-    [preferred_envs: ["test.json": :test, "dialyzer.json": :dev, ci: :test]]
+    [
+      preferred_envs: [
+        "test.json": :test,
+        "dialyzer.json": :dev,
+        ci: :test,
+        "check.dispatch": :test
+      ]
+    ]
   end
 
   def application do

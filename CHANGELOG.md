@@ -5,6 +5,11 @@ Release-level history for completed roadmap phases. The per-task delivery ledger
 
 ## Unreleased
 
+- Registered `DeltaCalc.Decimal` (the shared input-coercion boundary from task 39) in the
+  agent manifest with `api()` annotations for `cast/1` and `cast!/1`, and hardened the
+  manifest-consistency suite: every publicly documented `lib/delta_calc/` module must now be
+  registered — a documented module without `api()` coverage fails CI instead of silently
+  missing from the agent surface.
 - Added `DeltaCalc.describe/0..2` — progressive disclosure over the manifest registry, so an
   agent narrows from library to module to function without reading source.
 - **Breaking:** renamed DeltaCalc.PnL (unbackticked: the module no longer exists, and an

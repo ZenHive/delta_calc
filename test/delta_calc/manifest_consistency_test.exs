@@ -55,6 +55,22 @@ defmodule DeltaCalc.ManifestConsistencyTest do
              """
     end
 
+    test "every publicly documented lib/delta_calc module is registered in Manifest" do
+      registered = MapSet.new(Manifest.modules())
+
+      unregistered =
+        documented_modules_from_lib()
+        |> Enum.reject(&MapSet.member?(registered, &1))
+        |> Enum.sort()
+
+      assert unregistered == [],
+             """
+             Publicly documented lib/delta_calc modules missing from DeltaCalc.Manifest @modules
+             (annotate with api() and register, or hide with @moduledoc false):
+             #{Enum.map_join(unregistered, "\n", &"  - #{inspect(&1)}")}
+             """
+    end
+
     test "every public function in a registered module carries :hints metadata" do
       missing =
         Manifest.modules()
@@ -110,6 +126,30 @@ defmodule DeltaCalc.ManifestConsistencyTest do
       Module.concat([mod_str])
     else
       _ -> nil
+    end
+  end
+
+  defp documented_modules_from_lib do
+    @lib_delta_calc
+    |> File.ls!()
+    |> Enum.filter(&String.ends_with?(&1, ".ex"))
+    |> Enum.reject(&(&1 == "manifest.ex"))
+    |> Enum.map(&module_from_file/1)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.filter(&publicly_documented?/1)
+    |> Enum.sort()
+  end
+
+  defp publicly_documented?(mod) do
+    case Code.ensure_loaded(mod) do
+      {:module, _} ->
+        case Code.fetch_docs(mod) do
+          {:docs_v1, _, _, _, moduledoc, _, _} -> is_map(moduledoc)
+          _ -> false
+        end
+
+      {:error, _} ->
+        false
     end
   end
 

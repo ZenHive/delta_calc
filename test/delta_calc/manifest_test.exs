@@ -4,6 +4,7 @@ defmodule DeltaCalc.ManifestTest do
   alias DeltaCalc.Manifest
 
   @expected_modules [
+    "DeltaCalc.Decimal",
     "DeltaCalc.Calc",
     "DeltaCalc.Presets",
     "DeltaCalc.DCAPlanner",
@@ -126,6 +127,7 @@ defmodule DeltaCalc.ManifestTest do
   describe "modules/0" do
     test "returns the calculator module list" do
       assert Manifest.modules() == [
+               DeltaCalc.Decimal,
                DeltaCalc.Calc,
                DeltaCalc.Presets,
                DeltaCalc.DCAPlanner,

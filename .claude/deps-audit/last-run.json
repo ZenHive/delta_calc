@@ -1,0 +1,49 @@
+{
+  "schema": 1,
+  "run_at": "2026-08-09",
+  "mode": "B",
+  "old_source": "git show HEAD:mix.lock",
+  "new_source": "working mix.lock",
+  "packages": [
+    {
+      "name": "sobelow",
+      "old": "0.14.1",
+      "new": "0.15.0",
+      "risk_band": "low",
+      "score": 3,
+      "findings": [
+        {"rule_id": 2, "severity": "INFO", "file": "lib/sobelow/rce/code_module.ex:5", "snippet": "Arbitrary strings passed to the `Code.eval_*` functions", "message": "Doc/detection strings in sobelow's own RCE-check module; pre-existing in 0.14.1 (differential subtract)"},
+        {"rule_id": 3, "severity": "INFO", "file": "lib/sobelow/ci/os.ex, lib/sobelow/ci/system.ex", "snippet": ":os.cmd / System.cmd finding-type strings", "message": "Sobelow's own command-injection check modules; docs/detection only, pre-existing"},
+        {"rule_id": 4, "severity": "INFO", "file": "lib/sobelow/misc/bin_to_term.ex", "snippet": "binary_to_term detection module", "message": "Sobelow's own BinToTerm check; no actual unsafe call, pre-existing"}
+      ],
+      "maintainer_change": false,
+      "publisher": "holden.oullette (unchanged)",
+      "days_since_publish": 4,
+      "downloads_all": 41331005,
+      "notes": "Diff is scanner-robustness bug fixes (Config.Secrets heredoc crash, corrupt cache exit-0, --strict since Elixir 1.13, EEx template abort, .sobelow-conf error handling) + usage-rules.md added. No new exec/network surface."
+    },
+    {
+      "name": "tidewave",
+      "old": "0.8.1",
+      "new": "0.8.2",
+      "risk_band": "low",
+      "score": 2,
+      "findings": [
+        {"rule_id": 2, "severity": "INFO", "file": "lib/tidewave/mcp/tools/eval.ex:106", "snippet": "Code.eval_string(code, [arguments: arguments], env())", "message": "project_eval is tidewave's documented purpose (dev-only MCP tool); pre-existing in 0.8.1"},
+        {"rule_id": 3, "severity": "INFO", "file": "lib/tidewave/mcp.ex:65", "snippet": "System.cmd(\"git\", [\"rev-parse\", \"--show-toplevel\"])", "message": "Fixed-argument git invocation at runtime; pre-existing"}
+      ],
+      "maintainer_change": false,
+      "publisher": "josevalim (unchanged)",
+      "days_since_publish": 4,
+      "downloads_all": 1778709,
+      "notes": "Only lib change is browser.ex: schema key rename (args -> action_inputs) and error-message wording. No new exec/network surface."
+    }
+  ],
+  "rules_clean": [1, 5, 6, 7, 8],
+  "external_tools": {
+    "hex_audit": "clean — no retired packages",
+    "mix_audit": "not installed — skipped (do not auto-install)",
+    "osv_scanner": "not installed — skipped"
+  },
+  "verdict": "PASS"
+}

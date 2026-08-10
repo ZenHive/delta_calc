@@ -10,7 +10,7 @@ covered-call math).
 
 - Split the `Calc` god-module along cohesion seams into `DeltaCalc.Leverage`, `Liquidation`,
   `Allocation`, `Safety`, and `Quantization` (DCA-ladder logic moved to `DCAPlanner`).
-  `DeltaCalc.Calc` remains as an undocumented compatibility façade delegating all 11 previous
+  DeltaCalc.Calc remains as an undocumented compatibility façade delegating all 11 previous
   public functions; the agent manifest advertises the extracted modules instead.
 - **Breaking:** moved rounding to explicit caller-controlled output boundaries — generic
   price/rate/percentage/ratio math no longer quantizes internally and returns full active
@@ -26,7 +26,8 @@ covered-call math).
 - Added base-numeraire math to `DeltaCalc.DeltaNeutral`: inverse-perp exposure, settlement-period
   net-delta handling, covered-call coverage (capacity/uncovered reporting without implying
   approval), and risk-target checks.
-- **Breaking:** `DeltaCalc.PositionCalculator.calculate_position/2` is now `calculate_position/1` —
+- **Breaking:** DeltaCalc.PositionCalculator.calculate_position/2 (removed) is now
+  `DeltaCalc.PositionCalculator.calculate_position/1` —
   the unused `fee_rate` input (fee modeling belongs to `DeltaCalc.Fees`) and the echoed risk-mode
   config were removed, so the API no longer advertises inputs that don't affect the calculation.
   `Calc.dca_ladder` now actually applies the advertised `mark_buffer` to every intermediate and

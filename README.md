@@ -49,7 +49,7 @@ alias DeltaCalc.{
 }
 ```
 
-## `DeltaCalc.Calc`
+## DeltaCalc.Calc (compatibility façade)
 
 Compatibility façade preserving the original entry points. The focused implementation modules
 are `Leverage`, `Liquidation`, `Allocation`, `Safety`, `DCAPlanner`, and `Quantization`.

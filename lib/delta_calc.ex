@@ -16,7 +16,7 @@ defmodule DeltaCalc do
     * `DeltaCalc.Presets` — default risk modes, black-swan thresholds, DCA preset.
     * `DeltaCalc.DCAPlanner` — DCA ladder math, presets, and orchestration.
     * `DeltaCalc.Quantization` — retired-dashboard output compatibility.
-    * `DeltaCalc.Calc` — compatibility façade over these focused modules.
+    * DeltaCalc.Calc (undocumented) — compatibility façade over these focused modules.
     * `DeltaCalc.PositionCalculator` — full position-sizing pipeline
       (takes a plain `config` map; decoupled from LiveView assigns).
     * `DeltaCalc.Hedging` — pure spot-hedging formulas: required CEX balance,

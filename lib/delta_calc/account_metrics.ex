@@ -2,8 +2,9 @@ defmodule DeltaCalc.AccountMetrics do
   @moduledoc """
   Per-account liquidation, leverage, and margin-usage metrics.
 
-  This module is pure calculation glue around `DeltaCalc.Calc`; callers own account
-  isolation, alert thresholds, exchange state, and persistence.
+  This module is pure calculation glue around `DeltaCalc.Leverage`, `DeltaCalc.Liquidation`,
+  and `DeltaCalc.Safety`; callers own account isolation, alert thresholds, exchange state,
+  and persistence.
   """
 
   use Descripex, namespace: "/account_metrics"
@@ -79,7 +80,7 @@ defmodule DeltaCalc.AccountMetrics do
   @doc """
   Return account-level risk metrics for one isolated account.
 
-  `:safety_cfg` in `opts` is passed through to `DeltaCalc.Calc.safety/5`.
+  `:safety_cfg` in `opts` is passed through to `DeltaCalc.Safety.safety/5`.
   """
   @spec calculate(account(), map()) :: metrics() | {:error, atom()}
   def calculate(account, opts \\ %{}) do

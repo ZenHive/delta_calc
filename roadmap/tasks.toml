@@ -43,7 +43,7 @@ description = "Proves TradingDashboard's planned funding, account-risk, options,
 [phases.3]
 name = "Consumer decision math"
 order = 3
-status = "in_progress"
+status = "done"
 
 [bundles.consumer_math]
 description = "Pure-Decimal decision and aggregation primitives consumed at trading call sites: PnL/breakeven, net-delta hedging, portfolio-margin liquidation, stress scenarios, fees, funding carry, and explicit base-numeraire exposure/coverage. Inputs are caller-owned state plus provider facts; policy, I/O, and option pricing stay outside DeltaCalc."
@@ -58,15 +58,15 @@ phase = 3
 [milestones.v0_3]
 name = "Consumer decision primitives"
 order = 3
-status = "active"
+status = "done"
 target_version = "0.3.0"
 description = "Proves TradingDashboard can consume DeltaCalc as the unit-consistent, independently checked source for everyday leveraged-trading decisions without compensating for hidden venue constants or ambiguous contracts."
 
 [milestones.v0_4]
 name = "Base-numeraire covered-call math"
 order = 4
-status = "pending"
-target_version = "0.4.0"
+status = "done"
+target_version = "0.3.0"
 description = "Proves an ETH-numeraire covered-call consumer can calculate inverse exposure and settlement capacity from explicit provider facts while keeping coverage, risk targets, and approval policy separate."
 
 # ---------------------------------------------------------------------------

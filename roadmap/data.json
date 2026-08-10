@@ -20,7 +20,7 @@
     "3": {
       "name": "Consumer decision math",
       "order": 3,
-      "status": "in_progress"
+      "status": "done"
     }
   },
   "bundles": {
@@ -64,15 +64,15 @@
       "name": "Consumer decision primitives",
       "description": "Proves TradingDashboard can consume DeltaCalc as the unit-consistent, independently checked source for everyday leveraged-trading decisions without compensating for hidden venue constants or ambiguous contracts.",
       "order": 3,
-      "status": "active",
+      "status": "done",
       "target_version": "0.3.0"
     },
     "v0_4": {
       "name": "Base-numeraire covered-call math",
       "description": "Proves an ETH-numeraire covered-call consumer can calculate inverse exposure and settlement capacity from explicit provider facts while keeping coverage, risk targets, and approval policy separate.",
       "order": 4,
-      "status": "pending",
-      "target_version": "0.4.0"
+      "status": "done",
+      "target_version": "0.3.0"
     }
   },
   "task": [

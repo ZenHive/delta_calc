@@ -1,7 +1,7 @@
 defmodule DeltaCalc.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.3.0"
   @source_url "https://github.com/ZenHive/delta_calc"
 
   def project do

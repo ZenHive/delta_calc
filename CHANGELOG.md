@@ -3,7 +3,10 @@
 Release-level history for completed roadmap phases. The per-task delivery ledger remains in
 `roadmap/tasks.toml`; upcoming work is in `ROADMAP.md`.
 
-## Unreleased
+## 0.3.0 - 2026-08-10
+
+Completes milestones v0_3 (consumer decision primitives) and v0_4 (base-numeraire
+covered-call math).
 
 - Split the `Calc` god-module along cohesion seams into `DeltaCalc.Leverage`, `Liquidation`,
   `Allocation`, `Safety`, and `Quantization` (DCA-ladder logic moved to `DCAPlanner`).

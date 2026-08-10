@@ -14,7 +14,7 @@ no I/O. Drop it into any Elixir project (LiveView, CLI, Nx pipeline, agent tool)
 
 ```elixir
 def deps do
-  [{:delta_calc, "~> 0.1"}]
+  [{:delta_calc, "~> 0.3"}]
 end
 ```
 
@@ -57,15 +57,15 @@ are `Leverage`, `Liquidation`, `Allocation`, `Safety`, `DCAPlanner`, and `Quanti
 ```elixir
 # effective_leverage(notional, wallet_equity) -> Decimal
 Calc.effective_leverage(Decimal.new(10_000), Decimal.new(5_000))
-#=> #Decimal<2.00000000>
+#=> #Decimal<2>
 
 # leverage_to_aum(notional, total_aum) -> Decimal
 Calc.leverage_to_aum(Decimal.new(10_000), Decimal.new(100_000))
-#=> #Decimal<0.10000000>
+#=> #Decimal<0.1>
 
 # liquidation(entry, leff, mmr_total, side) -> Decimal
 Calc.liquidation(Decimal.new(3000), Decimal.new(2), Decimal.new("0.005"), :long)
-#=> #Decimal<1507.50000000>
+#=> #Decimal<1507.5000>
 ```
 
 ## `DeltaCalc.Presets`
@@ -214,7 +214,7 @@ Funding-rate APR annualisation, cross-venue comparison, arbitrage detection, and
 ```elixir
 # funding_apr(rate, period_hours) -> {:ok, %{hourly, daily, annual}} | {:error, :invalid_rate}
 Funding.funding_apr(Decimal.new("0.0001"), 8)
-#=> {:ok, %{hourly: #Decimal<0.0013>, daily: #Decimal<0.03>, annual: #Decimal<10.95>}}
+#=> {:ok, %{hourly: #Decimal<0.0012500>, daily: #Decimal<0.0300>, annual: #Decimal<10.9500>}}
 
 # compare_funding_rates(rates) -> comparison map per symbol
 Funding.compare_funding_rates(%{binance: Decimal.new("0.0001"), bybit: Decimal.new("0.00015")})
@@ -269,7 +269,7 @@ weights = %{
 
 # hhi(weights) -> Decimal
 Concentration.hhi(weights)
-#=> #Decimal<0.32500000>
+#=> #Decimal<0.3250>
 ```
 
 ## `DeltaCalc.MarginBridge`
@@ -299,9 +299,11 @@ MarginBridge.stress_test_prolonged_negative(
 )
 #=> %{daily_cost: #Decimal<360.00000>, total_cost: #Decimal<32400.00000>, kill_switch_day: nil, ...}
 
-# check_kill_switch(avg_funding_24h, margin_ratio, opts) -> kill-switch map
+# check_kill_switch(per_period_funding_rate, margin_ratio, opts) -> kill-switch map
+# daily_funding_rate = per_period_rate x :periods_per_day (default 3, overridable)
 MarginBridge.check_kill_switch(Decimal.new("0.015"), Decimal.new("0.145"))
-#=> %{kill_switch_triggered: false, avg_funding_24h: #Decimal<0.015>, ...}
+#=> %{kill_switch_triggered: false, per_period_funding_rate: #Decimal<0.015>,
+#     daily_funding_rate: #Decimal<0.045>, periods_per_day: #Decimal<3>, ...}
 ```
 
 ## `DeltaCalc.FundingProjection`
@@ -438,6 +440,46 @@ DeltaNeutral.rebalance_to_neutral(positions)
 #     instrument: :perp,
 #     signed_hedge: #Decimal<-0.85000000>
 #   }
+```
+
+Base-numeraire math for inverse perps, options, covered-call coverage, and risk targets:
+
+```elixir
+# base_numeraire_exposure(params) -> {:ok, Decimal} | {:error, reason}
+DeltaNeutral.base_numeraire_exposure(%{
+  kind: :inverse_perpetual,
+  quantity: %{unit: :usd_notional, value: Decimal.new("12000")},
+  mark: Decimal.new("3000")
+})
+#=> {:ok, #Decimal<4>}
+
+DeltaNeutral.base_numeraire_exposure(%{
+  kind: :option,
+  quantity: %{unit: :base_currency, value: Decimal.new("1")},
+  delta: %{semantic: :black_scholes, value: Decimal.new("0.40")},
+  mark: %{unit: :quote_currency, value: Decimal.new("100"), spot_price: Decimal.new("2000")}
+})
+#=> {:ok, #Decimal<0.35>}   # 1 x (0.40 - 100/2000); ambiguous shapes return named errors
+
+# settlement_coverage(params) -> {:ok, coverage map} | {:error, reason}
+DeltaNeutral.settlement_coverage(%{
+  eligible_base: Decimal.new("10"),
+  existing_short_call_obligations: Decimal.new("2"),
+  other_reservations: Decimal.new("0"),
+  pending_sell_reservations: Decimal.new("0"),
+  proposed_short_call_obligation: Decimal.new("5")
+})
+#=> {:ok, %{total_obligation: #Decimal<7>, remaining_capacity: #Decimal<3>,
+#           uncovered_amount: #Decimal<0>, fully_covered: true, ...}}
+
+# risk_target(params) -> {:ok, target map} | {:error, reason}
+# Coverage never implies neutrality: fully_covered does not mean within_target.
+DeltaNeutral.risk_target(%{
+  base_numeraire_exposure: Decimal.new("0.65"),
+  target_exposure: Decimal.new("0"),
+  tolerance: Decimal.new("0.1")
+})
+#=> {:ok, %{residual_exposure: #Decimal<0.65>, within_target: false, ...}}
 ```
 
 ## `DeltaCalc.PortfolioMargin`

@@ -16,11 +16,12 @@ defmodule DeltaCalc.ManifestConsistencyTest do
 
   alias DeltaCalc.Manifest
 
+  @lib_root Path.expand("../../lib", __DIR__)
   @lib_delta_calc Path.expand("../../lib/delta_calc", __DIR__)
   @test_root Path.expand("..", __DIR__)
 
   describe "registered module surface" do
-    test "every registered or manifest-exempt module with doc examples has a doctest registration" do
+    test "every registered or publicly documented module with doc examples has a doctest registration" do
       registered =
         @test_root
         |> Path.join("**/*.{ex,exs}")
@@ -28,7 +29,24 @@ defmodule DeltaCalc.ManifestConsistencyTest do
         |> Enum.map(&File.read!/1)
         |> doctest_registrations()
 
-      assert_doctests_registered!([DeltaCalc, Manifest | Manifest.modules()], registered)
+      modules = Enum.uniq(documented_modules_from_lib() ++ Manifest.modules())
+      assert_doctests_registered!(modules, registered)
+    end
+
+    @tag :tmp_dir
+    test "documented modules derive from nested and top-level source paths", %{tmp_dir: tmp_dir} do
+      nested = Path.join(tmp_dir, "lib/future/nested/calculator.ex")
+      top_level = Path.join(tmp_dir, "lib/another_entry.ex")
+      manifest = Path.join(tmp_dir, "lib/manifest.ex")
+      File.mkdir_p!(Path.dirname(nested))
+      File.write!(nested, "defmodule DeltaCalc.FundingProjection do\nend\n")
+      File.write!(top_level, "defmodule DeltaCalc do\nend\n")
+      File.write!(manifest, "defmodule DeltaCalc.Manifest do\nend\n")
+
+      assert documented_modules_from_paths([nested, top_level, manifest]) ==
+               [DeltaCalc, DeltaCalc.FundingProjection, Manifest]
+
+      assert documented_modules_from_paths([]) == []
     end
 
     test "missing doctest registration fails with the offending module name" do
@@ -99,17 +117,17 @@ defmodule DeltaCalc.ManifestConsistencyTest do
              """
     end
 
-    test "every publicly documented lib/delta_calc module is registered in Manifest" do
+    test "every non-exempt publicly documented lib module is registered in Manifest" do
       registered = MapSet.new(Manifest.modules())
 
       unregistered =
         documented_modules_from_lib()
-        |> Enum.reject(&MapSet.member?(registered, &1))
+        |> Enum.reject(&(&1 in [DeltaCalc, Manifest] or MapSet.member?(registered, &1)))
         |> Enum.sort()
 
       assert unregistered == [],
              """
-             Publicly documented lib/delta_calc modules missing from DeltaCalc.Manifest @modules
+             Publicly documented lib modules missing from DeltaCalc.Manifest @modules
              (annotate with api() and register, or hide with @moduledoc false):
              #{Enum.map_join(unregistered, "\n", &"  - #{inspect(&1)}")}
              """
@@ -277,15 +295,14 @@ defmodule DeltaCalc.ManifestConsistencyTest do
     |> File.ls!()
     |> Enum.filter(&String.ends_with?(&1, ".ex"))
     |> Enum.reject(&(&1 == "manifest.ex"))
+    |> Enum.map(&Path.join(@lib_delta_calc, &1))
     |> Enum.map(&module_from_file/1)
     |> Enum.reject(&is_nil/1)
     |> Enum.filter(&api_module?/1)
     |> Enum.sort()
   end
 
-  defp module_from_file(filename) do
-    path = Path.join(@lib_delta_calc, filename)
-
+  defp module_from_file(path) do
     with {:ok, source} <- File.read(path),
          [_, mod_str] <- Regex.run(~r/defmodule\s+([A-Za-z0-9_.]+)/, source) do
       Module.concat([mod_str])
@@ -295,10 +312,14 @@ defmodule DeltaCalc.ManifestConsistencyTest do
   end
 
   defp documented_modules_from_lib do
-    @lib_delta_calc
-    |> File.ls!()
-    |> Enum.filter(&String.ends_with?(&1, ".ex"))
-    |> Enum.reject(&(&1 == "manifest.ex"))
+    @lib_root
+    |> Path.join("**/*.ex")
+    |> Path.wildcard()
+    |> documented_modules_from_paths()
+  end
+
+  defp documented_modules_from_paths(paths) do
+    paths
     |> Enum.map(&module_from_file/1)
     |> Enum.reject(&is_nil/1)
     |> Enum.filter(&publicly_documented?/1)

@@ -1522,3 +1522,50 @@ started_at = "2026-08-09"
 scored_at = "2026-07-25"
 done_at = "2026-08-09"
 shipped_in = "89824123b0df327717060af5da1fd0678bb92b14"
+
+[[task]]
+id = 54
+phase = 3
+bundle = "contract_hardening"
+status = "pending"
+title = "Align single-position liquidation price with the venue cross-margin formula"
+scores = { d = 4, b = 8, u = 8 }
+acceptance_criteria = ["liquidation/4 returns entry * (1 - 1/leff) / (1 - mmr_total) for :long and entry * (1 + 1/leff) / (1 + mmr_total) for :short; the fixture entry 2279, leff 3, mmr_total 0.021 yields long 1551.93 and short 2976.16 to the cent", "Golden fixtures are hand-derived from Hyperliquid's published liquidation formula with explicit account_value, position_size, and maintenance ratio inputs, and cross-checked against a second venue's published formula; both source URLs and the derivation are in the test", "A property test pins long liquidation < entry < short liquidation for leff > 1, that both move toward entry as leff grows, and that raising mmr_total moves both toward entry", "An unreachable long liquidation (leff <= 1) still returns zero, with a test naming that contract", "PositionCalculator, stress-scenario, CCXT differential and domain-invariant suites pass with any moved golden re-derived by hand and annotated, none copied from output", "mix ci green; DeltaCalc.Liquidation and DeltaCalc.PositionCalculator coverage at or above 95%"]
+out_of_scope = ["Netted-book liquidation in DeltaCalc.PortfolioMargin (already uses the venue-equivalent numerator/denominator form)", "Venue-specific tiered maintenance schedules; mmr_total stays a caller-supplied value", "Changing the return shape to nil or an error for unreachable liquidation", "Consumer changes in trading_dashboard"]
+files_to_modify = ["lib/delta_calc/liquidation.ex", "test/delta_calc/liquidation_test.exs", "test/delta_calc/property_test.exs", "test/delta_calc/position_calculator_test.exs"]
+touches = ["lib/delta_calc/liquidation.ex", "test/delta_calc/liquidation_test.exs", "test/delta_calc/property_test.exs", "test/delta_calc/position_calculator_test.exs"]
+assignee = "codex"
+model = "gpt-5.6-sol"
+body = """
+`DeltaCalc.Liquidation.liquidation/4` prices a single position's liquidation as
+`factor = (1 - mmr_total) / leff`, `long = entry * (1 - factor)`, `short = entry * (1 + factor)`
+(read 2026-09-16, lib/delta_calc/liquidation.ex). That divides the maintenance margin by the
+leverage, which no venue does. Hyperliquid's published formula
+(https://hyperliquid.gitbook.io/hyperliquid-docs/trading/liquidations, fetched 2026-09-16):
+`liq_price = price - side * margin_available / position_size / (1 - l * side)` with
+`l = 1 / MAINTENANCE_LEVERAGE` (the maintenance margin ratio) and, for cross margin,
+`margin_available = account_value - maintenance_margin_required`. For one position with
+equity E, notional N = leff * E and mmr l, that reduces to
+`long = entry * (1 - 1/leff) / (1 - l)` and `short = entry * (1 + 1/leff) / (1 + l)`.
+
+Worked numbers at entry 2279, leff 3, mmr_total 0.021: current long 1535.29 vs venue 1551.93
+(0.7% too far from entry); current short 3022.71 vs venue 2976.16 (2.0% too far). Both errors are
+on the optimistic side: a consumer that treats the liquidation as its stop believes it has more
+room than the venue gives it. trading_dashboard's position sizer is that consumer (its task 292
+defers the formula to this dependency's own release).
+
+Replace the formula with the venue-equivalent one. Derive the long and short golden fixtures by
+hand from the Hyperliquid formula with explicit E, N, l inputs (never by running the new code), and
+cross-check the same fixtures against a second venue's published isolated-margin liquidation
+formula fetched from that venue's own documentation (Binance USDS-M futures publishes one); record
+both sources in the test. The zero clamp for an unreachable long liquidation stays (leff <= 1 under
+the new formula): trading_dashboard already renders zero as not-applicable. Consumers inside this
+library (PositionCalculator black-swan safety and liquidation distance, the property suite's
+monotonicity tests, stress scenarios, the CCXT differential) keep passing with goldens re-derived
+by hand where the number moves; a golden updated by copying new output is the failure this task
+exists to prevent.
+
+Dispatch trigger: money/risk math with a public calculation contract; independent worked examples required.
+"""
+created_at = "2026-09-16"
+scored_at = "2026-09-16"

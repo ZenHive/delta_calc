@@ -1582,7 +1582,7 @@ shipped_in = "3c16735c6e8ca27c56cbbebdf0c408000333aa93"
 id = 55
 phase = 3
 bundle = "contract_hardening"
-status = "pending"
+status = "in_progress"
 title = "Execute every README example in the test suite so doc rot becomes a CI failure"
 scores = { d = 3, b = 7, u = 6 }
 acceptance_criteria = ["A test module extracts every ```elixir fenced block in README.md that contains a `#=>` result comment, evaluates the expression, and asserts the evaluated value renders exactly as the documented `#=>` value (Decimal compared as Decimal, not as float or string prefix)", "The test fails — with the README line number and both values — when an example's documented output no longer matches, and fails when an example raises", "Blocks whose documented result is elided (`#=> #Decimal<...>`, `..., ...}`) are skipped by an explicit, documented rule rather than by silently passing; the count of skipped vs asserted examples is asserted so a new elision cannot quietly opt an example out", "Every currently-asserted README example passes without changing lib/ behavior", "mix ci green"]
@@ -1624,4 +1624,5 @@ named explicitly.
 Dispatch trigger: mechanical, well-specified test infrastructure with a checkable pass condition.
 """
 created_at = "2026-09-16"
+started_at = "2026-09-16"
 scored_at = "2026-09-16"

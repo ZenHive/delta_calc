@@ -2856,7 +2856,7 @@
       "id": 58,
       "phase": 3,
       "bundle": "contract_hardening",
-      "status": "in_progress",
+      "status": "done",
       "title": "Fail CI when a lib module's `iex>` doc examples are not registered as doctests",
       "scores": {
         "d": 3,
@@ -2887,10 +2887,17 @@
       "touches": [
         "test/delta_calc/manifest_consistency_test.exs"
       ],
+      "shipped_in": "e6b591924df633f9c943561b0d6b42f64b7f587f",
       "body": "Found by the 2026-09-16 post-merge audit of `ff94236..1c7bcd4` (task 57).\n\n`lib/delta_calc/funding_projection.ex` is the only module in `lib/` carrying `iex>` examples\n(`project_payback_timeline/1`, two of them), and until this audit **no test module registered\nthem** — `test/delta_calc_test.exs` has `doctest DeltaCalc` and nothing else. The examples\nhappened to still be correct (verified: both pass), and the audit commit added\n`doctest DeltaCalc.FundingProjection` to `test/delta_calc/funding_projection_test.exs`. But the\n*structural* hole is untouched: nothing stops the next module's `## Examples` block from landing\nungated.\n\nThis is the same defect class tasks 55/56/57 closed for `README.md` — documented output that\n`ex_doc` ships to consumers with no executable gate — and it is the class CLAUDE.md § \"Review\nBlind Spots\" says to encode as a manifest-wide CI failure rather than leave to per-task review:\na reviewer grading one diff cannot see that the diff's new `@doc` example is unregistered,\nbecause registration lives in a different file that the diff does not touch.\n\nThe manifest-consistency test already asserts whole-surface invariants (public name+arity\nuniqueness, full `DeltaCalc.Manifest` registration, `:hints` presence) — this belongs next to\nthem. `Code.fetch_docs/1` gives the docs chunk for a compiled module, so \"does this module's\ndoc content contain `iex>`\" is a runtime question, not a source grep.\n",
       "created_at": "2026-09-16",
       "started_at": "2026-09-16",
+      "done_at": "2026-09-16",
       "scored_at": "2026-09-16",
+      "implemented": "Landed by codex via merge-train; reviewer-approved (run run-1789545628688-3b91a1ae, e6b591924df633f9c943561b0d6b42f64b7f587f).",
+      "delivered_by": "codex",
+      "verified": true,
+      "verified_by": "cursor",
+      "verification_ref": "harness-run:run-1789545628688-3b91a1ae",
       "cross_repo": []
     }
   ]

@@ -2947,6 +2947,47 @@
       "verified_by": "cursor",
       "verification_ref": "harness-run:run-1789549228035-6cc00466",
       "cross_repo": []
+    },
+    {
+      "id": 60,
+      "phase": 3,
+      "bundle": "contract_hardening",
+      "status": "pending",
+      "title": "Derive the manifest gate's module set from the filesystem instead of two hand-maintained carve-outs",
+      "scores": {
+        "d": 2,
+        "b": 3,
+        "u": 2
+      },
+      "eff": 1.25,
+      "dep_layer": 0,
+      "unlocks": 0,
+      "markers": [],
+      "depends_on": [],
+      "assignee": "codex",
+      "model": "gpt-6-astra",
+      "acceptance_criteria": [
+        "`documented_modules_from_lib/0` walks `lib/` recursively (`Path.wildcard(\"lib/**/*.ex\")`) instead of a non-recursive `File.ls!` on `lib/delta_calc/`, so a module in a future nested subdirectory is covered by invariants 5 and 6 rather than silently exempt",
+        "The doctest gate's module set (invariant 6) is computed from that scan plus `Manifest.modules()` rather than the literal `[DeltaCalc, Manifest | Manifest.modules()]`, so a new top-level `lib/*.ex` module is gated the moment it is added",
+        "Invariant 5's registration requirement keeps its two deliberate exemptions (`DeltaCalc`, `DeltaCalc.Manifest`) — widening the doctest gate must not start demanding those be registered in `@modules`",
+        "A test proves the derivation, not the current tree: a synthetic path list containing a nested and a top-level entry maps to the expected module set",
+        "`mix ci` green; no lib/ behavior change"
+      ],
+      "out_of_scope": [
+        "Changing which modules are registered in `DeltaCalc.Manifest` `@modules`",
+        "Writing new `iex>` examples for modules that have none",
+        "Touching the README-example gate (`test/delta_calc/readme_examples_test.exs`)"
+      ],
+      "files_to_modify": [
+        "test/delta_calc/manifest_consistency_test.exs"
+      ],
+      "touches": [
+        "test/delta_calc/manifest_consistency_test.exs"
+      ],
+      "body": "Sibling check (DD-8): task 59 [done] shares `gate` / `manifest`. This is deliberately NOT a third\ninstance of 59's class — it is the class statement 59's chosen scope left unwritten. Task 59 named\ntwo specific ungated modules and added them to the gate by hand; this task removes the hand, so a\nthird instance cannot be filed. Per the DD-8 rule that is the \"widen to the class\" resolution\nrather than the \"don't file the instance\" one, and it needs its own task because it changes gate\nlogic and adds a derivation test — work outside the doc-drift scope of the audit that found it.\n\nFound by the 2026-09-16 post-merge audit of `2cc5071..fc39c8b` (task 59).\n\nTask 59 closed the two known holes in the doctest-registration invariant by widening its set to\n`[DeltaCalc, Manifest | Manifest.modules()]`. That is correct for the tree as it stands, but it\nreplaces a derived set with a literal carve-out list — the exact shape task 58's own CHANGELOG\nentry claims the gate avoids (\"never from a hand-maintained allowlist\"). Two latent holes remain,\nboth silent passes rather than spurious failures:\n\n  * `documented_modules_from_lib/0` calls `File.ls!` on `lib/delta_calc/`, which is not\n    recursive. `lib/` is flat today, so nothing is missed — but the first module placed in a\n    subdirectory is invisible to invariant 5 (registration) *and*, transitively, to invariant 6.\n  * A new documented module added at `lib/*.ex` alongside `delta_calc.ex` is outside the scanned\n    directory and absent from the literal, so it is gated by neither invariant until someone\n    remembers to extend the list.\n\nNeither is a correctness bug in what has landed; both are the gate failing open on a shape the\nlibrary does not have yet. The fix is to derive the set the gate walks from the filesystem, which\nalso removes the carve-out list as a thing that must be maintained in step with `lib/`.\n",
+      "created_at": "2026-09-16",
+      "scored_at": "2026-09-16",
+      "cross_repo": []
     }
   ]
 }

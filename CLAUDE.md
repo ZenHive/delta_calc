@@ -101,7 +101,10 @@ things, and real correctness bugs landed clean through both gaps (tasks 24/25/26
   modules, full module registration in `DeltaCalc.Manifest`, the `:hints`-present invariant,
   `api()` coverage of every public function in a registered module, registration of every
   publicly documented `lib/delta_calc/` module, and a `doctest` registration under `test/` for
-  every registered module whose docs carry `iex>` examples. Turn global invariants into CI
+  every module whose docs carry an executable `iex>` example line — the registered set plus
+  `DeltaCalc` and `DeltaCalc.Manifest`, the two documented lib modules the registration
+  invariant exempts. The example detector anchors on a line-leading prompt, so a doc that only
+  *mentions* the prompt in prose is not gated. Turn global invariants into CI
   failures, not consumer discoveries.
 
 - **Documented output drift.** The README's worked examples are the library's front door (an

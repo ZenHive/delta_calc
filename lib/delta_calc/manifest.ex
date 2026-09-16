@@ -12,8 +12,11 @@ defmodule DeltaCalc.Manifest do
     3. Every advertised public function carries Descripex `:hints` metadata.
     4. Every public function in a registered module is advertised via `api()`.
     5. Every publicly documented `lib/delta_calc/` module is listed in `@modules`.
-    6. Every registered module whose compiled docs contain `iex>` examples is
-       covered by a `doctest` call under `test/`.
+    6. Every registered module — plus `DeltaCalc` and this module, the two documented
+       lib modules invariant 5 exempts — whose compiled docs carry an executable
+       example line is covered by a `doctest` call under `test/`. The detector
+       anchors on a line starting with the `iex>` prompt, so a prose mention of
+       the prompt (this sentence included) is not an example.
   """
 
   @modules [

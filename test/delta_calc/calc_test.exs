@@ -199,7 +199,7 @@ defmodule DeltaCalc.CalcTest do
   end
 
   describe "liquidation/4" do
-    # Independent golden — provenance: hand calc from the public simplified
+    # Independent golden — provenance: hand calc from the venue-equivalent
     # liquidation contract in Calc.liquidation/4.
     # Long: liq = entry × (1 − 1/L_eff) / (1 − mmr).
     # Hand calc, entry=3000, L_eff=2, mmr=0.005:
@@ -209,7 +209,7 @@ defmodule DeltaCalc.CalcTest do
       assert_close(result, Decimal.new("1507.53768844"), "0.01")
     end
 
-    # Independent golden — provenance: hand calc from the public simplified
+    # Independent golden — provenance: hand calc from the venue-equivalent
     # liquidation contract in Calc.liquidation/4.
     # Short: liq = entry × (1 + 1/L_eff) / (1 + mmr).
     # Hand calc, entry=3000, L_eff=2, mmr=0.005:
@@ -267,8 +267,7 @@ defmodule DeltaCalc.CalcTest do
     end
 
     test "clamps negative long liquidation to zero" do
-      # Very high leverage with high MMR could theoretically produce negative liq
-      # This should be clamped to 0
+      # Long at leff <= 1 is unreachable (1 − 1/leff <= 0) and clamps to zero.
       result = Calc.liquidation(Decimal.new(3000), Decimal.new("0.1"), Decimal.new("0.5"), :long)
       assert Decimal.compare(result, Decimal.new(0)) in [:eq, :gt]
     end

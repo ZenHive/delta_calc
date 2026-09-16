@@ -129,7 +129,7 @@ defmodule DeltaCalc.CcxtDifferentialTest do
       )
     end
 
-    test "Calc.liquidation approximation stays within the documented loose bound" do
+    test "Calc.liquidation matches the captured Binance isolated liquidation price" do
       row = load_fixture!(@fixtures_path) |> Map.fetch!("liquidation")
       position = Map.fetch!(row, "position")
       venue_liquidation = decimal_at!(row, "venue_liquidation_price")
@@ -148,6 +148,13 @@ defmodule DeltaCalc.CcxtDifferentialTest do
           position |> Map.fetch!("side") |> String.to_atom()
         )
 
+      # Hand calc from the captured isolated one-way fixture (maintenance_amount=0):
+      #   N = 0.25 × 100000 = 25000; leff = 25000/5000 = 5; l = 0.004
+      #   long = 100000 × (1 − 1/5) / (1 − 0.004) = 80000/0.996 = 80321.28514056…
+      # matches venue_liquidation_price. The fixture's historical
+      # calc_approximation_error_pct (~0.30%) is the previous formula's error.
+      assert_decimal_close(approximate, venue_liquidation, "venue-equivalent Calc.liquidation")
+
       error_pct =
         approximate
         |> Decimal.sub(venue_liquidation)
@@ -155,9 +162,6 @@ defmodule DeltaCalc.CcxtDifferentialTest do
         |> Decimal.div(venue_liquidation)
         |> Decimal.mult(@hundred)
 
-      # Calc.liquidation/4 is a documented simplified model (see moduledoc); the fixture's
-      # loose bound (1.0% vs ~0.30% actual) gives headroom. A differential oracle must still
-      # gate: gross regression past the loose bound is a real failure, not informational noise.
       assert Decimal.compare(error_pct, bound) != :gt,
              "Calc.liquidation/4 error #{Decimal.to_string(error_pct, :normal)}% exceeds documented loose bound " <>
                "#{Decimal.to_string(bound, :normal)}% vs venue oracle #{Decimal.to_string(venue_liquidation, :normal)}"

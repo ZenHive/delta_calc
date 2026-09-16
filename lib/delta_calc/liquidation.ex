@@ -1,6 +1,6 @@
 defmodule DeltaCalc.Liquidation do
   @moduledoc """
-  Simplified analytical liquidation-price calculations for long and short positions.
+  Venue-equivalent single-position liquidation prices for long and short sides.
   """
 
   use Descripex, namespace: "/liquidation"
@@ -13,7 +13,9 @@ defmodule DeltaCalc.Liquidation do
 
   @type decimal_result :: Decimal.t() | {:error, atom()}
 
-  api(:liquidation, "Calculate liquidation price using simplified analytical model.",
+  api(
+    :liquidation,
+    "Calculate liquidation price using the venue-equivalent cross-margin formula.",
     params: [
       entry: [
         kind: :value,

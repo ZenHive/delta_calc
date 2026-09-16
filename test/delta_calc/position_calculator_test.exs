@@ -113,6 +113,8 @@ defmodule DeltaCalc.PositionCalculatorTest do
   end
 
   describe "calculate_position/1 — safety and mmr_info" do
+    # Default base_params: notional = 100×0.5×2 = 100; eff_lev = 1.
+    # Long at leff <= 1 is unreachable: (1 − 1/1)/(1 − mmr_total) = 0.
     test "long liquidation sits below black swan when safe" do
       result = PositionCalculator.calculate_position(base_params(side: :long))
 
@@ -122,6 +124,8 @@ defmodule DeltaCalc.PositionCalculatorTest do
       assert D.compare(result.safety.liquidation_price, result.safety.black_swan_price) == :lt
     end
 
+    # Short at the same defaults: mmr_total = 0.005+0.001 = 0.006, leff = 1
+    #   3000 × (1+1/1) / (1+0.006) = 6000/1.006 = 5964.21471173…
     test "short liquidation sits above black swan when safe" do
       result = PositionCalculator.calculate_position(base_params(side: :short))
 
@@ -131,6 +135,8 @@ defmodule DeltaCalc.PositionCalculatorTest do
       assert D.compare(result.safety.liquidation_price, result.safety.black_swan_price) == :gt
     end
 
+    # ui_lev=10, mark_buffer=0: notional = 100×0.5×10 = 500; eff_lev = 5; mmr = 0.005
+    #   long = 3000 × (1−1/5) / (1−0.005) = 2400/0.995 = 2412.06030151…
     test "high leverage can fail black swan safety check" do
       params =
         base_params(

@@ -10,7 +10,7 @@ defmodule DeltaCalc do
   ## Modules
 
     * `DeltaCalc.Leverage` — effective leverage, position sizing, and multi-leg aggregation.
-    * `DeltaCalc.Liquidation` — simplified long/short liquidation estimates.
+    * `DeltaCalc.Liquidation` — venue-equivalent long/short liquidation prices.
     * `DeltaCalc.Allocation` — subaccount allocation envelopes.
     * `DeltaCalc.Safety` — safety scoring and before/after DCA comparisons.
     * `DeltaCalc.Presets` — default risk modes, black-swan thresholds, DCA preset.

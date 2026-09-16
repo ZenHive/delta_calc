@@ -65,7 +65,7 @@ Calc.leverage_to_aum(Decimal.new(10_000), Decimal.new(100_000))
 
 # liquidation(entry, leff, mmr_total, side) -> Decimal
 Calc.liquidation(Decimal.new(3000), Decimal.new(2), Decimal.new("0.005"), :long)
-#=> #Decimal<1507.5000>
+#=> #Decimal<1507.53768844>
 ```
 
 ## `DeltaCalc.Presets`
@@ -159,7 +159,7 @@ result = PositionCalculator.calculate_position(params)
 #     position: %{notional: ..., eff_lev: ..., tokens: ...},
 #     safety: %{
 #       is_safe: true,
-#       liquidation_price: #Decimal<18.00000000>,
+#       liquidation_price: #Decimal<0.00000000>,
 #       black_swan_price: #Decimal<2550.00000000>,
 #       ...
 #     },
@@ -244,8 +244,8 @@ account = %{
 AccountMetrics.calculate(account)
 #=> %{
 #     effective_leverage: #Decimal<2.00000000>,
-#     liquidation_price: #Decimal<1507.50000000>,
-#     liquidation_distance_pct: #Decimal<49.75000000>,
+#     liquidation_price: #Decimal<1507.53768844>,
+#     liquidation_distance_pct: #Decimal<49.74874372>,
 #     margin_usage_pct: #Decimal<20.00000000>,
 #     safety: %{verdict: :tight, ...}
 #   }

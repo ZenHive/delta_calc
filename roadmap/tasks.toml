@@ -1577,3 +1577,51 @@ started_at = "2026-09-16"
 scored_at = "2026-09-16"
 done_at = "2026-09-16"
 shipped_in = "3c16735c6e8ca27c56cbbebdf0c408000333aa93"
+
+[[task]]
+id = 55
+phase = 3
+bundle = "contract_hardening"
+status = "pending"
+title = "Execute every README example in the test suite so doc rot becomes a CI failure"
+scores = { d = 3, b = 7, u = 6 }
+acceptance_criteria = ["A test module extracts every ```elixir fenced block in README.md that contains a `#=>` result comment, evaluates the expression, and asserts the evaluated value renders exactly as the documented `#=>` value (Decimal compared as Decimal, not as float or string prefix)", "The test fails — with the README line number and both values — when an example's documented output no longer matches, and fails when an example raises", "Blocks whose documented result is elided (`#=> #Decimal<...>`, `..., ...}`) are skipped by an explicit, documented rule rather than by silently passing; the count of skipped vs asserted examples is asserted so a new elision cannot quietly opt an example out", "Every currently-asserted README example passes without changing lib/ behavior", "mix ci green"]
+out_of_scope = ["Converting README examples into @doc doctests inside lib/ modules", "Rewriting README prose or adding new examples", "Verifying code blocks in CHANGELOG.md, CLAUDE.md or AGENTS.md"]
+files_to_modify = ["test/delta_calc/readme_examples_test.exs", "README.md"]
+touches = ["test/delta_calc/readme_examples_test.exs", "README.md"]
+assignee = "codex"
+model = "gpt-6-astra"
+body = """
+The 2026-09-16 post-merge audit of bd9c4be..c39365c found the README's worked examples had
+rotted badly against the code they document, and nothing in `mix ci` could see it:
+
+- `FundingProjection.project_payback_timeline/1` with `funding_volatility: 0.2` **raises**
+  `ArgumentError` — task 39's `DeltaCalc.Decimal` boundary rejects floats, and the README was
+  never updated. Copy-paste from the README crashes.
+- `MarginBridge.stress_test_prolonged_negative` documented `daily_cost: 360.00000` where the
+  code returns `36000.000` — a 100x error left over from the pre-task-38 percent/fraction
+  confusion, i.e. the exact dimension bug CLAUDE.md's funding-fraction invariant exists to stop.
+- `StressScenario.cascade` documented `liquidated_positions: [:btc_long], survives?: true`
+  where the code returns `[:btc_long, :btc_short], survives?: false` (task 50).
+- `Funding.compare_funding_rates` documented `arbitrage_opportunity: true` where the code
+  returns `false` (task 37).
+- Roughly thirty numeric outputs still carried the pre-task-48 eight-decimal quantization.
+
+The audit corrected all of them by hand, so the README is accurate as of that commit. The
+durable fix is the one CLAUDE.md prescribes for whole-surface defects: make it a test. README
+examples are the library's front door (they are also an `ex_doc` extra and ship in the hex
+package), every behavior task in phase 3 moved at least one of them, and no per-task reviewer
+reads the README against its diff. A README-example test turns the next drift into a red CI
+run instead of a consumer discovery.
+
+Only `DeltaCalc` itself has doctests today (`test/delta_calc_test.exs`), so this is new ground:
+extract-and-eval over the README rather than moving examples into `@doc`. Use `Code.eval_string/3`
+with the README's own aliases in scope and compare `inspect/1` output against the documented
+`#=>` text, with `Decimal` values compared via `Decimal.equal?/2` on the parsed literal so a
+scale-only difference is still caught by the string comparison but a precision regression is
+named explicitly.
+
+Dispatch trigger: mechanical, well-specified test infrastructure with a checkable pass condition.
+"""
+created_at = "2026-09-16"
+scored_at = "2026-09-16"

@@ -186,8 +186,12 @@ defmodule DeltaCalc.ManifestTest do
         DeltaCalc.Decimal.cast!("12.34oops")
       end
 
+      # A JSON *number* decodes to a float and must be rejected — that rejection is the
+      # whole reason exact inputs are advertised as strings.
+      json_number = Jason.decode!("0.1")
+
       assert_raise ArgumentError, ~r/canonical decimal string/, fn ->
-        DeltaCalc.Decimal.cast!(0.1)
+        DeltaCalc.Decimal.cast!(json_number)
       end
     end
   end

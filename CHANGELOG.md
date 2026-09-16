@@ -3,6 +3,15 @@
 Release-level history for completed roadmap phases. The per-task delivery ledger remains in
 `roadmap/tasks.toml`; upcoming work is in `ROADMAP.md`.
 
+## Unreleased
+
+- **Breaking:** `DeltaCalc.Liquidation.liquidation/4` (and the `Calc` façade, `AccountMetrics`,
+  `PositionCalculator`, and `DCAPlanner` paths that build on it) now prices a single position
+  with the published venue cross-margin formula — `entry * (1 - 1/leff) / (1 - mmr)` long,
+  `entry * (1 + 1/leff) / (1 + mmr)` short — instead of the old
+  `entry * (1 -/+ (1 - mmr)/leff)`, which divided maintenance margin by leverage in a way no
+  venue does. Liquidation prices, liquidation distances, and every derived safety verdict move.
+
 ## 0.3.0 - 2026-08-10
 
 Completes milestones v0_3 (consumer decision primitives) and v0_4 (base-numeraire
@@ -47,6 +56,39 @@ covered-call math).
   ex_doc autolink would try to load it) to `DeltaCalc.Pnl`. Descripex derives discovery short
   names with `Macro.underscore/1`, which split the internal capital into `"pn_l"`; the module
   now resolves as `"pnl"`. Function names and signatures are unchanged.
+
+- **Breaking:** standardized the funding-rate unit to a decimal fraction (`0.0001` = 0.01%)
+  across the whole surface. `MarginBridge.stress_test_prolonged_negative` /
+  `check_kill_switch` and the `OptionsRisk` functions delegating to them no longer divide the
+  rate by 100 internally, so a rate derived once is now dimensionally consistent whether it is
+  fed to `Funding`, `Carry`, `Hedging`, or `MarginBridge` — previously the same number meant a
+  100x different rate depending on the module.
+- Fixed the inverted raw→daily scaling in `Funding.find_arbitrage_opportunities/2`. `min_delta`
+  stays a raw per-period threshold; entries tagged `:daily_normalized` now compare against
+  `min_delta` **multiplied** by periods-per-day (daily = raw x periods, so the daily-basis
+  threshold is larger), where the previous code divided and let through spreads well under the
+  requested floor.
+- Fixed `PortfolioMargin` netting for offsetting legs marked at different prices: the netted
+  mark is now signed notional over net quantity, not a gross-quantity-weighted average mark
+  applied to the net quantity — which was not the net position's mark and skewed both
+  `combined_maintenance_margin/1` and `portfolio_liquidation_price/1`.
+- **Breaking:** `StressScenario.apply_shock/2` no longer copies a book-wide verdict onto each
+  position. The per-position `:liquidated?` field is gone; the result carries a single
+  book-wide `:portfolio_liquidated?` instead, so a healthy leg no longer reports itself
+  liquidated whenever the book as a whole is under water.
+- **Breaking:** moved presentation strings out of `OptionsRisk.stress_test_extended_negative/2`.
+  Each scenario's `:margin_impact` is a `Decimal` ratio of free headroom rather than a string
+  like `"+45%"`, and the prose `:kill_switch_trigger` / `:recommendation` fields are replaced by
+  numeric `:kill_switch_day_min` / `:kill_switch_day_max`, so consumers no longer regex numbers
+  back out of a pure-calc result.
+- **Breaking:** disambiguated zero-as-sentinel from a legitimate zero in the `Calc` returns
+  (`effective_leverage`, `liquidation`, `leverage_to_aum`, `safety`). Invalid input — zero
+  equity, non-positive entry — returns `{:error, reason}` instead of a `0` a consumer cannot
+  tell apart from "no liquidation risk"; `AccountMetrics.calculate/1,2` propagates the error.
+- Replaced formula-derived golden fixtures with independently sourced values (hand-computed or
+  from a published venue spec, with documented provenance), compared as `Decimal` with explicit
+  tolerances instead of `to_float` — a golden derived from the formula under test proves
+  consistency, not correctness.
 
 ## Phase 1: Extraction
 

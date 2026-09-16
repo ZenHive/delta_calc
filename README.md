@@ -65,7 +65,7 @@ Calc.leverage_to_aum(Decimal.new(10_000), Decimal.new(100_000))
 
 # liquidation(entry, leff, mmr_total, side) -> Decimal
 Calc.liquidation(Decimal.new(3000), Decimal.new(2), Decimal.new("0.005"), :long)
-#=> #Decimal<1507.53768844>
+#=> #Decimal<1507.537688442211055276381909547739>
 ```
 
 ## `DeltaCalc.Presets`
@@ -127,8 +127,8 @@ dca_params = %{
 # calculate_dca_ladder(dca_params) -> %{defensive: ..., aggressive: ...} | nil
 DCAPlanner.calculate_dca_ladder(dca_params).defensive
 #=> %{
-#     final_avg_entry: #Decimal<2910.63829787>,
-#     final_eff_lev: #Decimal<3.20000000>,
+#     final_avg_entry: #Decimal<2910.638297872340425531914893617022>,
+#     final_eff_lev: #Decimal<3.2>,
 #     steps: [...],
 #     ...
 #   }
@@ -153,14 +153,14 @@ params = %{
 
 result = PositionCalculator.calculate_position(params)
 #=> %{
-#     effective_leverage: #Decimal<1.00000000>,
-#     leverage_to_aum: #Decimal<0.01000000>,
+#     effective_leverage: #Decimal<1.0>,
+#     leverage_to_aum: #Decimal<0.01>,
 #     allocation: %{sub_eq: ..., init_position: ..., reserve: ..., ...},
 #     position: %{notional: ..., eff_lev: ..., tokens: ...},
 #     safety: %{
 #       is_safe: true,
-#       liquidation_price: #Decimal<0.00000000>,
-#       black_swan_price: #Decimal<2550.00000000>,
+#       liquidation_price: #Decimal<0E+3>,
+#       black_swan_price: #Decimal<2550.00>,
 #       ...
 #     },
 #     mmr_info: %{...}
@@ -178,7 +178,7 @@ Hedging.calculate_required_cex_balance(Decimal.new("100000"), Decimal.new("60"))
 
 # check_hedge_coverage(cex_value, total_spot, target_hedge_percent)
 Hedging.check_hedge_coverage(Decimal.new("60000"), Decimal.new("100000"), Decimal.new("60"))
-#=> {:ok, #Decimal<60.00>}
+#=> {:ok, #Decimal<60.0>}
 
 prior = %{
   total_spot: Decimal.new("100000"),
@@ -217,8 +217,10 @@ Funding.funding_apr(Decimal.new("0.0001"), 8)
 #=> {:ok, %{hourly: #Decimal<0.0012500>, daily: #Decimal<0.0300>, annual: #Decimal<10.9500>}}
 
 # compare_funding_rates(rates) -> comparison map per symbol
+# `delta` is a raw per-period fraction (`delta_unit: :raw_per_period`), compared against a
+# raw-per-period threshold derived from the caller's daily `:min_delta`.
 Funding.compare_funding_rates(%{binance: Decimal.new("0.0001"), bybit: Decimal.new("0.00015")})
-#=> %{delta: #Decimal<0.00005>, arbitrage_opportunity: true, ranked: [...], ...}
+#=> %{delta: #Decimal<0.00005>, arbitrage_opportunity: false, delta_unit: :raw_per_period, ranked: [...], ...}
 
 # funding_trend(series) -> {:ok, trend} | {:error, :insufficient_data}
 Funding.funding_trend([Decimal.new("0.0001"), Decimal.new("0.00012"), Decimal.new("0.00015")])
@@ -243,16 +245,16 @@ account = %{
 # calculate(account, opts) -> %{effective_leverage, liquidation_price, ...}
 AccountMetrics.calculate(account)
 #=> %{
-#     effective_leverage: #Decimal<2.00000000>,
-#     liquidation_price: #Decimal<1507.53768844>,
-#     liquidation_distance_pct: #Decimal<49.74874372>,
-#     margin_usage_pct: #Decimal<20.00000000>,
+#     effective_leverage: #Decimal<2>,
+#     liquidation_price: #Decimal<1507.537688442211055276381909547739>,
+#     liquidation_distance_pct: #Decimal<49.74874371859296482412060301507537>,
+#     margin_usage_pct: #Decimal<20.0>,
 #     safety: %{verdict: :tight, ...}
 #   }
 
 # margin_usage_pct(margin_used, equity) -> Decimal
 AccountMetrics.margin_usage_pct(Decimal.new("1000"), Decimal.new("5000"))
-#=> #Decimal<20.00000000>
+#=> #Decimal<20.0>
 ```
 
 ## `DeltaCalc.Concentration`
@@ -288,16 +290,17 @@ MarginBridge.margin_runway_days(Decimal.new("2025"), Decimal.new("45"))
 
 # payback_timeline(remaining_debt, daily_funding, opts) -> payback map
 MarginBridge.payback_timeline(Decimal.new("2430"), Decimal.new("90"))
-#=> %{remaining_debt: #Decimal<2430>, daily_funding: #Decimal<90>, days_to_payoff: 27, ...}
+#=> %{remaining_debt: #Decimal<2430>, daily_funding: #Decimal<90>, days_to_payoff: #Decimal<27>, ...}
 
 # stress_test_prolonged_negative(rate, position_size, days, opts) -> stress map
+# the rate is a per-period fraction (-0.0001 = -0.01% per funding period), never a percent
 MarginBridge.stress_test_prolonged_negative(
-  Decimal.new("-0.025"),
+  Decimal.new("-0.0001"),
   Decimal.new("60000"),
   90,
   periods_per_day: 24
 )
-#=> %{daily_cost: #Decimal<360.00000>, total_cost: #Decimal<32400.00000>, kill_switch_day: nil, ...}
+#=> %{daily_cost: #Decimal<144.0000>, total_cost: #Decimal<12960.0000>, kill_switch_day: nil, ...}
 
 # check_kill_switch(per_period_funding_rate, margin_ratio, opts) -> kill-switch map
 # daily_funding_rate = per_period_rate x :periods_per_day (default 3, overridable)
@@ -313,10 +316,11 @@ For a single-scenario timeline with optional payoff date, see `DeltaCalc.MarginB
 
 ```elixir
 # project_payback_timeline(params) -> %{best_case, expected, worst_case}
+# exact inputs only — floats are rejected by the `DeltaCalc.Decimal` boundary
 FundingProjection.project_payback_timeline(%{
   remaining_debt: 2700,
   daily_funding: 90,
-  funding_volatility: 0.2
+  funding_volatility: "0.2"
 })
 #=> %{best_case: 25, expected: 30, worst_case: 38}
 ```
@@ -333,7 +337,7 @@ expiries = [
 
 # optimal_expiries(expiries, opts) -> %{buckets, total_allocation}
 OptionLadder.optimal_expiries(expiries)
-#=> %{buckets: [%{bucket: :front, allocation: #Decimal<...>, ...}, ...], total_allocation: #Decimal<1>}
+#=> %{buckets: [%{bucket: :front, allocation: #Decimal<0.625>, ...}, ...], total_allocation: #Decimal<1.000>}
 
 # check_roll_conditions(position, market) -> roll decision
 position = %{days_to_expiry: 3, pnl_percent: "10", bid_ask_spread: "0.14"}
@@ -386,7 +390,7 @@ Pnl.unrealized_pnl(%{
   size: Decimal.new("2"),
   side: :long
 })
-#=> #Decimal<2000.00000000>
+#=> #Decimal<2000>
 
 # realized_pnl(params) -> Decimal (fees + accrued funding netted)
 Pnl.realized_pnl(%{
@@ -402,7 +406,7 @@ Pnl.realized_pnl(%{
 
 # roe(params) -> Decimal
 Pnl.roe(%{pnl: Decimal.new("400"), margin: Decimal.new("1000")})
-#=> #Decimal<40.00000000>
+#=> #Decimal<40.0>
 
 # breakeven(params) -> Decimal
 Pnl.breakeven(%{
@@ -428,17 +432,17 @@ positions = [
 
 # net_delta(positions) -> Decimal
 DeltaNeutral.net_delta(positions)
-#=> #Decimal<0.85000000>
+#=> #Decimal<0.85>
 
 # rebalance_to_neutral(positions | params) -> rebalance map
 DeltaNeutral.rebalance_to_neutral(positions)
 #=> %{
-#     net_delta: #Decimal<0.85000000>,
+#     net_delta: #Decimal<0.85>,
 #     within_tolerance: false,
 #     side: :short,
-#     size: #Decimal<0.85000000>,
+#     size: #Decimal<0.85>,
 #     instrument: :perp,
-#     signed_hedge: #Decimal<-0.85000000>
+#     signed_hedge: #Decimal<-0.85>
 #   }
 ```
 
@@ -497,15 +501,15 @@ account = %{
 
 # combined_maintenance_margin(account) -> Decimal
 PortfolioMargin.combined_maintenance_margin(account)
-#=> #Decimal<30.00000000>
+#=> #Decimal<30.000>
 
 # portfolio_liquidation_price(account) -> Decimal | nil
 PortfolioMargin.portfolio_liquidation_price(account)
-#=> #Decimal<2512.56281407>
+#=> #Decimal<2512.562814070351758793969849246231>
 
 # margin_usage(account) -> %{used, available, usage_pct}
 PortfolioMargin.margin_usage(account)
-#=> %{used: #Decimal<30.00000000>, available: #Decimal<970.00000000>, usage_pct: #Decimal<3.00000000>}
+#=> %{used: #Decimal<30.000>, available: #Decimal<970.000>, usage_pct: #Decimal<3.000>}
 ```
 
 ## `DeltaCalc.StressScenario`
@@ -525,9 +529,10 @@ account = %{
 StressScenario.apply_shock(account, Decimal.new("-10"))
 #=> %{
 #     shock_pct: #Decimal<-10>,
-#     equity: #Decimal<400.00000000>,
+#     equity: #Decimal<400.0>,
 #     positions: [...],
-#     portfolio_margin: #Decimal<27.00000000>,
+#     portfolio_margin: #Decimal<27.0000>,
+#     portfolio_liquidated?: false,
 #     liquidation_price: #Decimal<...>
 #   }
 
@@ -535,9 +540,9 @@ StressScenario.apply_shock(account, Decimal.new("-10"))
 StressScenario.cascade(account, Decimal.new("-20"))
 #=> %{
 #     shock_pct: #Decimal<-20>,
-#     liquidated_positions: [:btc_long],
-#     margin_call: #Decimal<224.00000000>,
-#     survives?: true
+#     liquidated_positions: [:btc_long, :btc_short],
+#     margin_call: #Decimal<224.0000>,
+#     survives?: false
 #   }
 ```
 
@@ -552,11 +557,11 @@ Fees.effective_entry(Decimal.new("50000"), %{
   slippage_bps: Decimal.new("10"),
   side: :long
 })
-#=> #Decimal<50070.00000000>
+#=> #Decimal<50070.0000>
 
 # effective_exit(fill_price, params) -> Decimal
 Fees.effective_exit(Decimal.new("50000"), %{fee_rate: Decimal.new("0.0004"), side: :long})
-#=> #Decimal<49980.00000000>
+#=> #Decimal<49980.0000>
 
 # roundtrip_cost(params) -> Decimal
 Fees.roundtrip_cost(%{
@@ -564,7 +569,7 @@ Fees.roundtrip_cost(%{
   open_fee_rate: Decimal.new("0.0004"),
   close_fee_rate: Decimal.new("0.0002")
 })
-#=> #Decimal<6.00000000>
+#=> #Decimal<6.0000>
 
 # funding_adjusted_breakeven(entry_price, params, accrued_funding) -> Decimal
 Fees.funding_adjusted_breakeven(
@@ -582,7 +587,7 @@ Basis yield, break-even funding, and net carry for spot/perp hedge profitability
 ```elixir
 # basis(spot_price, perp_price) -> Decimal (instantaneous premium/discount, not annualized)
 Carry.basis(Decimal.new("60000"), Decimal.new("60600"))
-#=> #Decimal<1.00000000>
+#=> #Decimal<1.00>
 
 # breakeven_funding(params) -> Decimal (per-period rate)
 Carry.breakeven_funding(%{
@@ -590,7 +595,7 @@ Carry.breakeven_funding(%{
   perp_price: Decimal.new("60600"),
   holding_days: 30
 })
-#=> #Decimal<-0.00011111>
+#=> #Decimal<-0.0001111111111111111111111111111111111>
 
 # net_carry(params) -> carry decision map
 Carry.net_carry(%{
@@ -600,11 +605,11 @@ Carry.net_carry(%{
   holding_days: 30
 })
 #=> %{
-#     basis: #Decimal<1.00000000>,
-#     basis_yield: #Decimal<1.00000000>,
-#     funding_yield: #Decimal<0.90000000>,
-#     net_yield: #Decimal<1.90000000>,
-#     breakeven_funding: #Decimal<-0.00011111>,
+#     basis: #Decimal<1.00>,
+#     basis_yield: #Decimal<1.00>,
+#     funding_yield: #Decimal<0.9000>,
+#     net_yield: #Decimal<1.9000>,
+#     breakeven_funding: #Decimal<-0.0001111111111111111111111111111111111>,
 #     profitable?: true
 #   }
 ```

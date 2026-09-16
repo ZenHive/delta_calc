@@ -2803,7 +2803,7 @@
       "id": 57,
       "phase": 3,
       "bundle": "contract_hardening",
-      "status": "in_progress",
+      "status": "done",
       "title": "Assert inside tail-elided README examples so no elision can hide a concrete value",
       "scores": {
         "d": 4,
@@ -2839,10 +2839,17 @@
         "test/delta_calc/readme_examples_test.exs",
         "README.md"
       ],
+      "shipped_in": "e532c6a406d893819a28497d8f200e1d7b6bd6ed",
       "body": "The 2026-09-16 post-merge audit of 3b3e4d5..9732c4d (task 56) verified that all 14 remaining\nREADME elisions are legitimate map/list tail elisions, exactly as task 56's acceptance criteria\nrequired — and found that the elision rule is coarser than it looks. `elided?/1` is\n`String.contains?(documented, \"...\")`, so a *single* `...` tail opts out the **entire** example,\nincluding every concrete value documented alongside it.\n\nMeasured against the current README: the 14 elided examples document **57** key/value pairs, of\nwhich **44 are concrete** (`final_avg_entry: #Decimal<2910.638297872340425531914893617022>`,\n`daily_funding_rate: #Decimal<0.045>`, `periods_per_day: #Decimal<3>`,\n`total_exposure: #Decimal<124500>`, `portfolio_margin: #Decimal<27.0000>`, ...) and unchecked by\nthe doc-rot gate. Only 13 positions are actually elided. Task 55 closed the gate on whole-result\nscalars and task 56 closed the last two holdouts; this is the same hole one level deeper, and it\nis the larger share — 44 unchecked documented values vs the 3 that tasks 55/56 fixed.\n\nThose values are also the ones most likely to rot, because they are the multi-field decision maps\n(`DCAPlanner`, `MarginBridge`, `StressScenario`, `PortfolioMargin`, `DeltaNeutral`) that phase-3\nbehavior changes actually move — the 2026-09-16 README audit found the liquidation-formula change\nhad already rotted several of them before task 55 landed.\n\nThe shape is a subset comparison rather than a new elision policy: evaluate as today, then walk the\ndocumented structure and compare only the positions that are not `...`. Keep the whole-result path\nbyte-identical so task 55/56's guarantees do not regress, and keep a census (or equivalent) that\nstill distinguishes a *whole-result* elision from a partial one, so the quiet-opt-out guard task 55\nbuilt is not lost.\n\nSecondary, same files, same session: three README results are asserted but 34 digits long\n(`#Decimal<1507.537688442211055276381909547739>` is the first example a `Calc` reader sees). They\nare not a correctness gap — the gate checks them — but they are the illegibility task 56 named, and\nthey are brittle against a `decimal` context-precision change (CLAUDE.md § Dependency Gotchas:\ndefault went 28 -> 34 in decimal 3.x). Decide the convention once and apply it consistently rather\nthan leaving the README carrying both.\n\nDispatch trigger: test-mechanics change with a measurable pass condition (44 previously unchecked\nvalues become checked) and negative cases that prove the new path fails; no lib/ behavior involved.\n",
       "created_at": "2026-09-16",
       "started_at": "2026-09-16",
+      "done_at": "2026-09-16",
       "scored_at": "2026-09-16",
+      "implemented": "Landed by codex via merge-train; reviewer-approved (run run-1789542026034-87f2fef9, e532c6a406d893819a28497d8f200e1d7b6bd6ed).",
+      "delivered_by": "codex",
+      "verified": true,
+      "verified_by": "cursor",
+      "verification_ref": "harness-run:run-1789542026034-87f2fef9",
       "cross_repo": []
     }
   ]

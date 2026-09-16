@@ -1688,7 +1688,7 @@ shipped_in = "640998dc0000e1a4513c2db34a95417bd3fa520d"
 id = 57
 phase = 3
 bundle = "contract_hardening"
-status = "in_progress"
+status = "done"
 title = "Assert inside tail-elided README examples so no elision can hide a concrete value"
 scores = { d = 4, b = 5, u = 4 }
 acceptance_criteria = ["A tail-elided README example (`..., ...}`, `[...]`, `%{k: ...}`) no longer opts its whole result out of assertion: every documented key whose value is concrete is compared against the evaluated result, and only the elided positions are skipped", "Decimal comparison semantics are unchanged from the whole-result path — `Decimal.equal?/2` for value drift named separately from the `inspect/1` rendering comparison, so a scale-only change still fails", "The negative-case tests are extended to prove the subset path actually fails: a drifted concrete value inside a tail-elided map fails, a documented key missing from the evaluated result fails, and a `...` position still passes regardless of what is there", "The pinned census is replaced or extended so it still detects a new elision quietly opting an example out — a whole-result `...` must remain distinguishable from a partial elision", "The three asserted 34-digit scalar results (`Calc.liquidation` README ~line 68, `PortfolioMargin.portfolio_liquidation_price` ~line 510, `Carry.breakeven_funding` ~line 602) are either rewritten to show the caller-side rounding boundary like task 56 did, or left as-is with a one-line README note stating the full-precision return is deliberate — pick one convention and apply it consistently", "No lib/ behavior change; mix ci green"]
@@ -1733,6 +1733,13 @@ than leaving the README carrying both.
 Dispatch trigger: test-mechanics change with a measurable pass condition (44 previously unchecked
 values become checked) and negative cases that prove the new path fails; no lib/ behavior involved.
 """
+implemented = "Landed by codex via merge-train; reviewer-approved (run run-1789542026034-87f2fef9, e532c6a406d893819a28497d8f200e1d7b6bd6ed)."
+delivered_by = "codex"
+verified = true
+verified_by = "cursor"
+verification_ref = "harness-run:run-1789542026034-87f2fef9"
 created_at = "2026-09-16"
 started_at = "2026-09-16"
 scored_at = "2026-09-16"
+done_at = "2026-09-16"
+shipped_in = "e532c6a406d893819a28497d8f200e1d7b6bd6ed"

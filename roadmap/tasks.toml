@@ -1853,7 +1853,7 @@ shipped_in = "ae84ba9014164ad35ddfab6b3e668eee85a586e4"
 id = 60
 phase = 3
 bundle = "contract_hardening"
-status = "in_progress"
+status = "done"
 title = "Derive the manifest gate's module set from the filesystem instead of two hand-maintained carve-outs"
 scores = { d = 2, b = 3, u = 2 }
 acceptance_criteria = ['`documented_modules_from_lib/0` walks `lib/` recursively (`Path.wildcard("lib/**/*.ex")`) instead of a non-recursive `File.ls!` on `lib/delta_calc/`, so a module in a future nested subdirectory is covered by invariants 5 and 6 rather than silently exempt', "The doctest gate's module set (invariant 6) is computed from that scan plus `Manifest.modules()` rather than the literal `[DeltaCalc, Manifest | Manifest.modules()]`, so a new top-level `lib/*.ex` module is gated the moment it is added", "Invariant 5's registration requirement keeps its two deliberate exemptions (`DeltaCalc`, `DeltaCalc.Manifest`) — widening the doctest gate must not start demanding those be registered in `@modules`", "A test proves the derivation, not the current tree: a synthetic path list containing a nested and a top-level entry maps to the expected module set", "`mix ci` green; no lib/ behavior change"]
@@ -1889,6 +1889,13 @@ Neither is a correctness bug in what has landed; both are the gate failing open 
 library does not have yet. The fix is to derive the set the gate walks from the filesystem, which
 also removes the carve-out list as a thing that must be maintained in step with `lib/`.
 """
+implemented = "Landed by codex via merge-train; reviewer-approved (run run-1789552824836-21fbde8e, d6284325a7ac6fe24d6d2d1789d07498e83291bd)."
+delivered_by = "codex"
+verified = true
+verified_by = "cursor"
+verification_ref = "harness-run:run-1789552824836-21fbde8e"
 created_at = "2026-09-16"
 started_at = "2026-09-16"
 scored_at = "2026-09-16"
+done_at = "2026-09-16"
+shipped_in = "d6284325a7ac6fe24d6d2d1789d07498e83291bd"

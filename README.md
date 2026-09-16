@@ -409,6 +409,7 @@ Pnl.roe(%{pnl: Decimal.new("400"), margin: Decimal.new("1000")})
 #=> #Decimal<40.0>
 
 # breakeven(params) -> Decimal
+# Round at the caller's output boundary for display.
 Pnl.breakeven(%{
   entry_price: Decimal.new("50000"),
   size: Decimal.new("2"),
@@ -416,7 +417,8 @@ Pnl.breakeven(%{
   close_fee_rate: Decimal.new("0.0002"),
   side: :long
 })
-#=> #Decimal<...>
+|> Decimal.round(2)
+#=> #Decimal<50030.01>
 ```
 
 ## `DeltaCalc.DeltaNeutral`
@@ -572,12 +574,14 @@ Fees.roundtrip_cost(%{
 #=> #Decimal<6.0000>
 
 # funding_adjusted_breakeven(entry_price, params, accrued_funding) -> Decimal
+# Round at the caller's output boundary for display.
 Fees.funding_adjusted_breakeven(
   Decimal.new("50000"),
   %{size: Decimal.new("2"), open_fee_rate: Decimal.new("0.0004"), close_fee_rate: Decimal.new("0.0002"), side: :long},
   Decimal.new("0")
 )
-#=> #Decimal<...>
+|> Decimal.round(2)
+#=> #Decimal<50030.01>
 ```
 
 ## `DeltaCalc.Carry`

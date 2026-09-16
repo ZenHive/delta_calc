@@ -21,7 +21,7 @@ defmodule DeltaCalc.ReadmeExamplesTest do
     examples = Enum.flat_map(blocks, &examples/1)
     {elided, asserted} = Enum.split_with(examples, &elided?/1)
 
-    assert {length(asserted), length(elided)} == {36, 16},
+    assert {length(asserted), length(elided)} == {38, 14},
            "README example census changed: #{length(asserted)} asserted, #{length(elided)} elided"
 
     dialect_drift = Enum.filter(asserted, &String.contains?(&1.documented, "Decimal.new("))

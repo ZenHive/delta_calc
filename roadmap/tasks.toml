@@ -1748,7 +1748,7 @@ shipped_in = "e532c6a406d893819a28497d8f200e1d7b6bd6ed"
 id = 58
 phase = 3
 bundle = "contract_hardening"
-status = "pending"
+status = "in_progress"
 title = "Fail CI when a lib module's `iex>` doc examples are not registered as doctests"
 scores = { d = 3, b = 4, u = 3 }
 acceptance_criteria = ["A manifest-wide test enumerates every module in `DeltaCalc.Manifest` (or every `lib/**/*.ex` module) whose compiled docs contain an `iex>` example, and asserts each one is covered by a `doctest`/`doctest_file` call somewhere under `test/` — failing with the offending module name, not a bare boolean", "The check reads the doctest registrations from the test sources (e.g. grep `test/` for `doctest <Module>`) or from `ExUnit` metadata — not from a hand-maintained allowlist that the next module silently omits", "A negative-path test proves the check fires: a module-with-examples-but-no-registration case fails, and the current tree (with `DeltaCalc.FundingProjection` registered) passes", "`mix ci` green; no lib/ behavior change"]
@@ -1780,4 +1780,5 @@ them. `Code.fetch_docs/1` gives the docs chunk for a compiled module, so "does t
 doc content contain `iex>`" is a runtime question, not a source grep.
 """
 created_at = "2026-09-16"
+started_at = "2026-09-16"
 scored_at = "2026-09-16"

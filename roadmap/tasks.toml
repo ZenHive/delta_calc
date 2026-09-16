@@ -1527,7 +1527,7 @@ shipped_in = "89824123b0df327717060af5da1fd0678bb92b14"
 id = 54
 phase = 3
 bundle = "contract_hardening"
-status = "in_progress"
+status = "done"
 title = "Align single-position liquidation price with the venue cross-margin formula"
 scores = { d = 4, b = 8, u = 8 }
 acceptance_criteria = ["liquidation/4 returns entry * (1 - 1/leff) / (1 - mmr_total) for :long and entry * (1 + 1/leff) / (1 + mmr_total) for :short; the fixture entry 2279, leff 3, mmr_total 0.021 yields long 1551.93 and short 2976.16 to the cent", "Golden fixtures are hand-derived from Hyperliquid's published liquidation formula with explicit account_value, position_size, and maintenance ratio inputs, and cross-checked against a second venue's published formula; both source URLs and the derivation are in the test", "A property test pins long liquidation < entry < short liquidation for leff > 1, that both move toward entry as leff grows, and that raising mmr_total moves both toward entry", "An unreachable long liquidation (leff <= 1) still returns zero, with a test naming that contract", "PositionCalculator, stress-scenario, CCXT differential and domain-invariant suites pass with any moved golden re-derived by hand and annotated, none copied from output", "mix ci green; DeltaCalc.Liquidation and DeltaCalc.PositionCalculator coverage at or above 95%"]
@@ -1567,6 +1567,13 @@ exists to prevent.
 
 Dispatch trigger: money/risk math with a public calculation contract; independent worked examples required.
 """
+implemented = "Landed by codex via merge-train; reviewer-approved (run run-1789531210115-209e3f31, 3c16735c6e8ca27c56cbbebdf0c408000333aa93)."
+delivered_by = "codex"
+verified = true
+verified_by = "cursor"
+verification_ref = "harness-run:run-1789531210115-209e3f31"
 created_at = "2026-09-16"
 started_at = "2026-09-16"
 scored_at = "2026-09-16"
+done_at = "2026-09-16"
+shipped_in = "3c16735c6e8ca27c56cbbebdf0c408000333aa93"

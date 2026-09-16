@@ -2643,7 +2643,7 @@
       "id": 54,
       "phase": 3,
       "bundle": "contract_hardening",
-      "status": "in_progress",
+      "status": "done",
       "title": "Align single-position liquidation price with the venue cross-margin formula",
       "scores": {
         "d": 4,
@@ -2683,10 +2683,17 @@
         "test/delta_calc/property_test.exs",
         "test/delta_calc/position_calculator_test.exs"
       ],
+      "shipped_in": "3c16735c6e8ca27c56cbbebdf0c408000333aa93",
       "body": "`DeltaCalc.Liquidation.liquidation/4` prices a single position's liquidation as\n`factor = (1 - mmr_total) / leff`, `long = entry * (1 - factor)`, `short = entry * (1 + factor)`\n(read 2026-09-16, lib/delta_calc/liquidation.ex). That divides the maintenance margin by the\nleverage, which no venue does. Hyperliquid's published formula\n(https://hyperliquid.gitbook.io/hyperliquid-docs/trading/liquidations, fetched 2026-09-16):\n`liq_price = price - side * margin_available / position_size / (1 - l * side)` with\n`l = 1 / MAINTENANCE_LEVERAGE` (the maintenance margin ratio) and, for cross margin,\n`margin_available = account_value - maintenance_margin_required`. For one position with\nequity E, notional N = leff * E and mmr l, that reduces to\n`long = entry * (1 - 1/leff) / (1 - l)` and `short = entry * (1 + 1/leff) / (1 + l)`.\n\nWorked numbers at entry 2279, leff 3, mmr_total 0.021: current long 1535.29 vs venue 1551.93\n(0.7% too far from entry); current short 3022.71 vs venue 2976.16 (2.0% too far). Both errors are\non the optimistic side: a consumer that treats the liquidation as its stop believes it has more\nroom than the venue gives it. trading_dashboard's position sizer is that consumer (its task 292\ndefers the formula to this dependency's own release).\n\nReplace the formula with the venue-equivalent one. Derive the long and short golden fixtures by\nhand from the Hyperliquid formula with explicit E, N, l inputs (never by running the new code), and\ncross-check the same fixtures against a second venue's published isolated-margin liquidation\nformula fetched from that venue's own documentation (Binance USDS-M futures publishes one); record\nboth sources in the test. The zero clamp for an unreachable long liquidation stays (leff <= 1 under\nthe new formula): trading_dashboard already renders zero as not-applicable. Consumers inside this\nlibrary (PositionCalculator black-swan safety and liquidation distance, the property suite's\nmonotonicity tests, stress scenarios, the CCXT differential) keep passing with goldens re-derived\nby hand where the number moves; a golden updated by copying new output is the failure this task\nexists to prevent.\n\nDispatch trigger: money/risk math with a public calculation contract; independent worked examples required.\n",
       "created_at": "2026-09-16",
       "started_at": "2026-09-16",
+      "done_at": "2026-09-16",
       "scored_at": "2026-09-16",
+      "implemented": "Landed by codex via merge-train; reviewer-approved (run run-1789531210115-209e3f31, 3c16735c6e8ca27c56cbbebdf0c408000333aa93).",
+      "delivered_by": "codex",
+      "verified": true,
+      "verified_by": "cursor",
+      "verification_ref": "harness-run:run-1789531210115-209e3f31",
       "cross_repo": []
     }
   ]

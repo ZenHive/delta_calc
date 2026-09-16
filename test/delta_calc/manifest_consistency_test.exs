@@ -5,7 +5,8 @@ defmodule DeltaCalc.ManifestConsistencyTest do
   Enforces uniqueness of public function name+arity across registered modules,
   full registration of every api()-bearing module under `lib/delta_calc/`,
   `:hints` metadata on every advertised function, and complete api() coverage
-  of every public function in registered modules.
+  of every public function in registered modules, plus doctest registration for
+  modules with executable doc examples.
 
   Note: the review convention that an advertised option must actually change output
   is not checked here — that would require mutation testing or behavioral fixtures.
@@ -16,8 +17,42 @@ defmodule DeltaCalc.ManifestConsistencyTest do
   alias DeltaCalc.Manifest
 
   @lib_delta_calc Path.expand("../../lib/delta_calc", __DIR__)
+  @test_root Path.expand("..", __DIR__)
 
   describe "registered module surface" do
+    test "every registered module with doc examples has a doctest registration" do
+      registered =
+        @test_root
+        |> Path.join("**/*.{ex,exs}")
+        |> Path.wildcard()
+        |> Enum.map(&File.read!/1)
+        |> doctest_registrations()
+
+      assert_doctests_registered!(Manifest.modules(), registered)
+    end
+
+    test "missing doctest registration fails with the offending module name" do
+      registered = doctest_registrations(["doctest DeltaCalc"])
+
+      assert_raise ExUnit.AssertionError, ~r/DeltaCalc\.FundingProjection/, fn ->
+        assert_doctests_registered!([DeltaCalc.FundingProjection], registered)
+      end
+    end
+
+    test "doctest registrations are calls, not comments or string contents" do
+      sources = [
+        "# doctest DeltaCalc.FundingProjection",
+        ~s("doctest DeltaCalc.FundingProjection"),
+        "doctest(\n  DeltaCalc.FundingProjection\n)",
+        "doctest DeltaCalc, import: true"
+      ]
+
+      assert doctest_registrations(Enum.take(sources, 2)) == MapSet.new()
+
+      assert doctest_registrations(sources) ==
+               MapSet.new([DeltaCalc, DeltaCalc.FundingProjection])
+    end
+
     test "public function name+arity is unique across all registered modules" do
       collisions =
         Manifest.modules()
@@ -164,6 +199,50 @@ defmodule DeltaCalc.ManifestConsistencyTest do
       assert properties["periods_per_day"] == %{"type" => "integer", "minimum" => 1}
       assert properties["capital_protected"] == %{"type" => "boolean"}
     end
+  end
+
+  defp assert_doctests_registered!(modules, registered) do
+    missing =
+      modules
+      |> Enum.filter(&doc_examples?/1)
+      |> Enum.reject(&MapSet.member?(registered, &1))
+      |> Enum.sort()
+
+    assert missing == [],
+           "Modules with iex> examples missing doctest registration under test/:\n" <>
+             Enum.map_join(missing, "\n", &"  - #{inspect(&1)}")
+  end
+
+  defp doc_examples?(mod) do
+    case Code.fetch_docs(mod) do
+      {:docs_v1, _, _, _, moduledoc, _, docs} ->
+        contents = [moduledoc | Enum.map(docs, &elem(&1, 3))]
+
+        contents
+        |> Enum.filter(&is_map/1)
+        |> Enum.flat_map(&Map.values/1)
+        |> Enum.any?(&String.contains?(&1, "iex>"))
+
+      other ->
+        flunk("Expected docs for #{inspect(mod)}, got: #{inspect(other)}")
+    end
+  end
+
+  defp doctest_registrations(sources) do
+    Enum.reduce(sources, MapSet.new(), fn source, registered ->
+      {_ast, registered} =
+        source
+        |> Code.string_to_quoted!()
+        |> Macro.prewalk(registered, fn
+          {:doctest, _, [{:__aliases__, _, parts} | _]} = node, acc ->
+            {node, MapSet.put(acc, Module.concat(parts))}
+
+          node, acc ->
+            {node, acc}
+        end)
+
+      registered
+    end)
   end
 
   defp number_schema_paths(value, path \\ [])

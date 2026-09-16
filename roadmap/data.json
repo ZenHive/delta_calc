@@ -2751,7 +2751,7 @@
       "id": 56,
       "phase": 3,
       "bundle": "contract_hardening",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Assert the two fully-elided README scalar results instead of hiding 34-digit precision",
       "scores": {
         "d": 3,
@@ -2788,6 +2788,7 @@
       ],
       "body": "The 2026-09-16 post-merge audit of 681ba3d..2a5d590 (task 55, the README-example test) found\nthree README results documented as a bare `#=> #Decimal<...>` — fully elided, so the new test\nevaluates them but asserts nothing. The audit made one concrete (`Pnl.realized_pnl` ->\n`#Decimal<3954.2000>`, hand-verified: 4000 gross - 40 open fee - 20.8 close fee + 15 funding\nreceived) and left two:\n\n- `Pnl.breakeven/1` (README ~line 419)\n- `Fees.funding_adjusted_breakeven/3` (README ~line 580)\n\nBoth return `50030.00600120024004800960192038408` for the documented inputs — 34 significant\ndigits, because v0_3 moved rounding to explicit caller-controlled output boundaries and these\nfunctions divide. That is *why* they were elided, so the elision is not arbitrary; but the\nconsequence is that two money-math functions on the >=95%-coverage tier have a front-door\nexample the doc-rot gate cannot check, and a 34-digit literal is both illegible and brittle\nagainst a future `decimal` context-precision change (CLAUDE.md § Dependency Gotchas: the\ndefault went 28 -> 34 in decimal 3.x).\n\nThe better shape is probably to show the boundary rather than hide the digits — e.g. document\n`Pnl.breakeven(params) |> Decimal.round(2)` with `#=> #Decimal<50030.01>`. That is both\nassertable and a more honest example, since no consumer displays 34 digits. Confirm the rounding\ncall belongs in the README example (caller side) and not in the function.\n\nDispatch trigger: small, well-bounded doc + test change with a checkable pass condition; the one\njudgement call (round in the example vs. document the full literal) is named above.\n",
       "created_at": "2026-09-16",
+      "started_at": "2026-09-16",
       "scored_at": "2026-09-16",
       "cross_repo": []
     }

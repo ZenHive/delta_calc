@@ -1638,7 +1638,7 @@ shipped_in = "39a6d981c816c90b1495fb13c8ff4ade7d331bfe"
 id = 56
 phase = 3
 bundle = "contract_hardening"
-status = "pending"
+status = "in_progress"
 title = "Assert the two fully-elided README scalar results instead of hiding 34-digit precision"
 scores = { d = 3, b = 5, u = 5 }
 acceptance_criteria = ["No `#=> #Decimal<...>` remains in README.md: every scalar Decimal result is either a concrete asserted value or, where full-context precision makes that illegible, an example rewritten to demonstrate the caller-controlled rounding boundary (Decimal.round/2,3 or Calc.quantize/1) so the documented result is short AND asserted", "Pnl.breakeven/1 and Fees.funding_adjusted_breakeven/3 both have at least one asserted README example; the README-example census in readme_examples_test.exs is updated to the new asserted/elided counts", "The elision rule stays as-is for map/list tail elisions (`..., ...}`), which legitimately document a subset — only whole-result scalar elisions are removed", "No lib/ behavior change: the chosen approach adds rounding at the README example's output boundary, it does not reintroduce internal quantization (that is what v0_3 removed)", "mix ci green"]
@@ -1674,4 +1674,5 @@ Dispatch trigger: small, well-bounded doc + test change with a checkable pass co
 judgement call (round in the example vs. document the full literal) is named above.
 """
 created_at = "2026-09-16"
+started_at = "2026-09-16"
 scored_at = "2026-09-16"

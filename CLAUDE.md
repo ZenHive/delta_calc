@@ -100,12 +100,14 @@ things, and real correctness bugs landed clean through both gaps (tasks 24/25/26
   (`mix ci`) asserts six global invariants — public name+arity uniqueness across all registered
   modules, full module registration in `DeltaCalc.Manifest`, the `:hints`-present invariant,
   `api()` coverage of every public function in a registered module, registration of every
-  publicly documented `lib/delta_calc/` module, and a `doctest` registration under `test/` for
-  every module whose docs carry an executable `iex>` example line — the registered set plus
-  `DeltaCalc` and `DeltaCalc.Manifest`, the two documented lib modules the registration
-  invariant exempts. The example detector anchors on a line-leading prompt, so a doc that only
-  *mentions* the prompt in prose is not gated. Turn global invariants into CI
-  failures, not consumer discoveries.
+  publicly documented module under `lib/` (except `DeltaCalc` and `DeltaCalc.Manifest`, the two
+  deliberate exemptions), and a `doctest` registration under `test/` for every module whose docs
+  carry an executable `iex>` example line — over every publicly documented `lib/` module plus the
+  registered set, so the exemptions above are still gated for examples. The module sets are
+  derived by walking `lib/**/*.ex` recursively, never from a hand-maintained list, so a module
+  added in a future subdirectory or at the `lib/` top level is gated the moment it lands. The
+  example detector anchors on a line-leading prompt, so a doc that only *mentions* the prompt in
+  prose is not gated. Turn global invariants into CI failures, not consumer discoveries.
 
 - **Documented output drift.** The README's worked examples are the library's front door (an
   `ex_doc` extra, shipped in the hex package), yet no per-task reviewer reads them against its

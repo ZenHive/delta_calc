@@ -7,9 +7,12 @@ Release-level history for completed roadmap phases. The per-task delivery ledger
 
 - A sixth manifest-wide invariant in `test/delta_calc/manifest_consistency_test.exs` fails `mix ci`
   when a module's `@doc`/`@moduledoc` carries an `iex>` example that no `doctest` call
-  under `test/` executes — over the registered set plus `DeltaCalc` and `DeltaCalc.Manifest`, the
-  two documented lib modules the registration invariant exempts and therefore the only surfaces
-  where an example could otherwise sit ungated. The detector anchors on a line-leading `iex>`
+  under `test/` executes — over every publicly documented module found by walking `lib/**/*.ex`
+  plus the registered set, so `DeltaCalc` and `DeltaCalc.Manifest` (which the registration
+  invariant exempts) are gated for examples, and so is a module added in a future `lib/`
+  subdirectory or at the `lib/` top level. That scan replaced a literal carve-out list: the
+  registration invariant walks the same recursive scan, so neither gate depends on a set kept in
+  step with `lib/` by hand. The detector anchors on a line-leading `iex>`
   prompt rather than a substring match, so a doc that merely mentions the prompt in prose (as
   `DeltaCalc.Manifest`'s own moduledoc does) is not flagged — the class of drift where a documented example rots unnoticed because
   nothing runs it. Registrations are read from the test sources' AST (so a commented-out or

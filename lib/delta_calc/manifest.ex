@@ -8,15 +8,19 @@ defmodule DeltaCalc.Manifest do
   CI enforces six global invariants in `DeltaCalc.ManifestConsistencyTest`:
 
     1. Public function name+arity is unique across all `@modules` entries.
-    2. Every `lib/delta_calc/` module exposing `api()` functions is listed in `@modules`.
+    2. Every module under `lib/` exposing `api()` functions is listed in `@modules`.
     3. Every advertised public function carries Descripex `:hints` metadata.
     4. Every public function in a registered module is advertised via `api()`.
-    5. Every publicly documented `lib/delta_calc/` module is listed in `@modules`.
-    6. Every registered module — plus `DeltaCalc` and this module, the two documented
-       lib modules invariant 5 exempts — whose compiled docs carry an executable
-       example line is covered by a `doctest` call under `test/`. The detector
+    5. Every publicly documented module under `lib/` is listed in `@modules`, except
+       `DeltaCalc` and this module.
+    6. Every publicly documented module under `lib/` — invariant 5's two exemptions
+       included — plus every registered module, whose compiled docs carry an executable
+       example line, is covered by a `doctest` call under `test/`. The detector
        anchors on a line starting with the `iex>` prompt, so a prose mention of
        the prompt (this sentence included) is not an example.
+
+  Invariants 2, 5 and 6 walk `lib/**/*.ex` recursively, so a module added in a future
+  subdirectory is gated on arrival rather than silently exempt.
   """
 
   @modules [

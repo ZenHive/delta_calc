@@ -3,7 +3,7 @@ defmodule DeltaCalc.ManifestConsistencyTest do
   Global invariants for `DeltaCalc.Manifest` that per-module review cannot see.
 
   Enforces uniqueness of public function name+arity across registered modules,
-  full registration of every api()-bearing module under `lib/delta_calc/`,
+  full registration of every api()-bearing and every publicly documented module under `lib/`,
   `:hints` metadata on every advertised function, and complete api() coverage
   of every public function in registered modules, plus doctest registration for
   modules with executable doc examples.
@@ -17,7 +17,6 @@ defmodule DeltaCalc.ManifestConsistencyTest do
   alias DeltaCalc.Manifest
 
   @lib_root Path.expand("../../lib", __DIR__)
-  @lib_delta_calc Path.expand("../../lib/delta_calc", __DIR__)
   @test_root Path.expand("..", __DIR__)
 
   describe "registered module surface" do
@@ -101,7 +100,7 @@ defmodule DeltaCalc.ManifestConsistencyTest do
              """
     end
 
-    test "every lib/delta_calc module with api() functions is registered in Manifest" do
+    test "every lib module with api() functions is registered in Manifest" do
       registered = MapSet.new(Manifest.modules())
       api_modules = api_modules_from_lib()
 
@@ -291,11 +290,7 @@ defmodule DeltaCalc.ManifestConsistencyTest do
   defp number_schema_paths(_value, _path), do: []
 
   defp api_modules_from_lib do
-    @lib_delta_calc
-    |> File.ls!()
-    |> Enum.filter(&String.ends_with?(&1, ".ex"))
-    |> Enum.reject(&(&1 == "manifest.ex"))
-    |> Enum.map(&Path.join(@lib_delta_calc, &1))
+    lib_sources()
     |> Enum.map(&module_from_file/1)
     |> Enum.reject(&is_nil/1)
     |> Enum.filter(&api_module?/1)
@@ -312,10 +307,13 @@ defmodule DeltaCalc.ManifestConsistencyTest do
   end
 
   defp documented_modules_from_lib do
+    documented_modules_from_paths(lib_sources())
+  end
+
+  defp lib_sources do
     @lib_root
     |> Path.join("**/*.ex")
     |> Path.wildcard()
-    |> documented_modules_from_paths()
   end
 
   defp documented_modules_from_paths(paths) do

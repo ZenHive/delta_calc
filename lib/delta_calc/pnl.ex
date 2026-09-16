@@ -102,7 +102,8 @@ defmodule DeltaCalc.Pnl do
         kind: :value,
         description:
           "Map with :entry_price, :exit_price, :size, :open_fee_rate, and :close_fee_rate as canonical decimal strings; " <>
-            ":side is :long or :short and optional :accrued_funding uses the same exact string form. " <>
+            ":side is :long or :short and optional :accrued_funding uses the same exact string form, " <>
+            "signed as in DeltaCalc.Fees.funding_adjusted_breakeven/3 (negative when paid, positive when received). " <>
             "Native Elixir callers may also pass Decimal or integer for exact fields.",
         schema: %{
           optional(:accrued_funding) => String.t(),
@@ -123,6 +124,9 @@ defmodule DeltaCalc.Pnl do
 
   @doc """
   Return net realized PnL at `exit_price` after open/close fees and accrued funding.
+
+  `:accrued_funding` is signed net funding in quote currency — negative when
+  paid, positive when received — and is added to the fee-adjusted gross PnL.
 
   Uses `DeltaCalc.Fees.roundtrip_cost/1` for the fee component.
   Returns zero when `size` or `entry_price` is not positive.
@@ -197,7 +201,8 @@ defmodule DeltaCalc.Pnl do
         kind: :value,
         description:
           "Map with :entry_price, :size, :open_fee_rate, and :close_fee_rate as canonical decimal strings; " <>
-            "optional :side defaults to :long and :accrued_funding uses the same exact string form. " <>
+            "optional :side defaults to :long and :accrued_funding uses the same exact string form, " <>
+            "signed as in DeltaCalc.Fees.funding_adjusted_breakeven/3 (negative when paid, positive when received). " <>
             "Native Elixir callers may also pass Decimal or integer for exact fields.",
         schema: %{
           optional(:side) => :long | :short,
@@ -217,6 +222,9 @@ defmodule DeltaCalc.Pnl do
 
   @doc """
   Return the breakeven exit price after roundtrip fees and accrued funding.
+
+  `:accrued_funding` is signed net funding in quote currency — negative when
+  paid, positive when received.
 
   Delegates to `DeltaCalc.Fees.funding_adjusted_breakeven/3`.
   Returns `entry_price` unchanged when `size` is zero.

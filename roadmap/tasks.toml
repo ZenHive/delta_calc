@@ -1633,3 +1633,45 @@ started_at = "2026-09-16"
 scored_at = "2026-09-16"
 done_at = "2026-09-16"
 shipped_in = "39a6d981c816c90b1495fb13c8ff4ade7d331bfe"
+
+[[task]]
+id = 56
+phase = 3
+bundle = "contract_hardening"
+status = "pending"
+title = "Assert the two fully-elided README scalar results instead of hiding 34-digit precision"
+scores = { d = 3, b = 5, u = 5 }
+acceptance_criteria = ["No `#=> #Decimal<...>` remains in README.md: every scalar Decimal result is either a concrete asserted value or, where full-context precision makes that illegible, an example rewritten to demonstrate the caller-controlled rounding boundary (Decimal.round/2,3 or Calc.quantize/1) so the documented result is short AND asserted", "Pnl.breakeven/1 and Fees.funding_adjusted_breakeven/3 both have at least one asserted README example; the README-example census in readme_examples_test.exs is updated to the new asserted/elided counts", "The elision rule stays as-is for map/list tail elisions (`..., ...}`), which legitimately document a subset — only whole-result scalar elisions are removed", "No lib/ behavior change: the chosen approach adds rounding at the README example's output boundary, it does not reintroduce internal quantization (that is what v0_3 removed)", "mix ci green"]
+out_of_scope = ["Reintroducing internal quantization in Fees or Pnl", "Changing the README-example test's extraction or comparison mechanics", "Converting README examples into @doc doctests", "Auditing map/list tail elisions elsewhere in the README"]
+files_to_modify = ["README.md", "test/delta_calc/readme_examples_test.exs"]
+touches = ["README.md", "test/delta_calc/readme_examples_test.exs"]
+assignee = "codex"
+model = "gpt-6-astra"
+body = """
+The 2026-09-16 post-merge audit of 681ba3d..2a5d590 (task 55, the README-example test) found
+three README results documented as a bare `#=> #Decimal<...>` — fully elided, so the new test
+evaluates them but asserts nothing. The audit made one concrete (`Pnl.realized_pnl` ->
+`#Decimal<3954.2000>`, hand-verified: 4000 gross - 40 open fee - 20.8 close fee + 15 funding
+received) and left two:
+
+- `Pnl.breakeven/1` (README ~line 419)
+- `Fees.funding_adjusted_breakeven/3` (README ~line 580)
+
+Both return `50030.00600120024004800960192038408` for the documented inputs — 34 significant
+digits, because v0_3 moved rounding to explicit caller-controlled output boundaries and these
+functions divide. That is *why* they were elided, so the elision is not arbitrary; but the
+consequence is that two money-math functions on the >=95%-coverage tier have a front-door
+example the doc-rot gate cannot check, and a 34-digit literal is both illegible and brittle
+against a future `decimal` context-precision change (CLAUDE.md § Dependency Gotchas: the
+default went 28 -> 34 in decimal 3.x).
+
+The better shape is probably to show the boundary rather than hide the digits — e.g. document
+`Pnl.breakeven(params) |> Decimal.round(2)` with `#=> #Decimal<50030.01>`. That is both
+assertable and a more honest example, since no consumer displays 34 digits. Confirm the rounding
+call belongs in the README example (caller side) and not in the function.
+
+Dispatch trigger: small, well-bounded doc + test change with a checkable pass condition; the one
+judgement call (round in the example vs. document the full literal) is named above.
+"""
+created_at = "2026-09-16"
+scored_at = "2026-09-16"

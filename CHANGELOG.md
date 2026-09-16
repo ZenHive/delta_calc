@@ -5,6 +5,19 @@ Release-level history for completed roadmap phases. The per-task delivery ledger
 
 ## Unreleased
 
+- Every README example is now executed by `mix ci`
+  (`test/delta_calc/readme_examples_test.exs`): each ```elixir block carrying a `#=>` result is
+  evaluated with the README's own aliases and asserted to render exactly as documented
+  (`Decimal` compared as `Decimal`, scale significant), with a pinned asserted/elided census so a
+  new elision cannot quietly opt an example out. README drift — the class that left the front
+  door raising `ArgumentError` and documenting a 100x funding cost — is a red CI run instead of a
+  consumer discovery.
+- Documented the signed accrued-funding convention on `DeltaCalc.Pnl.realized_pnl/1` and
+  `breakeven/1` (negative when paid, positive when received), which the delegate
+  `Fees.funding_adjusted_breakeven/3` already stated but the `Pnl` docs and agent schemas did
+  not — an MCP consumer reading `Pnl`'s schema had no way to know a bare positive value means
+  funding *received*. Behavior unchanged; the direction is now pinned by domain-invariant tests.
+
 - **Breaking:** `DeltaCalc.Liquidation.liquidation/4` (and the `Calc` façade, `AccountMetrics`,
   `PositionCalculator`, and `DCAPlanner` paths that build on it) now prices a single position
   with the published venue cross-margin formula — `entry * (1 - 1/leff) / (1 - mmr)` long,

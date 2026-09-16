@@ -29,9 +29,11 @@ defmodule DeltaCalc.DomainInvariantsTest do
   use ExUnit.Case, async: true
 
   alias DeltaCalc.Calc
+  alias DeltaCalc.Fees
   alias DeltaCalc.Funding
   alias DeltaCalc.Hedging
   alias DeltaCalc.MarginBridge
+  alias DeltaCalc.Pnl
 
   # Compare two Decimals within an absolute tolerance, failing loudly otherwise.
   defp assert_close(actual, expected, tolerance \\ "0.00000001") do
@@ -227,6 +229,99 @@ defmodule DeltaCalc.DomainInvariantsTest do
         )
 
       assert_close(actual, Decimal.new("1507.53768844"), "0.00000001")
+    end
+  end
+
+  describe "accrued funding is signed, negative when paid (audit 2a5d590)" do
+    # Invariant: every `:accrued_funding` / accrued-funding :value input across
+    # the surface is SIGNED net funding in quote currency — negative when paid,
+    # positive when received — the convention `Fees.funding_adjusted_breakeven/3`
+    # documents. No module may reinterpret the magnitude as a cost and subtract
+    # it, because the sign is the only thing distinguishing "the long paid 15"
+    # from "the long was paid 15", and both are ordinary states of a perp.
+    #
+    # Asserted by direction and by the gap between the two signs, not against a
+    # formula output: flipping the sign of F must move net PnL by exactly 2F and
+    # must move it the right way.
+    @funding Decimal.new("15")
+
+    # Hand calc (entry 50_000, exit 52_000, size 2, long, open 0.0004, close 0.0002):
+    #   gross      = (52_000 - 50_000) * 2 = 4000
+    #   open fee   = 50_000 * 2 * 0.0004   =   40
+    #   close fee  = 52_000 * 2 * 0.0002   =   20.8
+    #   net, F = 0                         = 3939.2
+    #   received (+15) = 3954.2   paid (-15) = 3924.2   gap = 2 * 15 = 30
+    test "realized PnL adds signed funding, so received beats paid by 2F" do
+      params = %{
+        entry_price: Decimal.new("50000"),
+        exit_price: Decimal.new("52000"),
+        size: Decimal.new("2"),
+        side: :long,
+        open_fee_rate: Decimal.new("0.0004"),
+        close_fee_rate: Decimal.new("0.0002")
+      }
+
+      received = Pnl.realized_pnl(Map.put(params, :accrued_funding, @funding))
+      paid = Pnl.realized_pnl(Map.put(params, :accrued_funding, Decimal.negate(@funding)))
+
+      assert Decimal.compare(received, paid) == :gt
+      assert_close(Decimal.sub(received, paid), Decimal.mult(@funding, Decimal.new(2)))
+      assert_close(received, Decimal.new("3954.2"))
+    end
+
+    # Dimensional truth, no formula involved: funding the long PAID must be
+    # earned back, so it raises the breakeven exit price; funding RECEIVED is a
+    # credit, so it lowers it. A subtracted-magnitude bug inverts both.
+    test "paying funding raises a long breakeven, receiving it lowers it" do
+      params = %{
+        entry_price: Decimal.new("50000"),
+        size: Decimal.new("2"),
+        open_fee_rate: Decimal.new("0.0004"),
+        close_fee_rate: Decimal.new("0.0002"),
+        side: :long
+      }
+
+      neutral = Pnl.breakeven(params)
+      received = Pnl.breakeven(Map.put(params, :accrued_funding, @funding))
+      paid = Pnl.breakeven(Map.put(params, :accrued_funding, Decimal.negate(@funding)))
+
+      assert Decimal.compare(received, neutral) == :lt
+      assert Decimal.compare(paid, neutral) == :gt
+
+      # The two legs are symmetric around neutral, and the gap is fixed by the
+      # documented two-leg fee model (close fees apply to the breakeven exit
+      # notional), not by the breakeven formula's internals. Hand calc:
+      #   gap = 2F / size / (1 - close_fee_rate) = 30 / 2 / 0.9998
+      #       = 15 / 0.9998 = 15.0030006001200240048...
+      assert_close(
+        Decimal.sub(paid, received),
+        Decimal.new("15.0030006001200240048"),
+        "0.0000000001"
+      )
+    end
+
+    # The Pnl facade must not reinterpret the sign on its way to Fees: the same
+    # inputs through either entry point give the same price.
+    test "Pnl.breakeven and Fees.funding_adjusted_breakeven agree on the sign" do
+      fee_params = %{
+        size: Decimal.new("2"),
+        open_fee_rate: Decimal.new("0.0004"),
+        close_fee_rate: Decimal.new("0.0002"),
+        side: :long
+      }
+
+      paid = Decimal.negate(@funding)
+
+      via_fees = Fees.funding_adjusted_breakeven(Decimal.new("50000"), fee_params, paid)
+
+      via_pnl =
+        Pnl.breakeven(
+          fee_params
+          |> Map.put(:entry_price, Decimal.new("50000"))
+          |> Map.put(:accrued_funding, paid)
+        )
+
+      assert_close(via_pnl, via_fees)
     end
   end
 end

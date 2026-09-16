@@ -402,7 +402,7 @@ Pnl.realized_pnl(%{
   close_fee_rate: Decimal.new("0.0002"),
   accrued_funding: Decimal.new("15")
 })
-#=> #Decimal<...>
+#=> #Decimal<3954.2000>
 
 # roe(params) -> Decimal
 Pnl.roe(%{pnl: Decimal.new("400"), margin: Decimal.new("1000")})

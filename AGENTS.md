@@ -1180,6 +1180,16 @@ things, and real correctness bugs landed clean through both gaps (tasks 24/25/26
   registration in `DeltaCalc.Manifest`, and the `:hints`-present invariant. Turn global invariants
   into CI failures, not consumer discoveries.
 
+- **Documented output drift.** The README's worked examples are the library's front door (an
+  `ex_doc` extra, shipped in the hex package), yet no per-task reviewer reads them against its
+  diff — so every phase-3 behavior change silently rotted one, and by the 2026-09-16 audit the
+  README raised `ArgumentError`, documented a 100x funding cost, and carried ~30 stale
+  quantized outputs. **Fix: the README-example test** (`test/delta_calc/readme_examples_test.exs`,
+  run by `mix ci`) evaluates every ```elixir block carrying a `#=>` result and asserts the value
+  renders exactly as documented, with a pinned asserted/elided census so a new elision cannot
+  quietly opt an example out. **A diff that changes a documented return value must update
+  README.md in the same commit** — and if it adds or removes an example, the census with it.
+
 Rule of thumb: if a defect can only be caught by knowing the *domain* or seeing the *whole surface*,
 no per-task reviewer will catch it — encode it as an acceptance criterion or a manifest-wide test.
 
@@ -1204,6 +1214,13 @@ is the rationale.
 - **No baked-in venue constants in generic math.** Funding cadence, MMR tier schedules, fee tiers,
   and kill-switch thresholds are caller-supplied `:value` params. Any default left in place is
   documented as a convention and is overridable — proven by a test feeding a non-default value.
+- **Accrued funding is signed, negative when paid.** Every accrued-funding `:value` input is
+  signed net funding in quote currency (`-15` = the position paid 15, `+15` = it received 15),
+  the convention `Fees.funding_adjusted_breakeven/3` documents. No module may reinterpret the
+  magnitude as a cost and subtract it: the sign is the only thing distinguishing the two, and
+  both are ordinary states of a perp. Consequences that must hold — funding received raises
+  realized PnL and *lowers* a long's breakeven; funding paid does the reverse; flipping the sign
+  of `F` moves net PnL by exactly `2F`.
 - **Goldens are independently sourced.** High-risk formula fixtures (liquidation, sizing, DCA, fees,
   funding) assert against values computed *outside* the code under test — hand-computed, from a
   spec, or external reference — with documented provenance, compared as `Decimal` with explicit

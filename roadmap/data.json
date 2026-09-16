@@ -2904,7 +2904,7 @@
       "id": 59,
       "phase": 3,
       "bundle": "contract_hardening",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Extend the doctest gate to the two manifest-exempt lib modules and anchor its `iex>` detector",
       "scores": {
         "d": 2,
@@ -2937,6 +2937,7 @@
       ],
       "body": "Sibling check (DD-8): tasks 16 and 23 were flagged as sharing `modules` / `manifest`. Different\nsurface — both are *content* tasks that added v0_2 / v0_3 modules to `@modules` and the README so\nthe agent manifest advertises them. This task changes no registration and adds no module; it\nhardens the *test-side detector* of invariant 6, which did not exist when 16/23 were written. The\nreal sibling is task 58, which landed that invariant and is `done`/shipped; this is the follow-up\nits chosen scope left open, not a repeat instance of it.\n\nFound by the 2026-09-16 post-merge audit of `6f870dc..3757dd5` (task 58).\n\nTask 58 landed the doctest-registration invariant scoped to `Manifest.modules()`, which its\nacceptance criteria explicitly allowed. That scope is sound because invariant 5 forces every\npublicly documented `lib/delta_calc/` module into `@modules` — with exactly two carve-outs:\n\n  * `DeltaCalc` lives at `lib/delta_calc.ex`, outside the `lib/delta_calc/` directory\n    `documented_modules_from_lib/0` scans, and is not in `@modules`. It happens to be covered\n    today only because `test/delta_calc_test.exs` carries a `doctest DeltaCalc` that currently\n    registers zero examples (the suite reports 2 doctests, both `FundingProjection`'s).\n  * `DeltaCalc.Manifest` is `Enum.reject`ed by name in `documented_modules_from_lib/0`, so it is\n    documented, ungated by invariant 5, and ungated by invariant 6.\n\nSo an `iex>` example added to the library's front-door moduledoc or to `Manifest`'s is not\ncovered by the gate that exists to catch exactly that. The hole is narrow, but it is on the two\nmost-read modules in the package.\n\nThe two halves of the fix are coupled and must land together: widening the gated set while the\ndetector stays `String.contains?(doc, \"iex>\")` turns CI red immediately, because task 58's own\nsixth-invariant line in `DeltaCalc.Manifest`'s `@moduledoc` — \"Every registered module whose\ncompiled docs contain `iex>` examples ...\" — is a prose mention that the substring test cannot\ndistinguish from an example. Anchoring the match to an example line resolves both.\n\nNote the detector's error direction is currently safe: a prose mention can produce a spurious\nfailure, never a silent pass, so nothing that landed is under-enforced. This is hardening, not a\ncorrectness bug.\n",
       "created_at": "2026-09-16",
+      "started_at": "2026-09-16",
       "scored_at": "2026-09-16",
       "cross_repo": []
     }

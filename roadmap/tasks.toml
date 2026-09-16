@@ -1794,7 +1794,7 @@ shipped_in = "e6b591924df633f9c943561b0d6b42f64b7f587f"
 id = 59
 phase = 3
 bundle = "contract_hardening"
-status = "pending"
+status = "in_progress"
 title = "Extend the doctest gate to the two manifest-exempt lib modules and anchor its `iex>` detector"
 scores = { d = 2, b = 3, u = 2 }
 acceptance_criteria = ["The doctest-registration invariant covers `DeltaCalc` (`lib/delta_calc.ex`) and `DeltaCalc.Manifest` in addition to `Manifest.modules()` — the two documented lib modules that invariant 5 deliberately exempts from registration, and therefore the only surfaces where an `iex>` example can exist today with nothing gating it", """The example detector matches an actual executable example line (leading whitespace then `iex>`) rather than `String.contains?(doc, "iex>")`, so a doc that merely *mentions* `iex>` in prose is not flagged — `DeltaCalc.Manifest`'s own moduledoc is exactly such a doc and would go red the moment it enters the gated set""", "A negative-path test proves the anchored detector still fires on a real example and does not fire on a prose mention — not just that the current tree passes", "`mix ci` green; no lib/ behavior change"]
@@ -1839,4 +1839,5 @@ failure, never a silent pass, so nothing that landed is under-enforced. This is 
 correctness bug.
 """
 created_at = "2026-09-16"
+started_at = "2026-09-16"
 scored_at = "2026-09-16"

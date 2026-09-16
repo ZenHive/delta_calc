@@ -18,8 +18,17 @@ defmodule DeltaCalc.AccountMetricsTest do
       result = AccountMetrics.calculate(account)
 
       assert Decimal.equal?(result.effective_leverage, Decimal.new("2.00000000"))
-      assert Decimal.equal?(result.liquidation_price, Decimal.new("1507.50000000"))
-      assert Decimal.equal?(result.liquidation_distance_pct, Decimal.new("49.75000000"))
+
+      assert Decimal.equal?(
+               Decimal.round(result.liquidation_price, 8),
+               Decimal.new("1507.53768844")
+             )
+
+      assert Decimal.equal?(
+               Decimal.round(result.liquidation_distance_pct, 8),
+               Decimal.new("49.74874372")
+             )
+
       assert Decimal.equal?(result.margin_usage_pct, Decimal.new("20.00000000"))
       assert result.safety.verdict == :tight
     end
@@ -38,8 +47,17 @@ defmodule DeltaCalc.AccountMetricsTest do
       result = AccountMetrics.calculate(account)
 
       assert Decimal.equal?(result.effective_leverage, Decimal.new("2.00000000"))
-      assert Decimal.equal?(result.liquidation_price, Decimal.new("4492.50000000"))
-      assert Decimal.equal?(result.liquidation_distance_pct, Decimal.new("49.75000000"))
+
+      assert Decimal.equal?(
+               Decimal.round(result.liquidation_price, 8),
+               Decimal.new("4477.61194030")
+             )
+
+      assert Decimal.equal?(
+               Decimal.round(result.liquidation_distance_pct, 8),
+               Decimal.new("49.25373134")
+             )
+
       assert Decimal.equal?(result.margin_usage_pct, Decimal.new("50.00000000"))
     end
 

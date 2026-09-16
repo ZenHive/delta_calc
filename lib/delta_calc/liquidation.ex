@@ -70,11 +70,19 @@ defmodule DeltaCalc.Liquidation do
 
   @spec liquidation_for_side(Decimal.t(), Decimal.t(), Decimal.t(), :long | :short) :: Decimal.t()
   defp liquidation_for_side(entry, leff, mmr_total, side) do
-    factor = @one |> Decimal.sub(mmr_total) |> Decimal.div(leff)
+    inverse_leverage = Decimal.div(@one, leff)
 
     case side do
-      :long -> @one |> Decimal.sub(factor) |> Decimal.mult(entry) |> Decimal.max(@zero)
-      :short -> @one |> Decimal.add(factor) |> Decimal.mult(entry)
+      :long ->
+        entry
+        |> Decimal.mult(Decimal.sub(@one, inverse_leverage))
+        |> Decimal.div(Decimal.sub(@one, mmr_total))
+        |> Decimal.max(@zero)
+
+      :short ->
+        entry
+        |> Decimal.mult(Decimal.add(@one, inverse_leverage))
+        |> Decimal.div(Decimal.add(@one, mmr_total))
     end
   end
 end

@@ -210,12 +210,11 @@ defmodule DeltaCalc.DomainInvariantsTest do
 
     # Provenance: hand calc from the public simplified liquidation contract in
     # Calc.liquidation/4 (generic, not venue-specific).
-    # For a long: liq = entry × (1 − (1 − mmr) / L_eff).
+    # For a long: liq = entry × (1 − 1/L_eff) / (1 − mmr).
     # Hand calc, entry=3000, L_eff=2, mmr=0.005:
-    #   (1 − mmr) = 0.995
-    #   0.995 / 2 = 0.4975
-    #   1 − 0.4975 = 0.5025
-    #   3000 × 0.5025 = 1507.5
+    #   1 − 1/2 = 0.5
+    #   1 − mmr = 0.995
+    #   3000 × 0.5 / 0.995 = 1507.53768844…
     # Expected literal is written here; it does not call Calc.liquidation or
     # reuse its internal constants beyond the public input contract.
     test "liquidation price matches an independently-sourced fixture" do
@@ -227,7 +226,7 @@ defmodule DeltaCalc.DomainInvariantsTest do
           :long
         )
 
-      assert_close(actual, Decimal.new("1507.5"), "0.00000001")
+      assert_close(actual, Decimal.new("1507.53768844"), "0.00000001")
     end
   end
 end

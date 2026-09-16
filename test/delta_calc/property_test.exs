@@ -39,10 +39,6 @@ defmodule DeltaCalc.PropertyTest do
     positive_decimal(1, 10_000)
   end
 
-  defp leverage do
-    bind(integer(1..50), fn n -> constant(D.new(Integer.to_string(n))) end)
-  end
-
   defp mmr_rate do
     bind(integer(1..50), fn n ->
       constant(D.div(D.new(Integer.to_string(n)), D.new("10000")))
@@ -494,10 +490,10 @@ defmodule DeltaCalc.PropertyTest do
   end
 
   describe "liquidation monotonicity (Calc.liquidation approximation)" do
-    property "long liq < entry < short liq for positive leverage" do
+    property "long liq < entry < short liq for leverage above one" do
       check all(
               entry <- positive_price(),
-              lev <- leverage(),
+              lev <- positive_decimal(2, 50),
               mmr <- mmr_rate(),
               max_runs: @max_runs
             ) do
@@ -506,6 +502,27 @@ defmodule DeltaCalc.PropertyTest do
 
         assert D.compare(long_liq, entry) == :lt
         assert D.compare(short_liq, entry) == :gt
+      end
+    end
+
+    property "raising maintenance margin moves both liquidation prices toward entry" do
+      check all(
+              entry <- positive_price(),
+              lev <- positive_decimal(2, 50),
+              low_mmr_bps <- integer(1..49),
+              extra_mmr_bps <- integer(1..(50 - low_mmr_bps)),
+              max_runs: @max_runs
+            ) do
+        low_mmr = D.div(D.new(low_mmr_bps), D.new(10_000))
+        high_mmr = D.div(D.new(low_mmr_bps + extra_mmr_bps), D.new(10_000))
+
+        low_long = Calc.liquidation(entry, lev, low_mmr, :long)
+        high_long = Calc.liquidation(entry, lev, high_mmr, :long)
+        low_short = Calc.liquidation(entry, lev, low_mmr, :short)
+        high_short = Calc.liquidation(entry, lev, high_mmr, :short)
+
+        assert D.compare(high_long, low_long) == :gt
+        assert D.compare(high_short, low_short) == :lt
       end
     end
 

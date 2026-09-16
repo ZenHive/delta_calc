@@ -35,9 +35,9 @@ defmodule DeltaCalc.PositionCalculatorTest do
     #   sub_eq=100; init_position = 100×0.5 = 50; reserve = 50; leftover = 9900
     #   notional = 50×3 = 150; tokens = 150/3000 = 0.05; eff_lev = 150/100 = 1.5
     #   lev_to_aum = 150/10000 = 0.015
-    #   long liq @ mmr=0.005, L=1.5: 3000×(1 − 0.995/1.5) = 1010 exactly
+    #   long liq @ mmr=0.005, L=1.5: 3000×(1−1/1.5)/(1−0.005) = 1005.02512563…
     #   black_swan @ 25%: 3000×0.75 = 2250
-    #   distance_to_liq_pct = (3000−1010)/3000 × 100 = 66.33333333…
+    #   distance_to_liq_pct = (3000−1005.02512563…)/3000 × 100 = 66.49916248…
     test "matches hand-computed sizing and liquidation fixture with 3x UI leverage" do
       params =
         base_params(
@@ -62,9 +62,9 @@ defmodule DeltaCalc.PositionCalculatorTest do
       assert_close(result.leverage_to_aum, D.new("0.01500000"), "0.00000001")
 
       assert result.safety.is_safe
-      assert_close(result.safety.liquidation_price, D.new("1010.00000000"), "0.00000001")
+      assert_close(result.safety.liquidation_price, D.new("1005.02512563"), "0.00000001")
       assert_close(result.safety.black_swan_price, D.new("2250.00000000"), "0.00000001")
-      assert_close(result.safety.distance_to_liq_pct, D.new("66.33333333"), "0.00000001")
+      assert_close(result.safety.distance_to_liq_pct, D.new("66.49916248"), "0.00000001")
       assert_close(result.safety.black_swan_pct, D.new("25.00"), "0.01")
 
       assert_close(result.mmr_info.mmr, D.new("0.00500000"), "0.00000001")
@@ -117,7 +117,7 @@ defmodule DeltaCalc.PositionCalculatorTest do
       result = PositionCalculator.calculate_position(base_params(side: :long))
 
       assert result.safety.is_safe
-      assert D.equal?(result.safety.liquidation_price, D.new("18.00000000"))
+      assert D.equal?(result.safety.liquidation_price, D.new("0.00000000"))
       assert D.equal?(result.safety.black_swan_price, D.new("2550.00000000"))
       assert D.compare(result.safety.liquidation_price, result.safety.black_swan_price) == :lt
     end
@@ -126,7 +126,7 @@ defmodule DeltaCalc.PositionCalculatorTest do
       result = PositionCalculator.calculate_position(base_params(side: :short))
 
       assert result.safety.is_safe
-      assert D.equal?(result.safety.liquidation_price, D.new("5982.00000000"))
+      assert_close(result.safety.liquidation_price, D.new("5964.21471173"), "0.00000001")
       assert D.equal?(result.safety.black_swan_price, D.new("3450.00000000"))
       assert D.compare(result.safety.liquidation_price, result.safety.black_swan_price) == :gt
     end
@@ -142,7 +142,7 @@ defmodule DeltaCalc.PositionCalculatorTest do
       result = PositionCalculator.calculate_position(params)
 
       refute result.safety.is_safe
-      assert D.equal?(result.safety.liquidation_price, D.new("2403.00000000"))
+      assert_close(result.safety.liquidation_price, D.new("2412.06030151"), "0.00000001")
       assert D.equal?(result.safety.black_swan_price, D.new("2250.00000000"))
     end
 
@@ -166,7 +166,7 @@ defmodule DeltaCalc.PositionCalculatorTest do
     # Provenance: hand calc from the public PositionCalculator.calculate_position/1
     # and Calc.liquidation/4 contracts.
     #   notional = 200×0.3×2 = 120; eff_lev = 120/200 = 0.6
-    #   short liq: 50000×(1 + 0.995/0.6) = 132916.6666… at Decimal context precision
+    #   short liq: 50000×(1+1/0.6)/(1+0.005) = 132669.98341625…
     test "moderate short at 50k entry matches expected leverage and liquidation" do
       params = %{
         aum: D.new("10000"),
@@ -185,13 +185,13 @@ defmodule DeltaCalc.PositionCalculatorTest do
       assert_close(result.position.notional, D.new("120.00000000"), "0.00000001")
       assert_close(result.effective_leverage, D.new("0.60000000"), "0.00000001")
       assert result.safety.is_safe
-      assert_close(result.safety.liquidation_price, D.new("132916.66666667"), "0.01")
+      assert_close(result.safety.liquidation_price, D.new("132669.98341625"), "0.01")
     end
   end
 
   describe "behavioral input contract" do
     test "every advertised input changes its relevant result" do
-      params = base_params(mark_buffer: D.new("0"))
+      params = base_params(mark_buffer: D.new("0"), ui_leverage: D.new("3"))
       baseline = PositionCalculator.calculate_position(params)
 
       mutations = [
@@ -201,7 +201,7 @@ defmodule DeltaCalc.PositionCalculatorTest do
         {:subaccount_allocation, D.new("200"), & &1.position.notional},
         {:initial_position_pct, D.new("0.6"), & &1.position.notional},
         {:black_swan_pct, D.new("0.25"), & &1.safety.black_swan_price},
-        {:ui_leverage, D.new("3"), & &1.position.notional},
+        {:ui_leverage, D.new("4"), & &1.position.notional},
         {:mmr_rate, D.new("0.01"), & &1.safety.liquidation_price},
         {:mark_buffer, D.new("0.01"), & &1.safety.liquidation_price}
       ]

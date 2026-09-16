@@ -201,23 +201,22 @@ defmodule DeltaCalc.CalcTest do
   describe "liquidation/4" do
     # Independent golden — provenance: hand calc from the public simplified
     # liquidation contract in Calc.liquidation/4.
-    # Long: liq = entry × (1 − (1 − mmr) / L_eff).
+    # Long: liq = entry × (1 − 1/L_eff) / (1 − mmr).
     # Hand calc, entry=3000, L_eff=2, mmr=0.005:
-    #   (1 − mmr) = 0.995; 0.995/2 = 0.4975; 1 − 0.4975 = 0.5025;
-    #   3000 × 0.5025 = 1507.5
+    #   1 − 1/2 = 0.5; 1 − mmr = 0.995; 3000 × 0.5 / 0.995 = 1507.53768844…
     test "calculates long liquidation correctly" do
       result = Calc.liquidation(Decimal.new(3000), Decimal.new(2), Decimal.new("0.005"), :long)
-      assert_close(result, Decimal.new("1507.5"), "0.01")
+      assert_close(result, Decimal.new("1507.53768844"), "0.01")
     end
 
     # Independent golden — provenance: hand calc from the public simplified
     # liquidation contract in Calc.liquidation/4.
-    # Short: liq = entry × (1 + (1 − mmr) / L_eff).
+    # Short: liq = entry × (1 + 1/L_eff) / (1 + mmr).
     # Hand calc, entry=3000, L_eff=2, mmr=0.005:
-    #   1 + 0.4975 = 1.4975; 3000 × 1.4975 = 4492.5
+    #   1 + 1/2 = 1.5; 1 + mmr = 1.005; 3000 × 1.5 / 1.005 = 4477.61194030…
     test "calculates short liquidation correctly" do
       result = Calc.liquidation(Decimal.new(3000), Decimal.new(2), Decimal.new("0.005"), :short)
-      assert_close(result, Decimal.new("4492.5"), "0.01")
+      assert_close(result, Decimal.new("4477.61194030"), "0.01")
     end
 
     test "returns zero for zero leverage no-position case" do
@@ -236,18 +235,18 @@ defmodule DeltaCalc.CalcTest do
     end
 
     # Hand calc: entry=50000, L=10, mmr=0.005 →
-    #   0.995/10 = 0.0995; 1 − 0.0995 = 0.9005; 50000 × 0.9005 = 45025
+    #   50000 × (1−1/10) / (1−0.005) = 45226.13065327…
     test "handles high leverage long" do
       result = Calc.liquidation(Decimal.new(50_000), Decimal.new(10), Decimal.new("0.005"), :long)
-      assert_close(result, Decimal.new("45025"), "0.01")
+      assert_close(result, Decimal.new("45226.13065327"), "0.01")
     end
 
-    # Hand calc: 1 + 0.0995 = 1.0995; 50000 × 1.0995 = 54975
+    # Hand calc: 50000 × (1+1/10) / (1+0.005) = 54726.36815920…
     test "handles high leverage short" do
       result =
         Calc.liquidation(Decimal.new(50_000), Decimal.new(10), Decimal.new("0.005"), :short)
 
-      assert_close(result, Decimal.new("54975"), "0.01")
+      assert_close(result, Decimal.new("54726.36815920"), "0.01")
     end
 
     test "clamps negative MMR to zero" do
@@ -579,7 +578,7 @@ defmodule DeltaCalc.CalcTest do
     #   init_margin = 100 × 0.5 = 50; notional = 50 × 3 = 150
     #   eff_lev = 150 / 100 = 1.5; lev_to_aum = 150 / 10000 = 0.015
     #   long liq @ mmr=0.005: 0.995/1.5 = 0.663333…; 1−0.663333…=0.336666…;
-    #   3000 × 0.336666… = 1010 exactly
+    #   3000 × (1−1/1.5) / (1−0.005) = 1005.02512563…
     test "ETH long @ $3000, 3x UI, 50% initial margin, conservative mode" do
       aum = Decimal.new(10_000)
       mode_cfg = %{pct: Decimal.new("0.01"), cap: Decimal.new("0.01")}
@@ -617,7 +616,7 @@ defmodule DeltaCalc.CalcTest do
 
       assert_close(position.eff_lev, Decimal.new("1.5"), "0.01")
       assert_close(leverage_aum, Decimal.new("0.015"), "0.001")
-      assert_close(liq, Decimal.new("1010"), "1.0")
+      assert_close(liq, Decimal.new("1005.02512563"), "1.0")
       assert safety.verdict == :safe
     end
 
@@ -628,7 +627,7 @@ defmodule DeltaCalc.CalcTest do
     #   init_margin = 200 × 0.3 = 60; notional = 60 × 2 = 120
     #   eff_lev = 120 / 200 = 0.6; lev_to_aum = 120 / 10000 = 0.012
     #   short liq: 0.995/0.6 = 1.658333…; 1+1.658333…=2.658333…;
-    #   50000 × 2.658333… = 132916.6666… at Decimal context precision
+    #   50000 × (1+1/0.6) / (1+0.005) = 132669.98341625…
     test "BTC short @ $50000, 2x UI, 30% initial margin, moderate mode" do
       aum = Decimal.new(10_000)
       mode_cfg = %{pct: Decimal.new("0.03"), cap: Decimal.new("0.02")}
@@ -666,7 +665,7 @@ defmodule DeltaCalc.CalcTest do
 
       assert_close(position.eff_lev, Decimal.new("0.6"), "0.01")
       assert_close(leverage_aum, Decimal.new("0.012"), "0.001")
-      assert_close(liq, Decimal.new("132916.66666667"), "1.0")
+      assert_close(liq, Decimal.new("132669.98341625"), "1.0")
       assert safety.verdict == :safe
     end
   end

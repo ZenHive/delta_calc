@@ -20,8 +20,7 @@ defmodule DeltaCalc.GoldenCalcTest do
     # Calc.liquidation/4 contracts.
     #   init_margin = 100 × 0.5 = 50; notional = 50 × 3 = 150
     #   eff_lev = 150 / 100 = 1.5
-    #   long liq @ mmr=0.005: 0.995/1.5 = 0.663333…; 1−0.663333…=0.336666…;
-    #   3000 × 0.336666… = 1010 exactly
+    #   long liq @ mmr=0.005: 3000 × (1−1/1.5) / (1−0.005) = 1005.02512563…
     test "calculates expected values correctly" do
       entry_price = Decimal.new(3000)
       ui_leverage = Decimal.new(3)
@@ -56,7 +55,7 @@ defmodule DeltaCalc.GoldenCalcTest do
         )
 
       assert_close(position.eff_lev, Decimal.new("1.5"), "0.0001")
-      assert_close(liquidation_price, Decimal.new("1010"), "0.0001")
+      assert_close(liquidation_price, Decimal.new("1005.02512563"), "0.0001")
       assert safety.verdict == :safe
     end
   end
@@ -67,8 +66,7 @@ defmodule DeltaCalc.GoldenCalcTest do
     # Calc.liquidation/4 contracts.
     #   init_margin = 200 × 0.3 = 60; notional = 60 × 2 = 120
     #   eff_lev = 120 / 200 = 0.6
-    #   short liq: 0.995/0.6 = 1.658333…; 1+1.658333…=2.658333…;
-    #   50000 × 2.658333… = 132916.6666… at Decimal context precision
+    #   short liq: 50000 × (1+1/0.6) / (1+0.005) = 132669.98341625…
     test "calculates expected values correctly" do
       entry_price = Decimal.new(50_000)
       ui_leverage = Decimal.new(2)
@@ -103,7 +101,7 @@ defmodule DeltaCalc.GoldenCalcTest do
         )
 
       assert_close(position.eff_lev, Decimal.new("0.6"), "0.0001")
-      assert_close(liquidation_price, Decimal.new("132916.66666667"), "0.0001")
+      assert_close(liquidation_price, Decimal.new("132669.98341625"), "0.0001")
       assert safety.verdict == :safe
     end
   end

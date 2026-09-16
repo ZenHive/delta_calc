@@ -15,7 +15,14 @@ Release-level history for completed roadmap phases. The per-task delivery ledger
   documented concretely, and `Pnl.breakeven/1` and `Fees.funding_adjusted_breakeven/3` — which
   return full 34-digit context precision since v0_3 moved rounding to the caller — now show the
   caller-side `Decimal.round/2` boundary, so their documented results are both legible and
-  asserted.
+  asserted. A tail elision (`%{k: v, ...}`, `[x, ...]`) no longer opts its whole result out
+  either: every documented position that is not `...` is compared, so the 47 concrete values
+  documented alongside an elision — the multi-field `DCAPlanner` / `MarginBridge` /
+  `StressScenario` / `PortfolioMargin` / `DeltaNeutral` decision maps that phase-3 behavior
+  changes move — are gated too, with the census split into partial and whole-result elisions so
+  neither can silently weaken the gate. `Calc.liquidation/4`,
+  `PortfolioMargin.portfolio_liquidation_price/1` and `Carry.breakeven_funding/1` document the
+  same caller-side rounding boundary instead of a 34-digit literal.
 - Documented the signed accrued-funding convention on `DeltaCalc.Pnl.realized_pnl/1` and
   `breakeven/1` (negative when paid, positive when received), which the delegate
   `Fees.funding_adjusted_breakeven/3` already stated but the `Pnl` docs and agent schemas did

@@ -29,7 +29,10 @@ defmodule DeltaCalc.ReadmeExamplesTest do
            "README census changed: #{length(asserted)} full, #{length(partial)} partial, #{length(whole)} whole elisions"
 
     # 44 concrete map values plus three :ok tuple tags.
-    assert Enum.sum(Enum.map(partial, &concrete_count(parse_subset(&1.documented)))) == 47
+    concrete = Enum.sum(Enum.map(partial, &concrete_count(parse_subset(&1.documented))))
+
+    assert concrete == 47,
+           "README partial-elision census changed: #{concrete} concrete positions inside elisions"
 
     dialect_drift = Enum.filter(examples, &String.contains?(&1.documented, "Decimal.new("))
 
@@ -221,29 +224,22 @@ defmodule DeltaCalc.ReadmeExamplesTest do
 
   defp check_example(example, aliases) do
     actual = evaluate(example, aliases)
+    actual_text = render(actual)
+
+    diagnostic = """
+    README.md:#{example.line}
+    Documented: #{example.documented}
+    Evaluated:  #{actual_text}
+    """
 
     if elided?(example) do
-      diagnostic = """
-      README.md:#{example.line}
-      Documented: #{example.documented}
-      Evaluated:  #{render(actual)}
-      """
-
       assert_subset(actual, parse_subset(example.documented), diagnostic)
     else
       expected_code = Regex.replace(@decimal, example.documented, ~S|Decimal.new("\1")|)
       {expected, _} = Code.eval_string(expected_code, [], file: "README.md", line: example.line)
-      actual_text = render(actual)
-      expected_text = render(expected)
-
-      diagnostic = """
-      README.md:#{example.line}
-      Documented: #{example.documented}
-      Evaluated:  #{actual_text}
-      """
 
       assert_decimals(actual, expected, diagnostic)
-      assert actual_text == expected_text, "#{diagnostic}Result rendering mismatch"
+      assert actual_text == render(expected), "#{diagnostic}Result rendering mismatch"
     end
   end
 

@@ -64,6 +64,7 @@ Calc.leverage_to_aum(Decimal.new(10_000), Decimal.new(100_000))
 #=> #Decimal<0.1>
 
 # liquidation(entry, leff, mmr_total, side) -> Decimal
+# Round at the caller's output boundary for display.
 Calc.liquidation(Decimal.new(3000), Decimal.new(2), Decimal.new("0.005"), :long)
 |> Decimal.round(2)
 #=> #Decimal<1507.54>
@@ -507,6 +508,7 @@ PortfolioMargin.combined_maintenance_margin(account)
 #=> #Decimal<30.000>
 
 # portfolio_liquidation_price(account) -> Decimal | nil
+# Round at the caller's output boundary for display.
 PortfolioMargin.portfolio_liquidation_price(account)
 |> Decimal.round(2)
 #=> #Decimal<2512.56>
@@ -596,6 +598,7 @@ Carry.basis(Decimal.new("60000"), Decimal.new("60600"))
 #=> #Decimal<1.00>
 
 # breakeven_funding(params) -> Decimal (per-period rate)
+# Round at the caller's output boundary for display.
 Carry.breakeven_funding(%{
   spot_price: Decimal.new("60000"),
   perp_price: Decimal.new("60600"),

@@ -1186,7 +1186,9 @@ things, and real correctness bugs landed clean through both gaps (tasks 24/25/26
   README raised `ArgumentError`, documented a 100x funding cost, and carried ~30 stale
   quantized outputs. **Fix: the README-example test** (`test/delta_calc/readme_examples_test.exs`,
   run by `mix ci`) evaluates every ```elixir block carrying a `#=>` result and asserts the value
-  renders exactly as documented, with a pinned asserted/elided census so a new elision cannot
+  renders exactly as documented. An elision skips only the `...` position itself — every concrete
+  value documented alongside it is still compared — and a pinned census (asserted / partial
+  elision / whole-result elision, plus the concrete-position count) means a new elision cannot
   quietly opt an example out. **A diff that changes a documented return value must update
   README.md in the same commit** — and if it adds or removes an example, the census with it.
 

@@ -3,6 +3,8 @@ defmodule DeltaCalc.FundingProjectionTest do
 
   alias DeltaCalc.FundingProjection
 
+  doctest DeltaCalc.FundingProjection
+
   describe "project_payback_timeline/1" do
     test "phase7 example: 2700 debt at 90/day with 20% volatility" do
       result =

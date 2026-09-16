@@ -65,7 +65,8 @@ Calc.leverage_to_aum(Decimal.new(10_000), Decimal.new(100_000))
 
 # liquidation(entry, leff, mmr_total, side) -> Decimal
 Calc.liquidation(Decimal.new(3000), Decimal.new(2), Decimal.new("0.005"), :long)
-#=> #Decimal<1507.537688442211055276381909547739>
+|> Decimal.round(2)
+#=> #Decimal<1507.54>
 ```
 
 ## `DeltaCalc.Presets`
@@ -507,7 +508,8 @@ PortfolioMargin.combined_maintenance_margin(account)
 
 # portfolio_liquidation_price(account) -> Decimal | nil
 PortfolioMargin.portfolio_liquidation_price(account)
-#=> #Decimal<2512.562814070351758793969849246231>
+|> Decimal.round(2)
+#=> #Decimal<2512.56>
 
 # margin_usage(account) -> %{used, available, usage_pct}
 PortfolioMargin.margin_usage(account)
@@ -599,7 +601,8 @@ Carry.breakeven_funding(%{
   perp_price: Decimal.new("60600"),
   holding_days: 30
 })
-#=> #Decimal<-0.0001111111111111111111111111111111111>
+|> Decimal.round(8)
+#=> #Decimal<-0.00011111>
 
 # net_carry(params) -> carry decision map
 Carry.net_carry(%{

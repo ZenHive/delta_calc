@@ -1683,3 +1683,55 @@ started_at = "2026-09-16"
 scored_at = "2026-09-16"
 done_at = "2026-09-16"
 shipped_in = "640998dc0000e1a4513c2db34a95417bd3fa520d"
+
+[[task]]
+id = 57
+phase = 3
+bundle = "contract_hardening"
+status = "pending"
+title = "Assert inside tail-elided README examples so no elision can hide a concrete value"
+scores = { d = 4, b = 5, u = 4 }
+acceptance_criteria = ["A tail-elided README example (`..., ...}`, `[...]`, `%{k: ...}`) no longer opts its whole result out of assertion: every documented key whose value is concrete is compared against the evaluated result, and only the elided positions are skipped", "Decimal comparison semantics are unchanged from the whole-result path — `Decimal.equal?/2` for value drift named separately from the `inspect/1` rendering comparison, so a scale-only change still fails", "The negative-case tests are extended to prove the subset path actually fails: a drifted concrete value inside a tail-elided map fails, a documented key missing from the evaluated result fails, and a `...` position still passes regardless of what is there", "The pinned census is replaced or extended so it still detects a new elision quietly opting an example out — a whole-result `...` must remain distinguishable from a partial elision", "The three asserted 34-digit scalar results (`Calc.liquidation` README ~line 68, `PortfolioMargin.portfolio_liquidation_price` ~line 510, `Carry.breakeven_funding` ~line 602) are either rewritten to show the caller-side rounding boundary like task 56 did, or left as-is with a one-line README note stating the full-precision return is deliberate — pick one convention and apply it consistently", "No lib/ behavior change; mix ci green"]
+out_of_scope = ["Reintroducing internal quantization anywhere in lib/ (v0_3 removed it deliberately)", "Converting README examples into @doc doctests", "Rewriting README prose or adding new examples beyond the rounding boundary shown in task 56", "Changing which examples are elided in the README — the fix is in the test's comparison, not in the documentation"]
+files_to_modify = ["test/delta_calc/readme_examples_test.exs", "README.md"]
+touches = ["test/delta_calc/readme_examples_test.exs", "README.md"]
+assignee = "codex"
+model = "gpt-6-astra"
+body = """
+The 2026-09-16 post-merge audit of 3b3e4d5..9732c4d (task 56) verified that all 14 remaining
+README elisions are legitimate map/list tail elisions, exactly as task 56's acceptance criteria
+required — and found that the elision rule is coarser than it looks. `elided?/1` is
+`String.contains?(documented, "...")`, so a *single* `...` tail opts out the **entire** example,
+including every concrete value documented alongside it.
+
+Measured against the current README: the 14 elided examples document **57** key/value pairs, of
+which **44 are concrete** (`final_avg_entry: #Decimal<2910.638297872340425531914893617022>`,
+`daily_funding_rate: #Decimal<0.045>`, `periods_per_day: #Decimal<3>`,
+`total_exposure: #Decimal<124500>`, `portfolio_margin: #Decimal<27.0000>`, ...) and unchecked by
+the doc-rot gate. Only 13 positions are actually elided. Task 55 closed the gate on whole-result
+scalars and task 56 closed the last two holdouts; this is the same hole one level deeper, and it
+is the larger share — 44 unchecked documented values vs the 3 that tasks 55/56 fixed.
+
+Those values are also the ones most likely to rot, because they are the multi-field decision maps
+(`DCAPlanner`, `MarginBridge`, `StressScenario`, `PortfolioMargin`, `DeltaNeutral`) that phase-3
+behavior changes actually move — the 2026-09-16 README audit found the liquidation-formula change
+had already rotted several of them before task 55 landed.
+
+The shape is a subset comparison rather than a new elision policy: evaluate as today, then walk the
+documented structure and compare only the positions that are not `...`. Keep the whole-result path
+byte-identical so task 55/56's guarantees do not regress, and keep a census (or equivalent) that
+still distinguishes a *whole-result* elision from a partial one, so the quiet-opt-out guard task 55
+built is not lost.
+
+Secondary, same files, same session: three README results are asserted but 34 digits long
+(`#Decimal<1507.537688442211055276381909547739>` is the first example a `Calc` reader sees). They
+are not a correctness gap — the gate checks them — but they are the illegibility task 56 named, and
+they are brittle against a `decimal` context-precision change (CLAUDE.md § Dependency Gotchas:
+default went 28 -> 34 in decimal 3.x). Decide the convention once and apply it consistently rather
+than leaving the README carrying both.
+
+Dispatch trigger: test-mechanics change with a measurable pass condition (44 previously unchecked
+values become checked) and negative cases that prove the new path fails; no lib/ behavior involved.
+"""
+created_at = "2026-09-16"
+scored_at = "2026-09-16"

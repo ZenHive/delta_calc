@@ -1,14 +1,16 @@
 defmodule DeltaCalc.ReadmeExamplesTest do
-  use ExUnit.Case, async: true
-
   @moduledoc """
   Executes README examples using the README's own alias setup.
 
   Expected values are parsed and inspected to canonicalize map order and multiline
-  layout; Decimal scale remains significant. Any result containing `...` is
-  explicitly elided: it still executes, but its output is not asserted. The census
-  below pins both counts so adding an elision requires a deliberate test change.
+  layout; Decimal scale remains significant. `#Decimal<x>` in `#=>` comments is
+  converted to `Decimal.new/1` only to parse the literal — asserted README results
+  must stay in IEx inspect form. Any result containing `...` is explicitly elided:
+  it still executes, but its output is not asserted. The census below pins both
+  counts so adding an elision requires a deliberate test change.
   """
+
+  use ExUnit.Case, async: true
 
   @readme Path.expand("../../README.md", __DIR__)
   @decimal ~r/#Decimal<([^>]+)>/
@@ -21,6 +23,14 @@ defmodule DeltaCalc.ReadmeExamplesTest do
 
     assert {length(asserted), length(elided)} == {35, 17},
            "README example census changed: #{length(asserted)} asserted, #{length(elided)} elided"
+
+    dialect_drift = Enum.filter(asserted, &String.contains?(&1.documented, "Decimal.new("))
+
+    assert dialect_drift == [],
+           """
+           asserted README #=> results must document IEx inspect form (#Decimal<...>), not Decimal.new/1:
+           #{Enum.map_join(dialect_drift, "\n", &"README.md:#{&1.line}")}
+           """
 
     Enum.each(examples, &check_example(&1, setup.code))
   end

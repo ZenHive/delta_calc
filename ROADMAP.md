@@ -57,5 +57,5 @@ Build the standalone Decimal primitives consumed by the dashboard without adding
 Complete the cross-module correctness work and the pure decision primitives used at trading call sites.
 
 <!-- TASKS:BEGIN phase=3 -->
-> 39 tasks. See [CHANGELOG.md](CHANGELOG.md#phase-3-consumer-decision-math).
+> 40 tasks. See [CHANGELOG.md](CHANGELOG.md#phase-3-consumer-decision-math).
 <!-- TASKS:END -->

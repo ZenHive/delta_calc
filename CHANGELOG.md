@@ -5,6 +5,13 @@ Release-level history for completed roadmap phases. The per-task delivery ledger
 
 ## Unreleased
 
+- A sixth manifest-wide invariant in `test/delta_calc/manifest_consistency_test.exs` fails `mix ci`
+  when a registered module's `@doc`/`@moduledoc` carries an `iex>` example that no `doctest` call
+  under `test/` executes — the class of drift where a documented example rots unnoticed because
+  nothing runs it. Registrations are read from the test sources' AST (so a commented-out or
+  string-quoted `doctest` does not count), never from a hand-maintained allowlist, and the failure
+  names the offending module. Companion to the README-example gate: that one covers `README.md`,
+  this one covers the module docs `ex_doc` publishes.
 - Every README example is now executed by `mix ci`
   (`test/delta_calc/readme_examples_test.exs`): each ```elixir block carrying a `#=>` result is
   evaluated with the README's own aliases and asserted to render exactly as documented

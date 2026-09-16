@@ -1176,9 +1176,12 @@ things, and real correctness bugs landed clean through both gaps (tasks 24/25/26
 - **Cross-module global invariants.** Write-set-disjoint parallel dispatch means two modules can
   each define `project_payback_timeline` in separate worktrees and neither review sees the other —
   the name collision only surfaces at the consumer. **Fix: the manifest-consistency test**
-  (`mix ci`) asserts public name+arity uniqueness across all registered modules, full module
-  registration in `DeltaCalc.Manifest`, and the `:hints`-present invariant. Turn global invariants
-  into CI failures, not consumer discoveries.
+  (`mix ci`) asserts six global invariants — public name+arity uniqueness across all registered
+  modules, full module registration in `DeltaCalc.Manifest`, the `:hints`-present invariant,
+  `api()` coverage of every public function in a registered module, registration of every
+  publicly documented `lib/delta_calc/` module, and a `doctest` registration under `test/` for
+  every registered module whose docs carry `iex>` examples. Turn global invariants into CI
+  failures, not consumer discoveries.
 
 - **Documented output drift.** The README's worked examples are the library's front door (an
   `ex_doc` extra, shipped in the hex package), yet no per-task reviewer reads them against its

@@ -1789,3 +1789,54 @@ started_at = "2026-09-16"
 scored_at = "2026-09-16"
 done_at = "2026-09-16"
 shipped_in = "e6b591924df633f9c943561b0d6b42f64b7f587f"
+
+[[task]]
+id = 59
+phase = 3
+bundle = "contract_hardening"
+status = "pending"
+title = "Extend the doctest gate to the two manifest-exempt lib modules and anchor its `iex>` detector"
+scores = { d = 2, b = 3, u = 2 }
+acceptance_criteria = ["The doctest-registration invariant covers `DeltaCalc` (`lib/delta_calc.ex`) and `DeltaCalc.Manifest` in addition to `Manifest.modules()` — the two documented lib modules that invariant 5 deliberately exempts from registration, and therefore the only surfaces where an `iex>` example can exist today with nothing gating it", """The example detector matches an actual executable example line (leading whitespace then `iex>`) rather than `String.contains?(doc, "iex>")`, so a doc that merely *mentions* `iex>` in prose is not flagged — `DeltaCalc.Manifest`'s own moduledoc is exactly such a doc and would go red the moment it enters the gated set""", "A negative-path test proves the anchored detector still fires on a real example and does not fire on a prose mention — not just that the current tree passes", "`mix ci` green; no lib/ behavior change"]
+out_of_scope = ["Writing new `iex>` examples for modules that have none — this task gates what exists", "Changing invariant 5's `manifest.ex` exemption or registering `DeltaCalc.Manifest` in `@modules`", "Touching the README-example gate (`test/delta_calc/readme_examples_test.exs`)"]
+files_to_modify = ["test/delta_calc/manifest_consistency_test.exs"]
+touches = ["test/delta_calc/manifest_consistency_test.exs"]
+assignee = "codex"
+model = "gpt-6-astra"
+body = """
+Sibling check (DD-8): tasks 16 and 23 were flagged as sharing `modules` / `manifest`. Different
+surface — both are *content* tasks that added v0_2 / v0_3 modules to `@modules` and the README so
+the agent manifest advertises them. This task changes no registration and adds no module; it
+hardens the *test-side detector* of invariant 6, which did not exist when 16/23 were written. The
+real sibling is task 58, which landed that invariant and is `done`/shipped; this is the follow-up
+its chosen scope left open, not a repeat instance of it.
+
+Found by the 2026-09-16 post-merge audit of `6f870dc..3757dd5` (task 58).
+
+Task 58 landed the doctest-registration invariant scoped to `Manifest.modules()`, which its
+acceptance criteria explicitly allowed. That scope is sound because invariant 5 forces every
+publicly documented `lib/delta_calc/` module into `@modules` — with exactly two carve-outs:
+
+  * `DeltaCalc` lives at `lib/delta_calc.ex`, outside the `lib/delta_calc/` directory
+    `documented_modules_from_lib/0` scans, and is not in `@modules`. It happens to be covered
+    today only because `test/delta_calc_test.exs` carries a `doctest DeltaCalc` that currently
+    registers zero examples (the suite reports 2 doctests, both `FundingProjection`'s).
+  * `DeltaCalc.Manifest` is `Enum.reject`ed by name in `documented_modules_from_lib/0`, so it is
+    documented, ungated by invariant 5, and ungated by invariant 6.
+
+So an `iex>` example added to the library's front-door moduledoc or to `Manifest`'s is not
+covered by the gate that exists to catch exactly that. The hole is narrow, but it is on the two
+most-read modules in the package.
+
+The two halves of the fix are coupled and must land together: widening the gated set while the
+detector stays `String.contains?(doc, "iex>")` turns CI red immediately, because task 58's own
+sixth-invariant line in `DeltaCalc.Manifest`'s `@moduledoc` — "Every registered module whose
+compiled docs contain `iex>` examples ..." — is a prose mention that the substring test cannot
+distinguish from an example. Anchoring the match to an example line resolves both.
+
+Note the detector's error direction is currently safe: a prose mention can produce a spurious
+failure, never a silent pass, so nothing that landed is under-enforced. This is hardening, not a
+correctness bug.
+"""
+created_at = "2026-09-16"
+scored_at = "2026-09-16"

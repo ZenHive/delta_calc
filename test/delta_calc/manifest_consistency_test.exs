@@ -20,7 +20,7 @@ defmodule DeltaCalc.ManifestConsistencyTest do
   @test_root Path.expand("..", __DIR__)
 
   describe "registered module surface" do
-    test "every registered module with doc examples has a doctest registration" do
+    test "every registered or manifest-exempt module with doc examples has a doctest registration" do
       registered =
         @test_root
         |> Path.join("**/*.{ex,exs}")
@@ -28,7 +28,7 @@ defmodule DeltaCalc.ManifestConsistencyTest do
         |> Enum.map(&File.read!/1)
         |> doctest_registrations()
 
-      assert_doctests_registered!(Manifest.modules(), registered)
+      assert_doctests_registered!([DeltaCalc, Manifest | Manifest.modules()], registered)
     end
 
     test "missing doctest registration fails with the offending module name" do
@@ -37,6 +37,15 @@ defmodule DeltaCalc.ManifestConsistencyTest do
       assert_raise ExUnit.AssertionError, ~r/DeltaCalc\.FundingProjection/, fn ->
         assert_doctests_registered!([DeltaCalc.FundingProjection], registered)
       end
+    end
+
+    test "doc examples require an iex> prompt at the start of a line" do
+      assert executable_example?("Examples:\n\n    iex> 1 + 1\n    2")
+      assert executable_example?("iex> 1 + 1\n2")
+      assert executable_example?("Examples:\n\tiex> 1 + 1\n\t2")
+      refute executable_example?("Compiled docs contain `iex>` examples.")
+      refute executable_example?("Examples:\n    Mention iex> in prose.")
+      refute executable_example?("")
     end
 
     test "doctest registrations are calls, not comments or string contents" do
@@ -221,12 +230,14 @@ defmodule DeltaCalc.ManifestConsistencyTest do
         contents
         |> Enum.filter(&is_map/1)
         |> Enum.flat_map(&Map.values/1)
-        |> Enum.any?(&String.contains?(&1, "iex>"))
+        |> Enum.any?(&executable_example?/1)
 
       other ->
         flunk("Expected docs for #{inspect(mod)}, got: #{inspect(other)}")
     end
   end
+
+  defp executable_example?(doc), do: Regex.match?(~r/^[\t ]*iex>/m, doc)
 
   defp doctest_registrations(sources) do
     Enum.reduce(sources, MapSet.new(), fn source, registered ->

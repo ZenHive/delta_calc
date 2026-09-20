@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+@~/.claude/includes/verification-policy.md
+
 Guidance for Claude Code working in this repo.
 
 @~/.claude/includes/critical-rules.md
@@ -11,7 +13,7 @@ Guidance for Claude Code working in this repo.
 @~/.claude/includes/elixir-setup.md
 @~/.claude/includes/agent-economy.md
 
-- **Reviewer note**: `mix test.json` (`ex_unit_json`) and `mix dialyzer.json` (`dialyzer_json`) emit JSON **by design** — parse for real failures, never flag the envelope. Canonical gate is `mix ci` / `mix precommit.full`. See `AGENTS.md` § Toolchain & check commands.
+- **Reviewer note**: `mix test.json` (`ex_unit_json`) and `mix dialyzer.json` (`dialyzer_json`) emit JSON **by design** — parse for real failures, never flag the envelope. Full post-merge QA uses `mix ci` / `mix precommit.full`. See `AGENTS.md` § Toolchain & check commands.
 
 ## Project Overview
 

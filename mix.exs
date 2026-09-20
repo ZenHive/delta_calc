@@ -94,9 +94,8 @@ defmodule DeltaCalc.MixProject do
         "run --no-halt -e 'Agent.start(fn -> Bandit.start_link(plug: Tidewave, port: 4024) end)'"
       ],
       ci: [
-        "format",
-        "compile --warnings-as-errors",
         "format --check-formatted",
+        "compile --warnings-as-errors",
         "test",
         "credo --strict",
         "dialyzer",
@@ -104,7 +103,7 @@ defmodule DeltaCalc.MixProject do
         "reach.check --arch --smells"
       ],
       # Dispatch-scale gate for the harness reviewer (registered check_command hint).
-      # No dialyzer/reach — cold worktree PLTs dominate; the landed-base pass runs `mix ci`.
+      # No dialyzer/reach — cold worktree PLTs dominate; post-merge audit + QA runs `mix ci`.
       "check.dispatch": [
         "format --check-formatted",
         "compile --warnings-as-errors",

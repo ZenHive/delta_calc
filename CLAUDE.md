@@ -13,7 +13,7 @@ Guidance for Claude Code working in this repo.
 @~/.claude/includes/elixir-setup.md
 @~/.claude/includes/agent-economy.md
 
-- **Reviewer note**: `mix test.json` (`ex_unit_json`) and `mix dialyzer.json` (`dialyzer_json`) emit JSON **by design** — parse for real failures, never flag the envelope. Full post-merge QA uses `mix ci` / `mix precommit.full`. See `AGENTS.md` § Toolchain & check commands.
+- **Reviewer note**: `mix test.json` (`ex_unit_json`) and `mix dialyzer.json` (`dialyzer_json`) emit JSON **by design** — parse for real failures, never flag the envelope. Project commands live in `## Toolchain & check commands` below; scheduling is `verification-policy.md`.
 
 ## Project Overview
 
@@ -77,11 +77,27 @@ to save tokens. Re-pin any task filed with a different assignee when you touch i
 and milestones `v0_1`–`v0_2` are complete. Phase 3 and milestone `v0_3` are the active focus.
 Use `rmap ready` for the dispatchable set and its declared write-sets before parallel dispatch.
 
+## Toolchain & check commands
+
+Scheduling is `verification-policy.md`. These are **this repo's** commands — `mix.exs` is
+authoritative; the generic elixir-setup alias snippet inlined into `AGENTS.md` does not
+describe this project.
+
+| Command | Runs | Who |
+|---|---|---|
+| `mix check.dispatch` | `format --check-formatted`, `compile --warnings-as-errors`, `test`, `credo --strict`, `ex_dna --max-clones 0` | implementer / reviewer (`check_command`) |
+| `mix ci` | `format --check-formatted`, `compile --warnings-as-errors`, `test`, `credo --strict`, `dialyzer`, `ex_dna --max-clones 0`, `reach.check --arch --smells` | post-merge audit + QA |
+| `mix doctor --raise` | 100% doc/spec coverage (`.doctor.exs` has `raise: false`; `--raise` gates) | post-merge audit + QA |
+| `mix sobelow --skip --exit Low` | Phoenix/Plug scanner; this library has no router — scan is still run | post-merge audit + QA |
+| `mix test.json --cover` | suite + coverage; `mix.exs` floor 80%, ≥95% on `Calc`/`Hedging` money math | post-merge audit + QA |
+
+`mix precommit` / `precommit.full` are older compatibility names and are not the audit command.
+`mix ci` must not rewrite sources (`format` as a rewriter); it only checks formatting.
+
 ## Quality Gate
 
-`mix ci` (format, compile `--warnings-as-errors`, test, `credo --strict`, dialyzer,
-`ex_dna --max-clones 0`, `reach.check --arch --smells`). Coverage tiers: ≥80% standard,
-≥95% on `Calc`/`Hedging` money math.
+Coverage tiers: ≥80% standard, ≥95% on `Calc`/`Hedging` money math. Full-suite command is
+`mix ci` plus the doctor / sobelow / `test.json --cover` rows above.
 
 ## Review Blind Spots — Encode What Per-Task Review Can't See
 

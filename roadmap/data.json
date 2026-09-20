@@ -3001,7 +3001,7 @@
       "id": 61,
       "phase": 3,
       "bundle": "contract_hardening",
-      "status": "in_progress",
+      "status": "done",
       "title": "Separate focused dispatch aliases from complete post-merge QA",
       "scores": {
         "d": 3,
@@ -3031,10 +3031,17 @@
         "AGENTS.md",
         "test/"
       ],
+      "shipped_in": "0deaca6e256454221cd5f6ef77729955a6c3b54a",
       "body": "Operator instruction 2026-09-21, coordinated by harness Task 448: finish focused dispatch versus asynchronous full audit QA. Inspection of origin/main mix.exs on 2026-09-21 found check.dispatch still invokes full-project tests or analyzers despite the central policy already being imported. This is check infrastructure, so use the independent implement/review/land workflow. The choice is settled: focused checks before approval, full checks after landing; no prior green-QA prerequisite. Preserve all existing QA checks when disentangling aliases, especially when ci/precommit.full currently calls check.dispatch. Do not change runtime/autonomy settings, restart services, install hooks, or bypass safety hooks. The orchestrator owns live qa_command settings. Update any instructions/tests coupled to the changed aliases; unrelated full-QA repair stays in its existing task. Report the exact full-QA command for the orchestrator.",
       "created_at": "2026-09-20",
       "started_at": "2026-09-20",
+      "done_at": "2026-09-20",
       "scored_at": "2026-09-20",
+      "implemented": "Landed by codex via merge-train; reviewer-approved (run run-1789946969594-d555ffb5, 0deaca6e256454221cd5f6ef77729955a6c3b54a).",
+      "delivered_by": "codex",
+      "verified": true,
+      "verified_by": "cursor",
+      "verification_ref": "harness-run:run-1789946969594-d555ffb5",
       "cross_repo": []
     }
   ]

@@ -93,6 +93,7 @@ defmodule DeltaCalc.MixProject do
       tidewave: [
         "run --no-halt -e 'Agent.start(fn -> Bandit.start_link(plug: Tidewave, port: 4024) end)'"
       ],
+      # Listed independently of check.dispatch so slimming dispatch cannot drop QA.
       ci: [
         "format --check-formatted",
         "compile --warnings-as-errors",
@@ -102,7 +103,7 @@ defmodule DeltaCalc.MixProject do
         "ex_dna --max-clones 0",
         "reach.check --arch --smells"
       ],
-      # Bootstrap checks; reviewers select focused behavior and risk-relevant tests.
+      # Format + compile only. Reviewers select focused behavior and risk-relevant tests.
       "check.dispatch": [
         "format --check-formatted",
         "compile --warnings-as-errors"

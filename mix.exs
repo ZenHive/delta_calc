@@ -102,14 +102,10 @@ defmodule DeltaCalc.MixProject do
         "ex_dna --max-clones 0",
         "reach.check --arch --smells"
       ],
-      # Dispatch-scale gate for the harness reviewer (registered check_command hint).
-      # No dialyzer/reach — cold worktree PLTs dominate; post-merge audit + QA runs `mix ci`.
+      # Bootstrap checks; reviewers select focused behavior and risk-relevant tests.
       "check.dispatch": [
         "format --check-formatted",
-        "compile --warnings-as-errors",
-        "test",
-        "credo --strict",
-        "ex_dna --max-clones 0"
+        "compile --warnings-as-errors"
       ]
     ]
   end

@@ -1250,7 +1250,7 @@ describe this project.
 
 | Command | Runs | Who |
 |---|---|---|
-| `mix check.dispatch` | `format --check-formatted`, `compile --warnings-as-errors`, `test`, `credo --strict`, `ex_dna --max-clones 0` | implementer / reviewer (`check_command`) |
+| `mix check.dispatch` | `format --check-formatted`, `compile --warnings-as-errors`; reviewers select focused behavior tests and risk-relevant live/security checks | implementer / reviewer (`check_command`) |
 | `mix ci` | `format --check-formatted`, `compile --warnings-as-errors`, `test`, `credo --strict`, `dialyzer`, `ex_dna --max-clones 0`, `reach.check --arch --smells` | post-merge audit + QA |
 | `mix doctor --raise` | 100% doc/spec coverage (`.doctor.exs` has `raise: false`; `--raise` gates) | post-merge audit + QA |
 | `mix sobelow --skip --exit Low` | Phoenix/Plug scanner; this library has no router — scan is still run | post-merge audit + QA |
@@ -1258,11 +1258,18 @@ describe this project.
 
 `mix precommit` / `precommit.full` are older compatibility names and are not the audit command.
 `mix ci` must not rewrite sources (`format` as a rewriter); it only checks formatting.
+`ci` lists its checks independently of `check.dispatch`; `precommit.full` calls
+`precommit` and then runs Dialyzer in `dev`.
 
 ## Quality Gate
 
 Coverage tiers: ≥80% standard, ≥95% on `Calc`/`Hedging` money math. Full-suite command is
 `mix ci` plus the doctor / sobelow / `test.json --cover` rows above.
+Exact full-QA command (explicit test environment):
+
+```sh
+MIX_ENV=test mix ci && MIX_ENV=test mix doctor --raise && MIX_ENV=test mix sobelow --skip --exit Low && MIX_ENV=test mix test.json --cover
+```
 
 ## Review Blind Spots — Encode What Per-Task Review Can't See
 

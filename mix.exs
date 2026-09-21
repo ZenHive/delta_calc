@@ -47,13 +47,13 @@ defmodule DeltaCalc.MixProject do
   defp deps do
     [
       {:ex_slop, "~> 0.4", only: [:dev, :test], runtime: false},
-      {:reach, "~> 2.0", only: [:dev, :test], runtime: false},
+      {:reach, "~> 2.8", only: [:dev, :test], runtime: false},
       {:ex_dna, "~> 1.0", only: [:dev, :test], runtime: false},
       {:decimal, "~> 3.0"},
 
       # Agent-economy surface — api() macro for AI-agent discovery/calling.
       # Annotate every public fn with api() AT PORT TIME (cheaper than backfitting).
-      {:descripex, "~> 0.11"},
+      {:descripex, "~> 1.0"},
 
       # Test / property-based testing (ported risk tests rely on StreamData)
       {:stream_data, "~> 1.0", only: [:test, :dev]},

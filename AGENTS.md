@@ -330,6 +330,7 @@ Hand-build when harness cannot perform or judge the work:
   - **When one premise could genuinely flip the answer, ship the decision with an evidence gate** — "ship (a) unless a live probe disproves X, in which case (b); say in the delivery which you found." That is a decision the implementer can execute, not a question it must route back.
   - **`blocked` is still not the escape hatch.** It hides the task from the queue, so the decision is never surfaced at all — the same failure with a quieter shape. Reserve it for an external blocker with an unblock path.
   - Under `:manual` cron mode the parked-decision drain (`dispatch-pending` / `dispatch-approve`) *does* restore the asking seat, and gate 6 reads as written. Know which mode the project is in before relying on it.
+<<<<<<< Updated upstream
 
 ### Integrated audit and QA
 
@@ -354,6 +355,9 @@ implementation and review, and undisclosed vulnerability details remain private.
 Observe bounded history with `dispatch-qa_status` and evidence slices with
 `dispatch-qa_evidence`, or the project settings dashboard. Orchestrators own
 configuration migration, skill propagation and activation.
+||||||| Stash base
+=======
+>>>>>>> Stashed changes
 
 ### Running a Task
 
@@ -418,10 +422,21 @@ Failed runs retain the worktree at `result.worktree_path` for inspection. Approv
 
 **Live-run intervention (not recovery of a dead run):** `dispatch-hold` (optionally `interrupt: true`) parks a live run mid-turn, `dispatch-steer` stashes guidance applied on resume, `dispatch-resume` un-pauses in place, `dispatch-cancel` kills it (idempotent). Use hold → steer → resume to force-hand a grinding implementer to the reviewer gate instead of burning the lifetime budget.
 
+<<<<<<< Updated upstream
 **Implementer question channel.** A headless implementer that hits genuinely ambiguous acceptance criteria writes `.harness/question.json` (`question` string, optional `context`, plus `run_id` / `invocation` echoing `$HARNESS_RUN_ID` / `$HARNESS_IMPLEMENTER_ATTEMPT`) and ends its invocation. Harness reads the file mechanically at the agent-invocation boundary: a fenced, unconsumed artifact parks in `:held` (`hold_reason: :question`) and emits a `:question` witness with the question verbatim; empty/malformed/stale/consumed files are ignored-and-logged. The orchestrator answers with `dispatch-steer` (the answer text) then `dispatch-resume` — no new primitives, no dashboard UI, no auto-answer inside harness. Resume injects question + answer into the prompt and consumes that identity via `.harness/question-state.json` (plus an archive under `.harness/questions/`); deleting `question.json` is not the consumption mechanism. A leftover file cannot re-park; a later question with a new identity can. Question-held time stays inside the existing `lifetime_timeout` (the timer is not suspended; expiry is recoverable `:timed_out`). A gen_statem crash while `:held` still settles `:failed`; the retained worktree sidecar is the recovery boundary and cannot leak to a new run. This is an escape hatch, not a substitute for well-written tasks; reviewer/audit questions are out of scope. Explicit `dispatch-resume_failed` recovery restores the selected retained run's pending/answered question state into a held replacement without notifying again; resume uses the saved answer or requires steer. Recovery needs the retained worktree and failed-run record on the same storage. Fresh dispatches do not import it. Notification delivery remains best effort (a crash after persisting the notified flag can lose delivery).
+||||||| Stash base
+**The gate before any reset-to-pending + re-dispatch:** `git branch -a | grep harness/<run-id>` and `git log --oneline origin/<target>..harness/<run-id>`. Commits present ⇒ recover, never redo.
+=======
+**The gate before any reset-to-pending + re-dispatch:** `git branch -a | grep harness/<run-id>` and `git log --oneline origin/<target>..harness/<run-id>`. Commits present ⇒ explicitly judge whether to resume, re-review or replace; justify discarding them.
+>>>>>>> Stashed changes
 
+<<<<<<< Updated upstream
 **The gate before any reset-to-pending + re-dispatch:** `git branch -a | grep harness/<run-id>` and `git log --oneline origin/<target>..harness/<run-id>`. Commits present ⇒ explicitly judge whether to resume, re-review or replace; justify discarding them.
 
+||||||| Stash base
+**🚨 First, confirm the run actually *didn't* land — check `origin`, not your local checkout.** Under `landing_policy: :auto` the lander pushes to `origin/<target>` and **deliberately never touches your local checkout** (it ff-pushes from a detached worktree). So after an autonomous land your local `tasks.toml` is **stale**: it still reads `in_progress` for a task the lander already marked `done --shipped-in` on origin. **Reading that stale local status as "the run didn't land" is the trap** — it triggers a wasteful reset-to-`pending` + re-dispatch that *duplicate-lands already-shipped work*. Before concluding anything from task status, `git fetch origin <target> && git rebase origin/<target>` (the existing "Sync main before committing" rule) or read ground truth directly:
+=======
+>>>>>>> Stashed changes
 **🚨 First, confirm the run actually *didn't* land — check `origin`, not your local checkout.** Under `landing_policy: :auto` the lander pushes to `origin/<target>` from a detached worktree, then `Harness.Git.TargetSync` may fast-forward the operator's local target when that is safe (off-target → ff the branch ref; on-target + clean tree → `merge --ff-only`). It skips — witnessed, never `--force` — when the tree is dirty, the update is not a fast-forward, or the target is this running node's own source tree (self-host: path identity, not the project name). Under dogfooding that self-host skip is the common case, so after an autonomous land your local `tasks.toml` is **stale**: it still reads `in_progress` for a task the lander already marked `done --shipped-in` on origin. **Reading that stale local status as "the run didn't land" is the trap** — it triggers a wasteful reset-to-`pending` + re-dispatch that *duplicate-lands already-shipped work*. Before concluding anything from task status, `git fetch origin <target> && git rebase origin/<target>` (the existing "Sync main before committing" rule) or read ground truth directly:
 - `git log --oneline origin/<target>` — does it already show `task <id> -> done (shipped …)` and the agent-delivery commit? Then it **landed**; your local view was just behind. Do nothing but rebase.
 - `dispatch-status <run-id>` / `result_store-list_run_records run_id:<id>` — a record with `state: done, verdict: approve` means the run succeeded; cross-check landing against origin before touching the roadmap.
@@ -598,7 +613,13 @@ The two blind classes, both real-correctness, both passing every per-task check:
   - **🚨 Default-DECLINE — the proposal pipeline outproduces the backlog's right to grow.** Reviewer + audit agents emit ~1 proposal per run; an orchestrator that files "everything evidenced and cross-session" lands N tasks and files N new ones per wave — net backlog delta ±0, the roadmap never converges. Evidence + cross-session is the FLOOR, not the bar. File a proposal only when ALL THREE hold: (a) real defect or invariant gap with evidence, (b) not foldable into an existing pending task — and when the proposal patches an instance of a class, scope the filing as the CLASS invariant so the next instance can't spawn a sibling task, (c) not inline-doable in minutes by the orchestrator — if it is, DO it now instead of filing. Declined proposals need no ceremony: the verdict record in the ResultStore is their evidence trail.
   - **Report the net backlog delta** (landed − filed) as an explicit number in every wave/session wrap-up. A session trending ±0 or negative-growth is the churn alarm firing — tighten the decline bar, don't normalize it.
 - **Witness notification is sakshi (read-only).** Landing outcomes notify via configured command sink; the sink grants no merge capability. Human operator reviews blocked/conflict outcomes — harness does not silently force-push past conflicts.
+<<<<<<< Updated upstream
 - **`check_command` is a dispatch-scale hint to the reviewer.** Free text (e.g. explicit format + compile commands for Elixir with focused tests chosen by the reviewer) — the reviewer runs and judges it; harness does not execute it mechanically. Use `verification-policy.md` to select scope; a hint that expands to full QA must not impose it on each run. Full-suite commands like `mix precommit.full` belong on `qa_command` for post-merge audit QA. Operator rollout: `mix harness.projects.rollout_dispatch_qa` (dry-run default). For verbose checks, capture to a per-run `mktemp` log on the first execution; never re-run only to recover truncated output.
+||||||| Stash base
+- **`check_command` is a dispatch-scale hint to the reviewer.** Free text (e.g. `"mix check.dispatch"` for Elixir, with focused tests chosen by the reviewer) — the reviewer runs and judges it; harness does not execute it mechanically. Keep full-suite commands like `mix precommit.full` for the landed-base Architect/QA pass. For verbose checks, capture to a per-run `mktemp` log on the first execution; never re-run only to recover truncated output.
+=======
+- **`check_command` is a dispatch-scale hint to the reviewer.** Free text (e.g. `"mix check.dispatch"` for Elixir, with focused tests chosen by the reviewer) — the reviewer runs and judges it; harness does not execute it mechanically. Use `verification-policy.md` to select scope; a hint that expands to full QA must not impose it on each run. Full-suite commands like `mix precommit.full` belong to post-merge audit + QA. For verbose checks, capture to a per-run `mktemp` log on the first execution; never re-run only to recover truncated output.
+>>>>>>> Stashed changes
 - **The cross-family reviewer reads `AGENTS.md`, not your Claude skills/includes.** `AGENTS.md` is generated from `CLAUDE.md` by `claude-marketplace/scripts/sync-agents-md.sh`, which recursively inlines every `@`-import. **Regenerate it after any `CLAUDE.md` change** (`bash ~/_DATA/code/claude-marketplace/scripts/sync-agents-md.sh`, or `--dry-run` to preview) so the reviewer gates against current rules — a stale `AGENTS.md` makes codex/cursor/grok judge against rules you've already changed. **`--check` is the freshness gate** — it re-renders in memory and exits non-zero if `AGENTS.md` has drifted (diffs rendered output, not mtimes, so it catches drift in transitive `@`-imports too); wire it into CI / a pre-commit hook / the `check_command` so staleness fails loudly instead of silently. Consequence under Opus-4.8 skill-on-demand: once `CLAUDE.md` slims to the eager floor, reviewer-critical facts that *were* carried by eager includes (the `check_command` gate; that `mix test.json` / `mix dialyzer.json` emit JSON **by design** — parse for real failures, never flag the envelope; plain `mix dialyzer` is authoritative when the JSON encoder can't serialize a warning) no longer reach `AGENTS.md` via those imports. Put them in a **self-contained `## Toolchain & check commands` section in `CLAUDE.md`** so they survive the slim-down and flow into `AGENTS.md` on regen (ref: `tapakly/CLAUDE.md`, `ccxt_extract/CLAUDE.md`).
 - **Roster doctrine.** Prefer `codex`, `cursor`, `grok`. `claude` is dispatched only when the operator has enabled it in the Agents settings; the default is off because the orchestrator session already runs on the same Max subscription. `cursor` and `grok` are one family — pair either with a `codex` reviewer. Spread assignees across the enabled agents; a ledger skewed to one adapter is the tell. A repo may override the roster in its own CLAUDE.md.
 - **Model pins.** `model` is required at creation for any non-`human` assignee (`rmap new` rejects a model-less dispatchable task; see `rmap.md` § "Pinning an LLM model"). Read the live standing model per agent from `routing-brief` and the live ids from `model_availability-list_available_models <agent>`; a retired pin fails at dispatch, so re-pin when you touch a task. A newly-probed model lands in the catalog as `selected?: false` — select it before it is dispatchable. New ids carry no ledger data — route to them to *gather* it (`dispatch-compare`), not on a performance claim.
@@ -891,6 +912,7 @@ Add `Styler` to `.formatter.exs` plugins: `plugins: [Styler]`.
 
 **Styler sets your Elixir floor to 1.17.** It rewrites `DateTime.add/3` into `DateTime.shift/2` whenever the running Elixir is ≥ 1.17, so `mix format` writes 1.17-only calls regardless of what `elixir:` claims. Declare `elixir: "~> 1.17"` (or higher) — a lower floor is a build that only works by accident.
 
+<<<<<<< Updated upstream
 ### Standard Aliases — four tiers, split by audience
 
 Four tiers, each with a different consumer. The marketplace's `pre-commit-unified.sh` hook runs its **own** inline gate at commit time (format · compile · credo · doctor · sobelow · mix_audit · ash — **no tests, no dialyzer, no ex_doc**); it does **not** invoke these aliases. The aliases are for manual / dispatch / CI runs. (`mix docs` belongs in CI / a manual run — too slow for any gate.)
@@ -901,10 +923,26 @@ Four tiers, each with a different consumer. The marketplace's `pre-commit-unifie
 | `precommit` | you, before handoff | + doctor · test+cover gate · sobelow | tens of seconds |
 | `check.dispatch` | harness reviewers — the registered `check_command` | + `ex_dna --max-clones 0` · `sobelow --exit Low` | tens of seconds |
 | `precommit.full` | CI / `harness.yml` / post-wave integration run | + dialyzer · `reach.check --arch --smells` | minutes |
+||||||| Stash base
+Three tiers split by **inner-loop cost**. The marketplace's `pre-commit-unified.sh` hook runs its **own** inline gate at commit time (format · compile · credo · doctor · sobelow · mix_audit · ash — **no tests, no dialyzer, no ex_doc**); it does **not** invoke these aliases. The aliases are for manual / CI runs: `precommit` adds the test+cover gate, `precommit.full` adds dialyzer. (`mix docs` belongs in CI / a manual run — too slow for the commit gate.)
+=======
+### Standard aliases — check scope comes from verification-policy.md
+
+`~/.claude/includes/verification-policy.md` owns scheduling. This template keeps
+full QA separate from the implementation/review command. Focused tests are chosen
+for the changed behavior, not baked into a whole-suite dispatch alias.
+
+| Alias | Contents | Role |
+|---|---|---|
+| `check.fast` / `check.dispatch` | Format check and compile with warnings as errors | Scoped code verification; add focused tests |
+| `precommit` | Compatibility name for comprehensive checks below | Full QA, not an automatic commit/handoff trigger |
+| `precommit.full` / `ci` | Full suite, coverage and project analyzers | Post-merge audit + QA |
+>>>>>>> Stashed changes
 
 ```elixir
 defp aliases do
   [
+<<<<<<< Updated upstream
     # TagTODO/TagFIXME stay on in .credo.exs for visibility (`mix credo` shows them);
     # the gate excludes them so it fails only on real regressions, not tracked debt.
     "check.fast": [
@@ -913,13 +951,35 @@ defp aliases do
       "credo --strict --ignore TagTODO,TagFIXME"
     ],
     # Manual pre-handoff gate (NOT run by the commit hook). No dialyzer; tests + sobelow + doctor.
+||||||| Stash base
+    # TagTODO/TagFIXME stay on in .credo.exs for visibility (`mix credo` shows them);
+    # the gate excludes them so it fails only on real regressions, not tracked debt.
+    "check.fast": [
+      "format --check-formatted",
+      "compile --warnings-as-errors",
+      "credo --strict --ignore TagTODO,TagFIXME"
+    ],
+    # Manual / CI gate (NOT run by the commit hook). Drops dialyzer; keeps tests + sobelow + doctor.
+=======
+    "check.fast": ["format --check-formatted", "compile --warnings-as-errors"],
+    "check.dispatch": ["check.fast"],
+>>>>>>> Stashed changes
     precommit: [
       "check.fast",
+<<<<<<< Updated upstream
+||||||| Stash base
+      "format --check-formatted",
+      "compile --warnings-as-errors",
+      "credo --strict --ignore TagTODO,TagFIXME",
+=======
+      "credo --strict --ignore TagTODO,TagFIXME",
+>>>>>>> Stashed changes
       "doctor --raise",
-      # `preferred_envs` (cli/0) is ignored for alias steps — set MIX_ENV explicitly.
+      # preferred_envs is ignored for alias steps; 85 is this template's QA coverage floor.
       "cmd MIX_ENV=test mix test.json --quiet --cover --cover-threshold 85 --summary-only --exclude integration",
-      "sobelow --skip"                 # --skip honors inline # sobelow_skip; drop on pure libs
+      "sobelow --skip --exit Low"
     ],
+<<<<<<< Updated upstream
     # Dispatch-scale gate: what a harness reviewer runs against a task's worktree.
     # ex_dna is here, not in precommit.full, because it runs in ~1s and a clone introduced
     # by a dispatched run is otherwise invisible to the per-task gate (observed in practice).
@@ -934,19 +994,54 @@ defp aliases do
       "dialyzer.json --quiet",
       "reach.check --arch --smells"
     ]
+||||||| Stash base
+    # CI mirror — adds dialyzer. Matches `elixir-ci-harness` `harness.yml`.
+    "precommit.full": ["precommit", "dialyzer.json --quiet"]
+=======
+    "precommit.full": [
+      "precommit",
+      "ex_dna --max-clones 0",
+      "dialyzer.json --quiet",
+      "reach.check --arch --smells"
+    ],
+    ci: ["precommit.full"]
+>>>>>>> Stashed changes
   ]
 end
 ```
 
+<<<<<<< Updated upstream
 Each tier calls the previous one, so a step appears once and the ordering (cheapest-fail-first) is preserved by construction. Register `check.dispatch` as the harness `check_command`; `precommit.full` is what CI runs and what the post-wave integration run on landed `origin/<target>` uses.
+||||||| Stash base
+**Three tiers, by inner-loop cost:**
+
+- `mix check.fast` — format + compile-with-warnings + credo. Seconds. Run after every meaningful edit.
+- `mix precommit` — adds doctor, test+cover gate, sobelow. Tens of seconds. **Manual / pre-handoff gate** — the commit hook does *not* run this; use it before handing work off when you want the test+cover gate locally.
+- `mix precommit.full` — adds dialyzer. Minutes (mostly dialyzer). Run before handing off to a reviewer / matches CI; **not** for the hook path.
+=======
+Register `check.dispatch` as the scoped hint and `ci` as full QA where supported.
+A registration does not prove that an automatic audit is configured or has run.
+Relevant live/security verification remains required for the changed behavior.
+>>>>>>> Stashed changes
 
 **Flag rationale:**
 
 - **`credo --strict --ignore TagTODO,TagFIXME`.** TODO/FIXME are tracked-debt visibility (`development-philosophy.md` § "TODO Comment Requirements"), not regressions. Standalone `mix credo` still surfaces them so an agent can SEE the debt; the gate doesn't fail on them so PRs aren't blocked by accumulated tags. ExSlop rides this step as a Credo plugin — no separate alias entry (see § "ExSlop" below).
 - **`doctor --raise`.** Overrides `.doctor.exs` `raise: false` to gate CI without changing local behavior. Redundant if the repo already sets `raise: true`, but harmless. A `doctor` dep without a `doctor` alias step is a dead gate — the dep alone enforces nothing.
 - **`test.json --cover --cover-threshold 85 --summary-only --exclude integration`.** 85% is the project default (cartouche's empirical floor; meaningful bump from 80%, leaves headroom under typical ~87% project coverage). Critical-path repos (signing, money, crypto, wire-format encoders) raise to `95`. `--exclude integration` because the credentials/network for live services are not present in a normal run; run the integration tag separately where they are. **The threshold must live in the alias, not only in `AGENTS.md` prose** — a coverage tier enforced by telling the agent about it is not enforced.
+<<<<<<< Updated upstream
 - **`ex_dna --max-clones 0`.** Zero-tolerance clone gate. Placed in `check.dispatch` because it costs ~1s and per-task review is the only point where a freshly introduced clone is visible before it lands. Generated/vendor clones: configure ExDNA ignore paths, don't relax the threshold.
 - **`sobelow --skip`** (precommit) / **`sobelow --skip --exit Low`** (check.dispatch). `--skip` makes sobelow honor inline `# sobelow_skip` annotations (without it they're ignored — see "Sobelow skip/config semantics" below). `--exit Low` fails on Low-confidence findings too: `Low` is the only threshold that catches `Traversal.FileModule` on an operator-supplied path, and every committed skip is Low or Medium, so nothing below Low exists to suppress. Phoenix / Plug / web-facing apps only — drop both steps on pure libraries. A `.sobelow-conf` needs no flag — it auto-loads since 0.14.1 (`--no-config` opts out).
+||||||| Stash base
+- **`credo --strict --ignore TagTODO,TagFIXME`.** TODO/FIXME are tracked-debt visibility (`development-philosophy.md` § "TODO Comment Requirements"), not regressions. Standalone `mix credo` still surfaces them so an agent can SEE the debt; the gate doesn't fail on them so PRs aren't blocked by accumulated tags.
+- **`doctor --raise`.** Overrides `.doctor.exs` `raise: false` to gate CI without changing local behavior. Redundant if the repo already sets `raise: true`, but harmless.
+- **`test.json --cover --cover-threshold 85 --summary-only --exclude integration`.** 85% is the project default (cartouche's empirical floor; meaningful bump from 80%, leaves headroom under typical ~87% project coverage). Critical-path repos (signing, money, crypto, wire-format encoders) raise to `95`. `--exclude integration` because local + CI lack credentials/network for live services; see `elixir-ci-harness` SKILL.md § "Integration Tag Exclusion" for the separate-workflow pattern if integration coverage is needed.
+- **`sobelow --skip`.** `--skip` makes sobelow honor inline `# sobelow_skip` annotations (without it they're ignored — see "Sobelow skip/config semantics" below). Phoenix / Plug / web-facing apps only — drop on pure libraries. A `.sobelow-conf` needs no flag — it auto-loads since 0.14.1 (`--no-config` opts out).
+- **`dialyzer.json --quiet`** (in `precommit.full`). Agent-friendly JSON variant (`harness.yml` uses plain `mix dialyzer` because GH Actions consumes human-readable output; agents prefer JSON). For pipeline parsing: `dialyzer.json --quiet --output /tmp/dialyzer.json` then jq.
+=======
+- **`ex_dna --max-clones 0`.** Zero-tolerance clone gate. Placed in `precommit.full` for the complete project comparison during audit + QA. Generated/vendor clones: configure ExDNA ignore paths, don't relax the threshold.
+- **`sobelow --skip --exit Low`** (full QA; also use for a relevant security change). `--skip` makes sobelow honor inline `# sobelow_skip` annotations (without it they're ignored — see "Sobelow skip/config semantics" below). `--exit Low` fails on Low-confidence findings too: `Low` is the only threshold that catches `Traversal.FileModule` on an operator-supplied path, and every committed skip is Low or Medium, so nothing below Low exists to suppress. Phoenix / Plug / web-facing apps only — drop both steps on pure libraries. A `.sobelow-conf` needs no flag — it auto-loads since 0.14.1 (`--no-config` opts out).
+>>>>>>> Stashed changes
 - **`dialyzer.json --quiet`** (precommit.full). Agent-friendly JSON variant (agents prefer JSON over the human-readable default). For pipeline parsing: `dialyzer.json --quiet --output /tmp/dialyzer.json` then jq.
 - **`reach.check --arch --smells`** (precommit.full only). Needs the full SDG — too slow for the inner loop or the dispatch gate. `--arch` validates against `.reach.exs`; `--smells` runs the cross-function smell surface (see `reach.md` for the Credo overlap). An empty `.reach.exs` (`[]`) is a valid no-policy — `--arch` passes vacuously until you populate layers/boundaries, so populate it as the architecture settles.
 
@@ -1178,7 +1273,13 @@ See the library's `CONSUMING.md` for exact output shapes.
 | EIP-8004 registration | Agent wrapper project (Ethereum coupling stays separate) |
 
 
+<<<<<<< Updated upstream
 - **Reviewer note**: `mix test.json` (`ex_unit_json`) and `mix dialyzer.json` (`dialyzer_json`) emit JSON **by design** — parse for real failures, never flag the envelope. Project commands live in `## Toolchain & check commands` below; scheduling is `verification-policy.md`.
+||||||| Stash base
+- **Reviewer note**: `mix test.json` (`ex_unit_json`) and `mix dialyzer.json` (`dialyzer_json`) emit JSON **by design** — parse for real failures, never flag the envelope. Canonical gate is `mix ci` / `mix precommit.full`. See `AGENTS.md` § Toolchain & check commands.
+=======
+- **Reviewer note**: `mix test.json` (`ex_unit_json`) and `mix dialyzer.json` (`dialyzer_json`) emit JSON **by design** — parse for real failures, never flag the envelope. Full post-merge QA uses `mix ci` / `mix precommit.full`. See `AGENTS.md` § Toolchain & check commands.
+>>>>>>> Stashed changes
 
 ## Project Overview
 

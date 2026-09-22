@@ -3048,7 +3048,7 @@
       "id": 62,
       "phase": 3,
       "bundle": "consumer_math",
-      "status": "pending",
+      "status": "in_progress",
       "title": "Add pure Decimal cash-secured put collateral and capacity calculations",
       "scores": {
         "d": 5,

@@ -3,6 +3,18 @@
 Release-level history for completed roadmap phases. The per-task delivery ledger remains in
 `roadmap/tasks.toml`; upcoming work is in `ROADMAP.md`.
 
+## 0.5.0 - 2026-09-22
+
+- Added `DeltaCalc.CashSecuredPut.cash_secured_put_coverage/1` to calculate full
+  strike principal, a separate fee reserve, existing cash commitments, remaining
+  capacity and uncovered cash. Contract quantities use an explicit base-unit
+  multiplier; base quantities are used directly. Currency mismatches and invalid
+  inputs return tagged errors. Unreceived premiums cannot reduce required cash,
+  and arithmetic coverage does not imply venue margin acceptance or trade approval.
+- Cash-secured put calculations preserve exact Decimal arithmetic independently
+  of caller precision. The API is registered for discovery, and its README example
+  is checked alongside independent golden and property tests.
+
 ## 0.4.0 - 2026-09-22
 
 - A sixth manifest-wide invariant in `test/delta_calc/manifest_consistency_test.exs` fails `mix ci`

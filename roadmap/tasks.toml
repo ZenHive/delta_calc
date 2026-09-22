@@ -1977,7 +1977,7 @@ shipped_in = "973ed8fdc65c77945a40c817b2fed6a291794cd3"
 id = 64
 phase = 3
 bundle = "consumer_math"
-status = "pending"
+status = "done"
 title = "Complete the operator-owned 0.5.0 release notes"
 scores = { d = 1, b = 3, u = 4 }
 acceptance_criteria = ["CHANGELOG.md documents the prepared 0.5.0 cash-secured put API, explicit quantity and currency contracts, exact cash funding, and tagged invalid-input errors.", "Release notes agree with README.md and source commit 484950d93a5b01d312b7ca611271cb21bb3f698f; publishing remains an explicit operator action."]
@@ -1985,5 +1985,8 @@ out_of_scope = ["Library behavior changes", "Automatic Hex publication"]
 touches = ["CHANGELOG.md"]
 assignee = "human"
 body = "Audit 42f209c found mix.exs and README.md at 0.5.0 while CHANGELOG.md ends at 0.4.0. Task 62 explicitly assigns this post-landing update to the orchestrator, but is already done and no separate release-note task exists. Human routing preserves that operator-owned hand-build step: harness strips CHANGELOG.md from dispatched delivery, so another implementation run cannot land it. Do not publish automatically. D1 is a small documentation edit; B3 records the new public API for package consumers; U4 reflects the concrete prepared-release mismatch. Full QA at 42f209c passed."
+implemented = "Completed 0.5.0 release notes for the cash-secured put API, exact funding, explicit units/currencies and tagged errors. Hex publication remains manual."
+delivered_by = "codex"
 created_at = "2026-09-22"
 scored_at = "2026-09-22"
+done_at = "2026-09-22"

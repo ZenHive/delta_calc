@@ -43,6 +43,7 @@ defmodule DeltaCalc.Manifest do
     DeltaCalc.OptionsRisk,
     DeltaCalc.Pnl,
     DeltaCalc.DeltaNeutral,
+    DeltaCalc.CashSecuredPut,
     DeltaCalc.PortfolioMargin,
     DeltaCalc.StressScenario,
     DeltaCalc.Fees,

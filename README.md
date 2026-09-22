@@ -14,7 +14,7 @@ no I/O. Drop it into any Elixir project (LiveView, CLI, Nx pipeline, agent tool)
 
 ```elixir
 def deps do
-  [{:delta_calc, "~> 0.4.0"}]
+  [{:delta_calc, "~> 0.5.0"}]
 end
 ```
 
@@ -422,6 +422,43 @@ Pnl.breakeven(%{
 |> Decimal.round(2)
 #=> #Decimal<50030.01>
 ```
+
+## `DeltaCalc.CashSecuredPut`
+
+`cash_secured_put_coverage/1` calculates cash funding for a proposed put. Supply
+actual settled cash, a strike denominated in quote currency per base unit, a
+separate cash fee reserve, and disjoint existing cash commitments. All money
+currencies must match the strike quote currency; the quantity base currency must
+match the strike base currency. Currency identifiers are case-sensitive strings.
+
+```elixir
+{:ok, funding} = DeltaCalc.CashSecuredPut.cash_secured_put_coverage(%{
+  settled_cash: %{currency: "USD", value: "752.25"},
+  strike: %{base_currency: "ETH", quote_currency: "USD", value: "3000"},
+  quantity: %{
+    unit: :contracts, base_currency: "ETH", value: "2.5",
+    base_units_per_contract: "0.1"
+  },
+  fee_reserve: %{currency: "USD", value: "2.25"},
+  existing_commitments: []
+})
+```
+
+This funds 0.25 ETH of strike principal (750 USD) and 2.25 USD of fees exactly.
+Results include Decimal `strike_principal`, `fee_reserve`, summed
+`existing_commitments`, `total_required`, `remaining_capacity` and
+`uncovered_amount`, plus `fully_covered`. Both capacity and shortfall are clamped
+at zero, after all obligations. Unreceived premium never reduces principal.
+
+For an already-base amount, pass
+`%{unit: :base_currency, base_currency: "ETH", value: "0.25"}`; a multiplier on
+that shape is rejected. Contract quantities require a positive provider-supplied
+multiplier and may be fractional; the consumer owns provider eligibility rules.
+Exact inputs are Decimal, integer or decimal string, never floats. Nonfinite,
+negative, incompatible or ambiguous inputs return tagged errors. Zero amounts
+are valid. Calculations do not round to display precision or depend on the
+caller's Decimal precision. Coverage never grants provider margin acceptance,
+risk-target approval, or a reservation.
 
 ## `DeltaCalc.DeltaNeutral`
 

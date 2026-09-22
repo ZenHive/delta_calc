@@ -4,7 +4,7 @@ Pure-`Decimal` calculation engine for leveraged crypto trading — **position si
 effective leverage, liquidation price, DCA ladders, safety scoring, spot hedging,
 funding-rate math, account metrics, margin-bridge financing, option-ladder strategies,
 position PnL, delta-neutral rebalancing, portfolio-margin netting, stress scenarios,
-fee math, and spot/perp carry analysis**.
+fee math, spot/perp carry analysis, and cash-secured put collateral**.
 
 Salvaged from the retired `TradingDashboard` app so a rebuild does not reinvent the math.
 Every function is a pure value-in / value-out `Decimal` computation: no Ecto, no Phoenix,
@@ -42,6 +42,7 @@ alias DeltaCalc.{
   OptionsRisk,
   Pnl,
   DeltaNeutral,
+  CashSecuredPut,
   PortfolioMargin,
   StressScenario,
   Fees,
@@ -432,16 +433,34 @@ currencies must match the strike quote currency; the quantity base currency must
 match the strike base currency. Currency identifiers are case-sensitive strings.
 
 ```elixir
-{:ok, funding} = DeltaCalc.CashSecuredPut.cash_secured_put_coverage(%{
-  settled_cash: %{currency: "USD", value: "752.25"},
-  strike: %{base_currency: "ETH", quote_currency: "USD", value: "3000"},
-  quantity: %{
-    unit: :contracts, base_currency: "ETH", value: "2.5",
-    base_units_per_contract: "0.1"
-  },
-  fee_reserve: %{currency: "USD", value: "2.25"},
-  existing_commitments: []
-})
+{:ok, funding} =
+  CashSecuredPut.cash_secured_put_coverage(%{
+    settled_cash: %{currency: "USD", value: "752.25"},
+    strike: %{base_currency: "ETH", quote_currency: "USD", value: "3000"},
+    quantity: %{
+      unit: :contracts,
+      base_currency: "ETH",
+      value: "2.5",
+      base_units_per_contract: "0.1"
+    },
+    fee_reserve: %{currency: "USD", value: "2.25"},
+    existing_commitments: []
+  })
+
+funding
+#=> %{
+#     base_amount: #Decimal<0.25>,
+#     base_currency: "ETH",
+#     cash_currency: "USD",
+#     existing_commitments: #Decimal<0>,
+#     fee_reserve: #Decimal<2.25>,
+#     fully_covered: true,
+#     remaining_capacity: #Decimal<0>,
+#     settled_cash: #Decimal<752.25>,
+#     strike_principal: #Decimal<750.00>,
+#     total_required: #Decimal<752.25>,
+#     uncovered_amount: #Decimal<0>
+#   }
 ```
 
 This funds 0.25 ETH of strike principal (750 USD) and 2.25 USD of fees exactly.

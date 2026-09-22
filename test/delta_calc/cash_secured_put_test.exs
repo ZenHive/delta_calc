@@ -169,6 +169,9 @@ defmodule DeltaCalc.CashSecuredPutTest do
     end
 
     assert {:error, :invalid_shape} = coverage(%{params() | existing_commitments: [1]})
+
+    assert {:error, :invalid_shape} =
+             coverage(%{params() | existing_commitments: [money("1") | :tail]})
   end
 
   test "exact results exceed default precision and ignore display rounding and context" do

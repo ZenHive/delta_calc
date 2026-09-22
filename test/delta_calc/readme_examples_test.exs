@@ -25,7 +25,7 @@ defmodule DeltaCalc.ReadmeExamplesTest do
 
     {whole, partial} = Enum.split_with(elided, &(parse_subset(&1.documented) == @elision))
 
-    assert {length(asserted), length(partial), length(whole)} == {38, 14, 0},
+    assert {length(asserted), length(partial), length(whole)} == {39, 14, 0},
            "README census changed: #{length(asserted)} full, #{length(partial)} partial, #{length(whole)} whole elisions"
 
     # 44 concrete map values plus three :ok tuple tags.

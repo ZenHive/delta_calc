@@ -201,6 +201,12 @@ defmodule DeltaCalc.CashSecuredPut do
   defp quantity(_quantity, _base), do: {:error, :invalid_shape}
 
   defp commitments(values, currency) do
+    if List.improper?(values),
+      do: {:error, :invalid_shape},
+      else: sum_commitments(values, currency)
+  end
+
+  defp sum_commitments(values, currency) do
     Enum.reduce_while(values, {:ok, []}, fn value, {:ok, acc} ->
       case money(value, currency) do
         {:ok, amount} -> {:cont, {:ok, [amount | acc]}}

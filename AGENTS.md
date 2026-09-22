@@ -1,8 +1,8 @@
-<!-- Auto-generated from CLAUDE.md by claude-marketplace/scripts/sync-agents-md.sh — do not edit manually -->
+<!-- Auto-generated from CLAUDE.md by scripts/sync-agents-md.py — do not edit manually -->
 
 # CLAUDE.md
 
-<!-- @-import: ~/.claude/includes/verification-policy.md -->
+<!-- @-import: agent-instructions/includes/verification-policy.md -->
 ## Verification scope — focused runs, full post-merge QA
 
 This is the canonical policy for **when** checks run. Project command catalogs describe **how** to run them; an alias name such as `precommit` or `check.dispatch` does not require its execution. Apply this policy to implementers, reviewers, orchestrators and hooks. Explicit operator requests and concrete task acceptance criteria can require additional checks.
@@ -27,7 +27,7 @@ Maintain this policy in `~/.claude/includes/verification-policy.md`. Import it f
 
 Guidance for Claude Code working in this repo.
 
-<!-- @-import: ~/.claude/includes/critical-rules.md -->
+<!-- @-import: agent-instructions/includes/critical-rules.md -->
 ## Answer in short text
 
 Short, pointed text — explanation, proposal, pushback, summary alike. Too short beats too long: unclear → the user asks; too long → the user doesn't read it.
@@ -259,7 +259,7 @@ Don't use without explicit user approval:
 - Never a silent workaround. Tempted to add a fallback/nil-guard for missing data → should it come from upstream? Then stop and report.
 - Must move on → leave a tracked TODO, not a silent gap.
 
-<!-- @-import: ~/.claude/includes/harness-workflow.md -->
+<!-- @-import: agent-instructions/includes/harness-workflow.md -->
 ## Harness Workflow
 
 OTP-native **implement → review → land** loop for roadmap-driven development. An AI orchestrator drives harness; harness dispatches headless implementer agents into isolated git worktrees, then a **cross-family reviewer AI** gates every deliverable (runs the project's checks itself, fixes inline, writes `.harness/review.json`). Optional auto-landing ff-merges approved work; a post-merge audit agent sweeps hygiene.
@@ -693,7 +693,7 @@ loss cannot run these callbacks and carry no graceful-cleanup guarantee.
 
 The QA page `/harness/qa` owns the global audit agent/model picker and shows current eligibility and unavailable reasons. `Harness.Audit.Selection.configure(agent_name, model)` atomically persists this pair in SettingsStore; an empty agent selects automatic routing. Explicit selection starts a separate audit session and may reuse the implementation or review adapter. It still requires reviewer eligibility, an installed available adapter and an available explicit model; no fallback changes the saved choice. Automatic routing continues to exclude the run's implementer and reviewer and may produce `no_audit_agent`. QA summaries show the last incomplete reason directly. Changing selection affects new audit sessions and neither changes reviewer trust nor restarts existing jobs.
 
-<!-- @-import: ~/.claude/includes/worktree-workflow.md -->
+<!-- @-import: agent-instructions/includes/worktree-workflow.md -->
 # Worktree-Per-Branch Workflow
 
 Run multiple Claude Code sessions in parallel without files landing on the wrong branch. The mechanic: every new branch gets its own worktree under a centralized location, named after a tracking ID, cleaned up when the work merges.
@@ -820,7 +820,7 @@ A project can opt out of the worktree workflow by pinning a memory file under `~
 
 <!-- Setup-window imports — drop once the library is fully ported; the elixir:* /
      elixir:agent-economy skills cover these on-demand afterward. -->
-<!-- @-import: ~/.claude/includes/elixir-setup.md -->
+<!-- @-import: agent-instructions/includes/elixir-setup.md -->
 ## Elixir Project Setup
 
 Standard dependencies and tooling for Elixir projects (libraries, CLI tools, escripts).
@@ -1084,7 +1084,7 @@ Patterns: `_` = wildcard, named vars (`expr`) capture and carry to replacement. 
 - ExDNA: 0 clones (`--max-clones 0`)
 - Reach: `reach.check --arch --smells` clean against `.reach.exs`
 
-<!-- @-import: ~/.claude/includes/agent-economy.md -->
+<!-- @-import: agent-instructions/includes/agent-economy.md -->
 ## Agent Economy Design
 
 Every app and library should treat AI agents as first-class consumers. Design for discovery, calling, and verification now.
@@ -1372,17 +1372,38 @@ get flagged.
 
 ## AGENTS.md is generated — regenerate after editing CLAUDE.md
 
-`AGENTS.md` is **not** hand-authored: it's the Codex-facing view of this file, produced by
-inlining every `@`-import from `CLAUDE.md` (Codex doesn't inherit our Claude Code hooks, so
-AGENTS.md carries the rules they'd enforce). After any `CLAUDE.md` edit, regenerate:
+`AGENTS.md` is generated from this file and the Git-versioned snapshots in
+`agent-instructions/includes/`. Both Claude and the generator use these repository
+imports; generation never reads the host's `~/.claude/includes`. Python 3.9+ is required.
+Run from the repository root:
 
 ```sh
-~/.claude/plugins/marketplaces/zenhive/scripts/sync-agents-md.sh          # write
-~/.claude/plugins/marketplaces/zenhive/scripts/sync-agents-md.sh --check  # freshness gate (CI)
+python3 scripts/sync-agents-md.py             # generate
+python3 scripts/sync-agents-md.py --dry-run   # preview
+python3 scripts/sync-agents-md.py --check     # freshness gate; nonzero if stale/missing
+python3 -m unittest discover -s scripts -p 'test_*.py'  # focused regression checks
 ```
 
-Never edit `AGENTS.md` directly — it's overwritten. Both files are committed; `--check` exits
-non-zero when AGENTS.md has drifted (including drift in transitive `@`-imports).
+Never edit `AGENTS.md` directly. Commit it with changes to this file or its imports.
+Imports are repository-root-relative, recursively expanded, and must stay inside
+the repository. Missing, external, cyclic, or excessively deep imports fail visibly.
+The repository command above supersedes host generator commands in the imported guidance.
+
+To intentionally update policy, select a reviewed include directory and run:
+
+```sh
+python3 scripts/sync-agents-md.py --refresh-includes /path/to/reviewed/includes
+python3 scripts/sync-agents-md.py --check
+git diff -- agent-instructions/includes CLAUDE.md AGENTS.md
+```
+
+Refresh replaces the six named snapshots and regenerates only after all candidate
+files can be read and expanded. It never changes the source directory or shared
+host files. Review and commit the policy diff; freshness verifies reproducibility,
+not whether an intentional policy update is appropriate. Upstream imports must be
+converted to repository-relative paths in the reviewed source before refreshing.
+Snapshot provenance and preservation baseline are recorded in
+`agent-instructions/README.md`.
 
 ## Tidewave
 

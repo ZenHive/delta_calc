@@ -1,17 +1,17 @@
 # CLAUDE.md
 
-@~/.claude/includes/verification-policy.md
+@agent-instructions/includes/verification-policy.md
 
 Guidance for Claude Code working in this repo.
 
-@~/.claude/includes/critical-rules.md
-@~/.claude/includes/harness-workflow.md
-@~/.claude/includes/worktree-workflow.md
+@agent-instructions/includes/critical-rules.md
+@agent-instructions/includes/harness-workflow.md
+@agent-instructions/includes/worktree-workflow.md
 
 <!-- Setup-window imports — drop once the library is fully ported; the elixir:* /
      elixir:agent-economy skills cover these on-demand afterward. -->
-@~/.claude/includes/elixir-setup.md
-@~/.claude/includes/agent-economy.md
+@agent-instructions/includes/elixir-setup.md
+@agent-instructions/includes/agent-economy.md
 
 - **Reviewer note**: `mix test.json` (`ex_unit_json`) and `mix dialyzer.json` (`dialyzer_json`) emit JSON **by design** — parse for real failures, never flag the envelope. Project commands live in `## Toolchain & check commands` below; scheduling is `verification-policy.md`.
 
@@ -195,17 +195,38 @@ get flagged.
 
 ## AGENTS.md is generated — regenerate after editing CLAUDE.md
 
-`AGENTS.md` is **not** hand-authored: it's the Codex-facing view of this file, produced by
-inlining every `@`-import from `CLAUDE.md` (Codex doesn't inherit our Claude Code hooks, so
-AGENTS.md carries the rules they'd enforce). After any `CLAUDE.md` edit, regenerate:
+`AGENTS.md` is generated from this file and the Git-versioned snapshots in
+`agent-instructions/includes/`. Both Claude and the generator use these repository
+imports; generation never reads the host's `~/.claude/includes`. Python 3.9+ is required.
+Run from the repository root:
 
 ```sh
-~/.claude/plugins/marketplaces/zenhive/scripts/sync-agents-md.sh          # write
-~/.claude/plugins/marketplaces/zenhive/scripts/sync-agents-md.sh --check  # freshness gate (CI)
+python3 scripts/sync-agents-md.py             # generate
+python3 scripts/sync-agents-md.py --dry-run   # preview
+python3 scripts/sync-agents-md.py --check     # freshness gate; nonzero if stale/missing
+python3 -m unittest discover -s scripts -p 'test_*.py'  # focused regression checks
 ```
 
-Never edit `AGENTS.md` directly — it's overwritten. Both files are committed; `--check` exits
-non-zero when AGENTS.md has drifted (including drift in transitive `@`-imports).
+Never edit `AGENTS.md` directly. Commit it with changes to this file or its imports.
+Imports are repository-root-relative, recursively expanded, and must stay inside
+the repository. Missing, external, cyclic, or excessively deep imports fail visibly.
+The repository command above supersedes host generator commands in the imported guidance.
+
+To intentionally update policy, select a reviewed include directory and run:
+
+```sh
+python3 scripts/sync-agents-md.py --refresh-includes /path/to/reviewed/includes
+python3 scripts/sync-agents-md.py --check
+git diff -- agent-instructions/includes CLAUDE.md AGENTS.md
+```
+
+Refresh replaces the six named snapshots and regenerates only after all candidate
+files can be read and expanded. It never changes the source directory or shared
+host files. Review and commit the policy diff; freshness verifies reproducibility,
+not whether an intentional policy update is appropriate. Upstream imports must be
+converted to repository-relative paths in the reviewed source before refreshing.
+Snapshot provenance and preservation baseline are recorded in
+`agent-instructions/README.md`.
 
 ## Tidewave
 

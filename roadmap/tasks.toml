@@ -1928,7 +1928,7 @@ shipped_in = "0deaca6e256454221cd5f6ef77729955a6c3b54a"
 id = 62
 phase = 3
 bundle = "consumer_math"
-status = "in_progress"
+status = "pending"
 title = "Add pure Decimal cash-secured put collateral and capacity calculations"
 scores = { d = 5, b = 8, u = 8 }
 acceptance_criteria = ["A pure Decimal API reports strike principal, separately supplied fee reserve, existing commitments, remaining cash capacity and uncovered amount; coverage never implies provider margin acceptance or risk-target approval.", "Quantity units are explicit: contract count is multiplied exactly once by caller-supplied base-units-per-contract; base amount is never multiplied again. Strike/cash currency compatibility is explicit and incompatible units are rejected.", "Unreceived premiums do not reduce required principal. Actual settled cash is an input owned by the consumer; the calculator does not guess balances, settlement state or fee schedules.", "Independent golden and property tests prove exact funding, one smallest-unit shortfall, zero and negative/invalid input behavior, multiple existing obligations, mixed units, fractional contracts where permitted and display-independent precision; no assertion is derived from the same implementation formula.", "Public docs/specs and Descripex api/hints are present; manifest uniqueness/completeness checks pass and the touched money surface meets 95% coverage under the project verification policy.", "A released consumable version includes the API; delivery names the version and source commit so the dashboard can pin it without a path dependency."]

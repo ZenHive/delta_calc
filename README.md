@@ -10,11 +10,11 @@ Salvaged from the retired `TradingDashboard` app so a rebuild does not reinvent 
 Every function is a pure value-in / value-out `Decimal` computation: no Ecto, no Phoenix,
 no I/O. Drop it into any Elixir project (LiveView, CLI, Nx pipeline, agent tool) and call it.
 
-## Installation (once published)
+## Installation
 
 ```elixir
 def deps do
-  [{:delta_calc, "~> 0.3"}]
+  [{:delta_calc, "~> 0.4.0"}]
 end
 ```
 

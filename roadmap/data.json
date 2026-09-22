@@ -3099,7 +3099,7 @@
       "id": 63,
       "phase": 3,
       "bundle": "contract_hardening",
-      "status": "in_progress",
+      "status": "done",
       "title": "Make generated agent instructions reproducible across audit hosts",
       "scores": {
         "d": 3,
@@ -3130,10 +3130,17 @@
         "scripts/",
         "test/"
       ],
+      "shipped_in": "973ed8fdc65c77945a40c817b2fed6a291794cd3",
       "body": "Audit 738a3e1 found the documented sync-agents-md.sh --check fails because this host's imported files are older than the committed expansion. Dry-run would remove Explicit audit selection, restore the retired audit-review fast path, and replace focused dispatch guidance with the old four-tier aliases. Previous audit 3065438 regenerated against host-local files; task 61 subsequently restored current policy. This is generation-source drift, not an alias defect, so do not reopen task 61 or regenerate against the older inputs. Pin the generator inputs to a versioned source and expose an explicit refresh operation; use the committed current policy as the preservation baseline. This is repository instruction infrastructure and requires independent review. B4 reflects witnessed policy rollback on regeneration; U3 reflects this audit host, not inferred widespread demand.",
       "created_at": "2026-09-22",
       "started_at": "2026-09-22",
+      "done_at": "2026-09-22",
       "scored_at": "2026-09-22",
+      "implemented": "Landed by codex via merge-train; reviewer-approved (run run-1790049629347-f961777b, 973ed8fdc65c77945a40c817b2fed6a291794cd3).",
+      "delivered_by": "codex",
+      "verified": true,
+      "verified_by": "cursor",
+      "verification_ref": "harness-run:run-1790049629347-f961777b",
       "cross_repo": []
     }
   ]

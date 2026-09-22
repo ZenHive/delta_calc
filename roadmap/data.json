@@ -3048,7 +3048,7 @@
       "id": 62,
       "phase": 3,
       "bundle": "consumer_math",
-      "status": "in_progress",
+      "status": "done",
       "title": "Add pure Decimal cash-secured put collateral and capacity calculations",
       "scores": {
         "d": 5,
@@ -3082,10 +3082,17 @@
         "README.md",
         "CHANGELOG.md"
       ],
+      "shipped_in": "484950d93a5b01d312b7ca611271cb21bb3f698f",
       "body": "Operator-approved prerequisite for trading_dashboard cash-secured ETH/BTC puts. Source inspection: DeltaCalc.DeltaNeutral.settlement_coverage/1 and completed task 53 implement caller-classified covered-call base capacity, not cash-secured put strike capital. Add the missing cash-collateral capability with explicit amount units and provider-supplied contract multiplier. Keep values in Decimal and leave eligibility, reservations, approval and provider-margin judgments to the consumer. No venue constants or I/O. The full strike principal plus a separately supplied fee reserve must be funded without borrowing against an unreceived premium. Prepare the next consumable version for manual Hex publishing and identify its version for the dashboard dependency bump. Version 0.4.0 is already published without this API; do not overwrite it or publish automatically. The orchestrator owns CHANGELOG updates after landing because harness excludes CHANGELOG.md from agent delivery. Recovery decision: fresh on codex gpt-6-astra, explicitly requested by the operator. Prior run run-1790038055374-eebb92ab produced zero code changes, both processes exited 1, and dispatch-resume_failed returned source_unavailable_or_landed; there is no implementation to recover. The explicit operator model choice overrides the older repo model pin. D5 reflects a public money API; B8 supplies the requested put collateral calculation; U8 reflects its downstream execution dependency.",
       "created_at": "2026-09-21",
       "started_at": "2026-09-22",
+      "done_at": "2026-09-22",
       "scored_at": "2026-09-21",
+      "implemented": "Landed by codex via merge-train; reviewer-approved (run run-1790058428267-e48a1044, 484950d93a5b01d312b7ca611271cb21bb3f698f).",
+      "delivered_by": "codex",
+      "verified": true,
+      "verified_by": "cursor",
+      "verification_ref": "harness-run:run-1790058428267-e48a1044",
       "cross_repo": [
         {
           "repo": "trading_dashboard",

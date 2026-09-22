@@ -3060,15 +3060,15 @@
       "unlocks": 0,
       "markers": [],
       "depends_on": [],
-      "assignee": "grok",
-      "model": "grok-4.7",
+      "assignee": "codex",
+      "model": "gpt-6-astra",
       "acceptance_criteria": [
         "A pure Decimal API reports strike principal, separately supplied fee reserve, existing commitments, remaining cash capacity and uncovered amount; coverage never implies provider margin acceptance or risk-target approval.",
         "Quantity units are explicit: contract count is multiplied exactly once by caller-supplied base-units-per-contract; base amount is never multiplied again. Strike/cash currency compatibility is explicit and incompatible units are rejected.",
         "Unreceived premiums do not reduce required principal. Actual settled cash is an input owned by the consumer; the calculator does not guess balances, settlement state or fee schedules.",
         "Independent golden and property tests prove exact funding, one smallest-unit shortfall, zero and negative/invalid input behavior, multiple existing obligations, mixed units, fractional contracts where permitted and display-independent precision; no assertion is derived from the same implementation formula.",
         "Public docs/specs and Descripex api/hints are present; manifest uniqueness/completeness checks pass and the touched money surface meets 95% coverage under the project verification policy.",
-        "A released consumable version includes the API; delivery names the version and source commit so the dashboard can pin it without a path dependency."
+        "Prepare a new consumable version including the API for operator-owned manual Hex publishing; do not publish from the agent. Delivery names the prepared version and source commit so the dashboard can pin it after publication."
       ],
       "out_of_scope": [
         "Exchange clients, HTTP, Phoenix, Ecto, reservation storage, approval policy, portfolio reporting, option pricing/Greeks and venue-margin simulation",
@@ -3082,7 +3082,7 @@
         "README.md",
         "CHANGELOG.md"
       ],
-      "body": "Operator-approved prerequisite for trading_dashboard cash-secured ETH/BTC puts. Source inspection: DeltaCalc.DeltaNeutral.settlement_coverage/1 and completed task 53 implement caller-classified covered-call base capacity, not cash-secured put strike capital. Add the missing cash-collateral capability with explicit amount units and provider-supplied contract multiplier. Keep values in Decimal and leave eligibility, reservations, approval and provider-margin judgments to the consumer. No venue constants or I/O. The full strike principal plus a separately supplied fee reserve must be funded without borrowing against an unreceived premium. Publish a consumable version as part of delivery and identify its release/version for the dashboard dependency bump. D5 reflects a public money API; B8 supplies the requested put collateral calculation; U8 reflects its downstream execution dependency.",
+      "body": "Operator-approved prerequisite for trading_dashboard cash-secured ETH/BTC puts. Source inspection: DeltaCalc.DeltaNeutral.settlement_coverage/1 and completed task 53 implement caller-classified covered-call base capacity, not cash-secured put strike capital. Add the missing cash-collateral capability with explicit amount units and provider-supplied contract multiplier. Keep values in Decimal and leave eligibility, reservations, approval and provider-margin judgments to the consumer. No venue constants or I/O. The full strike principal plus a separately supplied fee reserve must be funded without borrowing against an unreceived premium. Prepare the next consumable version for manual Hex publishing and identify its version for the dashboard dependency bump. Version 0.4.0 is already published without this API; do not overwrite it or publish automatically. The orchestrator owns CHANGELOG updates after landing because harness excludes CHANGELOG.md from agent delivery. Recovery decision: fresh on codex gpt-6-astra, explicitly requested by the operator. Prior run run-1790038055374-eebb92ab produced zero code changes, both processes exited 1, and dispatch-resume_failed returned source_unavailable_or_landed; there is no implementation to recover. The explicit operator model choice overrides the older repo model pin. D5 reflects a public money API; B8 supplies the requested put collateral calculation; U8 reflects its downstream execution dependency.",
       "created_at": "2026-09-21",
       "started_at": "2026-09-22",
       "scored_at": "2026-09-21",

@@ -1995,7 +1995,7 @@ done_at = "2026-09-22"
 id = 65
 phase = 3
 bundle = "contract_hardening"
-status = "in_progress"
+status = "done"
 title = "Configure usage_rules to build dependency skills"
 scores = { d = 2, b = 3, u = 2 }
 acceptance_criteria = ['mix.exs declares {:usage_rules, "~> 1.2", only: :dev, runtime: false} and a usage_rules config building skills for the rule-shipping deps chosen per the body', "mix usage_rules.sync generates the skill files and they are committed", "mix usage_rules.sync --check passes and is part of the precommit/ci alias", "Both .agents/skills and .claude/skills resolve to the generated skills"]
@@ -2009,6 +2009,13 @@ Build skills only for dependencies that actually ship usage-rules.md (check with
 
 Add `usage_rules.sync --check` to the precommit/ci alias so a dependency bump that changes shipped rules fails until the skills are re-synced.
 """
+implemented = "Landed by grok via merge-train; reviewer-approved (run run-1790935203327-3d33b024, 70ba0137f86d373530a8aeb80046bc567505b6bf)."
+delivered_by = "grok"
+verified = true
+verified_by = "cursor"
+verification_ref = "harness-run:run-1790935203327-3d33b024"
 created_at = "2026-10-02"
 started_at = "2026-10-02"
 scored_at = "2026-10-02"
+done_at = "2026-10-02"
+shipped_in = "70ba0137f86d373530a8aeb80046bc567505b6bf"

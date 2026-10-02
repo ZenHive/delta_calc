@@ -3190,7 +3190,7 @@
       "id": 65,
       "phase": 3,
       "bundle": "contract_hardening",
-      "status": "in_progress",
+      "status": "done",
       "title": "Configure usage_rules to build dependency skills",
       "scores": {
         "d": 2,
@@ -3214,10 +3214,17 @@
         "Writing usage-rules.md for this repo's own code",
         "Building skills for phoenix/ecto/elixir core rules"
       ],
+      "shipped_in": "70ba0137f86d373530a8aeb80046bc567505b6bf",
       "body": "Add the usage_rules dev dependency and configure it so dependency-shipped usage rules become versioned agent skills in this repo, following the pattern in the `elixir-setup` include (section usage_rules; reference implementation tapakly/mix.exs `usage_rules/0`).\n\nBuild skills only for dependencies that actually ship usage-rules.md (check with `mix usage_rules.list`) and that a current model knows poorly; skip phoenix/ecto/elixir/liveview core rules. As of 2026-10-02 the rule-shipping deps in deps/ are: igniter (sobelow if present). Dispatched agents read `.agents/skills`; use that location with `.claude/skills` as a symlink to it, unless the repo already has a different layout, in which case keep it.\n\nAdd `usage_rules.sync --check` to the precommit/ci alias so a dependency bump that changes shipped rules fails until the skills are re-synced.\n",
       "created_at": "2026-10-02",
       "started_at": "2026-10-02",
+      "done_at": "2026-10-02",
       "scored_at": "2026-10-02",
+      "implemented": "Landed by grok via merge-train; reviewer-approved (run run-1790935203327-3d33b024, 70ba0137f86d373530a8aeb80046bc567505b6bf).",
+      "delivered_by": "grok",
+      "verified": true,
+      "verified_by": "cursor",
+      "verification_ref": "harness-run:run-1790935203327-3d33b024",
       "cross_repo": []
     }
   ]

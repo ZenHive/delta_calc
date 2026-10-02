@@ -19,6 +19,7 @@ defmodule DeltaCalc.MixAliasesTest do
     assert steps("ci") == [
              "format --check-formatted",
              "compile --warnings-as-errors",
+             "cmd env MIX_ENV=dev mix usage_rules.sync --check",
              "test",
              "credo --strict",
              "dialyzer",
@@ -45,6 +46,7 @@ defmodule DeltaCalc.MixAliasesTest do
              "format",
              "credo --strict --all",
              "doctor",
+             "usage_rules.sync --check",
              "test.json --quiet --cover",
              "cmd env MIX_ENV=dev mix dialyzer"
            ]
@@ -59,7 +61,8 @@ defmodule DeltaCalc.MixAliasesTest do
       "sobelow",
       "ex_dna",
       "reach",
-      "cover"
+      "cover",
+      "usage_rules"
     ])
   end
 

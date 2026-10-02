@@ -12,6 +12,7 @@ defmodule DeltaCalc.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
+      usage_rules: usage_rules(),
       test_coverage: [summary: [threshold: 80]],
       dialyzer: [
         plt_add_apps: [:mix, :ex_unit],
@@ -60,6 +61,7 @@ defmodule DeltaCalc.MixProject do
 
       # Quality stack installer (elixir-vibe) — brings ex_dna / ex_slop / reach + `mix ci`
       {:igniter, "~> 0.7", only: [:dev], runtime: false},
+      {:usage_rules, "~> 1.2", only: :dev, runtime: false},
       {:vibe_kit, "~> 0.1", only: [:dev, :test], runtime: false},
 
       # Dev / quality tooling — mirrors the source project's stack
@@ -86,6 +88,7 @@ defmodule DeltaCalc.MixProject do
         "format",
         "credo --strict --all",
         "doctor",
+        "usage_rules.sync --check",
         "test.json --quiet --cover"
       ],
       "precommit.full": ["precommit", "cmd env MIX_ENV=dev mix dialyzer"],
@@ -97,6 +100,8 @@ defmodule DeltaCalc.MixProject do
       ci: [
         "format --check-formatted",
         "compile --warnings-as-errors",
+        # usage_rules is only: :dev; ci preferred_envs is :test.
+        "cmd env MIX_ENV=dev mix usage_rules.sync --check",
         "test",
         "credo --strict",
         "dialyzer",
@@ -107,6 +112,28 @@ defmodule DeltaCalc.MixProject do
       "check.dispatch": [
         "format --check-formatted",
         "compile --warnings-as-errors"
+      ]
+    ]
+  end
+
+  # Skills for deps a current model knows poorly that ship usage-rules.md.
+  # Phoenix/Ecto/Elixir/LiveView core rules are omitted on purpose.
+  defp usage_rules do
+    [
+      skills: [
+        location: ".agents/skills",
+        build: [
+          igniter: [
+            description:
+              "Consult when writing Igniter installers, generators, or automated Elixir source transformations.",
+            usage_rules: [:igniter]
+          ],
+          sobelow: [
+            description:
+              "Consult when running Sobelow, investigating security findings, or configuring security scan exclusions.",
+            usage_rules: [:sobelow]
+          ]
+        ]
       ]
     ]
   end

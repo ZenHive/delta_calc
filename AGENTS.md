@@ -1263,7 +1263,7 @@ describe this project.
 | Command | Runs | Who |
 |---|---|---|
 | `mix check.dispatch` | `format --check-formatted`, `compile --warnings-as-errors`; reviewers select focused behavior tests and risk-relevant live/security checks | implementer / reviewer (`check_command`) |
-| `mix ci` | `format --check-formatted`, `compile --warnings-as-errors`, `test`, `credo --strict`, `dialyzer`, `ex_dna --max-clones 0`, `reach.check --arch --smells` | post-merge audit + QA |
+| `mix ci` | `format --check-formatted`, `compile --warnings-as-errors`, `usage_rules.sync --check` (via `MIX_ENV=dev`), `test`, `credo --strict`, `dialyzer`, `ex_dna --max-clones 0`, `reach.check --arch --smells` | post-merge audit + QA |
 | `mix doctor --raise` | 100% doc/spec coverage (`.doctor.exs` has `raise: false`; `--raise` gates) | post-merge audit + QA |
 | `mix sobelow --skip --exit Low` | Phoenix/Plug scanner; this library has no router — scan is still run | post-merge audit + QA |
 | `mix test.json --cover` | suite + coverage; `mix.exs` floor 80%, ≥95% on `Calc`/`Hedging` money math | post-merge audit + QA |
